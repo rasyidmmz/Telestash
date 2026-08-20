@@ -448,6 +448,35 @@ mod tests {
     }
 }
 
+#[derive(serde::Serialize, Clone)]
+pub struct StreamPlaybackEvent {
+    pub file_id: i32,
+    pub file_name: String,
+    pub folder_id: Option<i64>,
+    pub file_size: u64,
+}
+
+static LAST_STREAM_EVENT: OnceLock<Mutex<Option<(i32, Option<i64>, Instant)>>> = OnceLock::new();
+
+fn notify_stream_playback_started(app_handle: &tauri::AppHandle, file_id: i32, file_name: String, folder_id: Option<i64>, file_size: u64) {
+    let mutex = LAST_STREAM_EVENT.get_or_init(|| Mutex::new(None));
+    if let Ok(mut guard) = mutex.lock() {
+        if let Some((last_id, last_folder, last_time)) = *guard {
+            if last_id == file_id && last_folder == folder_id && last_time.elapsed().as_secs() < 5 {
+                return; // Debounce rapid Range requests for the exact same file
+            }
+        }
+        *guard = Some((file_id, folder_id, Instant::now()));
+    }
+    use tauri::Emitter;
+    let _ = app_handle.emit("stream-playback-started", StreamPlaybackEvent {
+        file_id,
+        file_name,
+        folder_id,
+        file_size,
+    });
+}
+
 async fn handle_stream_media_request(
     req: actix_web::HttpRequest,
     folder_id_str: String,
@@ -455,6 +484,7 @@ async fn handle_stream_media_request(
     query: web::Query<StreamQuery>,
     data: web::Data<Arc<TelegramState>>,
     token_data: web::Data<StreamTokenData>,
+    app_handle: web::Data<tauri::AppHandle>,
 ) -> impl Responder {
     let header_token = req
         .headers()
@@ -506,6 +536,7 @@ async fn handle_stream_media_request(
                             if let Some(media) = msg.media() {
                                 log::debug!("Stream request: Message and media found for msg {}", message_id);
                                 if let Some(manifest) = split_manifest_from_media(&client, &media, msg.text()).await {
+                                    notify_stream_playback_started(&app_handle, message_id, manifest.file_name.clone(), folder_id, manifest.size);
                                     return build_split_media_response(&client, peer.clone(), manifest, folder_id_str.clone(), &req);
                                 }
                                 let mime = mime_type_from_media(&media);
@@ -513,6 +544,9 @@ async fn handle_stream_media_request(
                                     Media::Document(d) => d.name().map(|s| s.to_string()),
                                     _ => None,
                                 };
+                                let file_size = media_size(&media).unwrap_or(0);
+                                let resolved_name = doc_filename.clone().unwrap_or_else(|| format!("file_{}", message_id));
+                                notify_stream_playback_started(&app_handle, message_id, resolved_name, folder_id, file_size);
                                 return build_media_response(
                                     &client, &media, &req, &mime, doc_filename.as_deref(),
                                     StreamingExtras {
@@ -552,9 +586,10 @@ async fn stream_media_named(
     query: web::Query<StreamQuery>,
     data: web::Data<Arc<TelegramState>>,
     token_data: web::Data<StreamTokenData>,
+    app_handle: web::Data<tauri::AppHandle>,
 ) -> impl Responder {
     let (folder_id_str, message_id, _filename) = path.into_inner();
-    handle_stream_media_request(req, folder_id_str, message_id, query, data, token_data).await
+    handle_stream_media_request(req, folder_id_str, message_id, query, data, token_data, app_handle).await
 }
 
 #[get("/stream/{folder_id}/{message_id}")]
@@ -564,9 +599,10 @@ async fn stream_media(
     query: web::Query<StreamQuery>,
     data: web::Data<Arc<TelegramState>>,
     token_data: web::Data<StreamTokenData>,
+    app_handle: web::Data<tauri::AppHandle>,
 ) -> impl Responder {
     let (folder_id_str, message_id) = path.into_inner();
-    handle_stream_media_request(req, folder_id_str, message_id, query, data, token_data).await
+    handle_stream_media_request(req, folder_id_str, message_id, query, data, token_data, app_handle).await
 }
 
 fn mime_type_from_media(media: &Media) -> String {
@@ -582,11 +618,13 @@ pub async fn start_server(
     token: String,
     db_pool: crate::db::DbConnection,
     transcode_manager: Arc<TranscodeManager>,
+    app_handle: tauri::AppHandle,
 ) -> std::io::Result<actix_web::dev::Server> {
     let state_data = web::Data::new(state);
     let token_data = web::Data::new(StreamTokenData { token });
     let db_data = web::Data::new(db_pool);
     let transcode_data = web::Data::new(transcode_manager);
+    let app_handle_data = web::Data::new(app_handle);
     
     log::info!("Starting Streaming Server on port {}", port);
 
@@ -633,6 +671,7 @@ pub async fn start_server(
             .app_data(token_data.clone())
             .app_data(db_data.clone())
             .app_data(transcode_data.clone())
+            .app_data(app_handle_data.clone())
             .service(stream_media_named)
             .service(stream_media)
             .configure(crate::share_routes::configure_share_routes)

@@ -27,7 +27,7 @@ import { LogsModal } from './dashboard/LogsModal';
 import { RecentWatchBar } from './dashboard/RecentWatchBar';
 import { WatchLogsModal } from './dashboard/WatchLogsModal';
 import { StorageAnalyticsModal } from './dashboard/StorageAnalyticsModal';
-import { getRecentWatchHistory, WatchHistoryEntry } from '../../utils/watchHistory';
+import { getRecentWatchHistory, recordWatchEvent, WatchHistoryEntry } from '../../utils/watchHistory';
 import { isVideoFile, isAudioFile } from '../../utils';
 import { Link, Copy, Check, X, Loader2 } from 'lucide-react';
 
@@ -159,10 +159,33 @@ export function Dashboard({ onLogout }: { onLogout: () => void }) {
         loggedTransferErrors.current = activeKeys;
     }, [uploadQueue, downloadQueue]);
 
-    // System Tray Menu Event Listeners
+    // System Tray Menu & Stream Playback Event Listeners
     useEffect(() => {
         let unlistenContinue: (() => void) | undefined;
         let unlistenToggle: (() => void) | undefined;
+        let unlistenStreamPlayback: (() => void) | undefined;
+
+        listen<{ file_id: number; file_name: string; folder_id: number | null; file_size: number }>(
+            'stream-playback-started',
+            (event) => {
+                const payload = event.payload;
+                if (!payload || !payload.file_id) return;
+
+                const fileObj: TelegramFile = {
+                    id: payload.file_id,
+                    name: payload.file_name,
+                    size: payload.file_size,
+                    sizeStr: formatBytes(payload.file_size),
+                    folder_id: payload.folder_id ?? undefined,
+                    type: 'file',
+                };
+
+                recordWatchEvent(fileObj, 'started');
+                refreshWatchHistory();
+            }
+        ).then((fn) => {
+            unlistenStreamPlayback = fn;
+        });
 
         listen('tray-continue-watching', () => {
             const history = getRecentWatchHistory();
@@ -188,10 +211,11 @@ export function Dashboard({ onLogout }: { onLogout: () => void }) {
         }).then(fn => { unlistenToggle = fn; });
 
         return () => {
+            unlistenStreamPlayback?.();
             unlistenContinue?.();
             unlistenToggle?.();
         };
-    }, []);
+    }, [refreshWatchHistory]);
 
     const {
         handleDelete, handleBulkDelete, handleBulkDownload,

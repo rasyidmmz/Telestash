@@ -304,11 +304,12 @@ pub fn run() {
             let handle_for_thread = server_handle_for_setup.clone();
             let db_pool_for_server = db_pool.clone();
             let transcode_for_server = transcode_arc.clone();
+            let app_handle_for_server = app.handle().clone();
             std::thread::spawn(move || {
                 init_com_on_worker_thread();
                 let sys = actix_rt::System::new();
                 sys.block_on(async move {
-                    match server::start_server(state, STREAM_PORT, token_for_server, db_pool_for_server, transcode_for_server).await {
+                    match server::start_server(state, STREAM_PORT, token_for_server, db_pool_for_server, transcode_for_server, app_handle_for_server).await {
                         Ok(server) => {
                             if let Ok(mut handle) = handle_for_thread.lock() {
                                 *handle = Some(server.handle());
