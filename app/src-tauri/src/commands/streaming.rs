@@ -45,6 +45,52 @@ pub struct MpvPlaylistItem {
     pub title: Option<String>,
 }
 
+fn resolve_mpv_binary(app_handle: &tauri::AppHandle) -> Option<std::path::PathBuf> {
+    if let Ok(res_dir) = app_handle.path().resource_dir() {
+        let candidates = [
+            res_dir.join("bin").join("mpv-x86_64-pc-windows-msvc.exe"),
+            res_dir.join("bin").join("mpv.exe"),
+            res_dir.join("mpv.exe"),
+        ];
+        for c in candidates {
+            if c.exists() { return Some(c); }
+        }
+    }
+    if let Ok(app_dir) = app_handle.path().app_data_dir() {
+        let candidates = [
+            app_dir.join("bin").join("mpv-x86_64-pc-windows-msvc.exe"),
+            app_dir.join("bin").join("mpv.exe"),
+            app_dir.join("mpv.exe"),
+        ];
+        for c in candidates {
+            if c.exists() { return Some(c); }
+        }
+    }
+    if let Ok(exec_path) = std::env::current_exe() {
+        if let Some(exec_dir) = exec_path.parent() {
+            let candidates = [
+                exec_dir.join("bin").join("mpv-x86_64-pc-windows-msvc.exe"),
+                exec_dir.join("bin").join("mpv.exe"),
+                exec_dir.join("mpv.exe"),
+            ];
+            for c in candidates {
+                if c.exists() { return Some(c); }
+            }
+        }
+    }
+    if let Ok(cwd) = std::env::current_dir() {
+        let candidates = [
+            cwd.join("bin").join("mpv-x86_64-pc-windows-msvc.exe"),
+            cwd.join("bin").join("mpv.exe"),
+            cwd.join("mpv.exe"),
+        ];
+        for c in candidates {
+            if c.exists() { return Some(c); }
+        }
+    }
+    None
+}
+
 #[tauri::command]
 pub fn cmd_play_in_mpv(
     url: String,
@@ -85,10 +131,33 @@ pub fn cmd_play_in_mpv(
             args.push(format!("--http-header-fields={}: {}", STREAM_TOKEN_HEADER, t));
         }
 
-        for item in items {
+        if items.len() > 1 {
+            for item in items {
+                let (stable_url, _) = strip_token_query(&item.url);
+                args.push("--{".to_string());
+                if let Some(t) = &item.title {
+                    args.push(format!("--force-media-title={}", t));
+                    args.push(format!("--title={}", t));
+                    args.push(format!("--script-opts=osc-title={}", t));
+                }
+                if let (Some(msg_id), Some(f_id)) = (item.message_id, item.folder_id) {
+                    if let Ok(app_dir) = app_handle.path().app_data_dir() {
+                        let srt_path = app_dir.join("streaming").join("captions").join(format!("{}_{}.en.srt", f_id, msg_id));
+                        if srt_path.exists() {
+                            args.push(format!("--sub-file={}", srt_path.to_string_lossy()));
+                        }
+                    }
+                }
+                args.push(stable_url);
+                args.push("--}".to_string());
+            }
+        } else {
+            let item = &items[0];
             let (stable_url, _) = strip_token_query(&item.url);
             if let Some(t) = &item.title {
                 args.push(format!("--force-media-title={}", t));
+                args.push(format!("--title={}", t));
+                args.push(format!("--script-opts=osc-title={}", t));
             }
             if let (Some(msg_id), Some(f_id)) = (item.message_id, item.folder_id) {
                 if let Ok(app_dir) = app_handle.path().app_data_dir() {
@@ -107,6 +176,8 @@ pub fn cmd_play_in_mpv(
         }
         if let Some(t) = &title {
             args.push(format!("--force-media-title={}", t));
+            args.push(format!("--title={}", t));
+            args.push(format!("--script-opts=osc-title={}", t));
         }
         if let (Some(msg_id), Some(f_id)) = (message_id, folder_id) {
             if let Ok(app_dir) = app_handle.path().app_data_dir() {
@@ -121,7 +192,7 @@ pub fn cmd_play_in_mpv(
 
     let arg_refs: Vec<&str> = args.iter().map(String::as_str).collect();
 
-    // Try to launch bundled sidecar mpv
+    // 1. Try to launch bundled sidecar mpv via Tauri plugin
     use tauri_plugin_shell::ShellExt;
     if let Ok(sidecar) = app_handle.shell().sidecar("mpv") {
         if sidecar.args(arg_refs.clone()).spawn().is_ok() {
@@ -129,7 +200,14 @@ pub fn cmd_play_in_mpv(
         }
     }
 
-    // Fallback: Try to launch system-installed mpv from PATH
+    // 2. Try to launch resolved local mpv binary
+    if let Some(bin) = resolve_mpv_binary(&app_handle) {
+        if std::process::Command::new(bin).args(&args).spawn().is_ok() {
+            return Ok(());
+        }
+    }
+
+    // 3. Fallback: Try to launch system-installed mpv from PATH
     std::process::Command::new("mpv")
         .args(&args)
         .spawn()

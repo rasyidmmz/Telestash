@@ -37,7 +37,7 @@ export function MediaPlayer({ file, onClose, onNext, onPrev, currentIndex, total
     // a different folder is active (fixes wrong-title / wrong-stream bug).
     const fileFolderParam = file.folder_id != null ? file.folder_id.toString() : 'home';
     const streamUrl = streamInfo
-        ? `${streamInfo.base_url}/stream/${fileFolderParam}/${file.id}?token=${streamInfo.token}`
+        ? `${streamInfo.base_url}/stream/${fileFolderParam}/${file.id}/${encodeURIComponent(file.name)}?token=${streamInfo.token}`
         : null;
 
     const isVideo = isVideoFile(file.name);
@@ -57,22 +57,22 @@ export function MediaPlayer({ file, onClose, onNext, onPrev, currentIndex, total
           )
         : [];
 
+    const playlistItems = streamInfo && sortedPlaylistFiles.length > 0
+        ? sortedPlaylistFiles.map(f => ({
+            url: `${streamInfo.base_url}/stream/${f.folder_id != null ? f.folder_id.toString() : 'home'}/${f.id}/${encodeURIComponent(f.name)}?token=${streamInfo.token}`,
+            message_id: f.id,
+            folder_id: f.folder_id ?? undefined,
+            title: f.name
+        }))
+        : undefined;
+
+    const startIndex = sortedPlaylistFiles.length > 0
+        ? sortedPlaylistFiles.findIndex(f => f.id === file.id)
+        : undefined;
+
     // Automatically trigger MPV launch when streamUrl is ready
     useEffect(() => {
         if (isMedia && streamUrl && !isPlayingInMpv && !mpvError) {
-            const playlistItems = streamInfo && sortedPlaylistFiles.length > 0
-                ? sortedPlaylistFiles.map(f => ({
-                    url: `${streamInfo.base_url}/stream/${f.folder_id != null ? f.folder_id.toString() : 'home'}/${f.id}?token=${streamInfo.token}`,
-                    message_id: f.id,
-                    folder_id: f.folder_id ?? undefined,
-                    title: f.name
-                }))
-                : undefined;
-
-            const startIndex = sortedPlaylistFiles.length > 0
-                ? sortedPlaylistFiles.findIndex(f => f.id === file.id)
-                : undefined;
-
             invoke('cmd_play_in_mpv', {
                 url: streamUrl,
                 messageId: file.id,
@@ -191,7 +191,14 @@ export function MediaPlayer({ file, onClose, onNext, onPrev, currentIndex, total
                             <button
                                 onClick={() => {
                                     if (streamUrl) {
-                                        invoke('cmd_play_in_mpv', { url: streamUrl, messageId: file.id, folderId: file.folder_id }).catch(err => {
+                                        invoke('cmd_play_in_mpv', {
+                                            url: streamUrl,
+                                            messageId: file.id,
+                                            folderId: file.folder_id,
+                                            title: file.name,
+                                            playlist: playlistItems,
+                                            startIndex: startIndex !== undefined && startIndex >= 0 ? startIndex : undefined
+                                        }).catch(err => {
                                             toast.error(`Failed to reopen MPV: ${err}`);
                                         });
                                     }

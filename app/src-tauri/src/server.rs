@@ -223,7 +223,7 @@ pub fn build_media_response(
     if let Some(fname) = filename {
         resp.insert_header((
             "Content-Disposition",
-            format!("attachment; filename=\"{}\"", fname),
+            format!("inline; filename=\"{}\"", fname),
         ));
     }
 
@@ -395,7 +395,7 @@ fn build_split_media_response(
     resp.insert_header(("Content-Type", mime));
     resp.insert_header(("Accept-Ranges", "bytes"));
     resp.insert_header(("Cache-Control", "private, max-age=120"));
-    resp.insert_header(("Content-Disposition", format!("attachment; filename=\"{}\"", filename)));
+    resp.insert_header(("Content-Disposition", format!("inline; filename=\"{}\"", filename)));
     resp.streaming(stream)
 }
 
@@ -448,16 +448,14 @@ mod tests {
     }
 }
 
-#[get("/stream/{folder_id}/{message_id}")]
-async fn stream_media(
+async fn handle_stream_media_request(
     req: actix_web::HttpRequest,
-    path: web::Path<(String, i32)>,
+    folder_id_str: String,
+    message_id: i32,
     query: web::Query<StreamQuery>,
     data: web::Data<Arc<TelegramState>>,
     token_data: web::Data<StreamTokenData>,
 ) -> impl Responder {
-    let (folder_id_str, message_id) = path.into_inner();
-
     let header_token = req
         .headers()
         .get(stream_token_header_name())
@@ -511,8 +509,12 @@ async fn stream_media(
                                     return build_split_media_response(&client, peer.clone(), manifest, folder_id_str.clone(), &req);
                                 }
                                 let mime = mime_type_from_media(&media);
+                                let doc_filename = match &media {
+                                    Media::Document(d) => d.name().map(|s| s.to_string()),
+                                    _ => None,
+                                };
                                 return build_media_response(
-                                    &client, &media, &req, &mime, None,
+                                    &client, &media, &req, &mime, doc_filename.as_deref(),
                                     StreamingExtras {
                                         extra_headers: vec![("Cache-Control", "private, max-age=120".to_string())],
                                         log_label: "Stream",
@@ -541,6 +543,30 @@ async fn stream_media(
         log::error!("Stream request failed: Telegram client not connected for msg {}", message_id);
         HttpResponse::ServiceUnavailable().body("Telegram client not connected")
     }
+}
+
+#[get("/stream/{folder_id}/{message_id}/{filename:.*}")]
+async fn stream_media_named(
+    req: actix_web::HttpRequest,
+    path: web::Path<(String, i32, String)>,
+    query: web::Query<StreamQuery>,
+    data: web::Data<Arc<TelegramState>>,
+    token_data: web::Data<StreamTokenData>,
+) -> impl Responder {
+    let (folder_id_str, message_id, _filename) = path.into_inner();
+    handle_stream_media_request(req, folder_id_str, message_id, query, data, token_data).await
+}
+
+#[get("/stream/{folder_id}/{message_id}")]
+async fn stream_media(
+    req: actix_web::HttpRequest,
+    path: web::Path<(String, i32)>,
+    query: web::Query<StreamQuery>,
+    data: web::Data<Arc<TelegramState>>,
+    token_data: web::Data<StreamTokenData>,
+) -> impl Responder {
+    let (folder_id_str, message_id) = path.into_inner();
+    handle_stream_media_request(req, folder_id_str, message_id, query, data, token_data).await
 }
 
 fn mime_type_from_media(media: &Media) -> String {
@@ -607,6 +633,7 @@ pub async fn start_server(
             .app_data(token_data.clone())
             .app_data(db_data.clone())
             .app_data(transcode_data.clone())
+            .service(stream_media_named)
             .service(stream_media)
             .configure(crate::share_routes::configure_share_routes)
             .configure(crate::transcode::configure_hls_routes)
