@@ -1,6 +1,6 @@
 [package]
 name = "telestash"
-version = "1.1.4"
+version = "1.1.5"
 description = "Windows 11 x64 Telegram-backed media and file drive."
 authors = ["rasyidmmz"]
 edition = "2021"

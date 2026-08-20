@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.1.5]
+
+### Fixed
+
+- Fixed MPV player header and chapter bar media title display by introducing named streaming routes, scoped per-file CLI options (`--{ ... --}`), and inline `Content-Disposition` headers.
+- Fixed Continue Watching / Recent Watch synchronization when navigating to previous/next episodes directly inside the MPV player via backend stream playback events.
+- Added automatic resolution for bundled local MPV binary before PATH fallback.
+
 ## [1.1.4]
 
 ### Fixed
