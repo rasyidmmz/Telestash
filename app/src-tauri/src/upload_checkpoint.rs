@@ -1,5 +1,4 @@
 use sqlite::Connection;
-use std::path::Path;
 
 #[derive(Debug, Clone)]
 pub struct UploadCheckpoint {

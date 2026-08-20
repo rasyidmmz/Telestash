@@ -536,12 +536,19 @@ async fn handle_stream_media_request(
                             if let Some(media) = msg.media() {
                                 log::debug!("Stream request: Message and media found for msg {}", message_id);
                                 if let Some(manifest) = split_manifest_from_media(&client, &media, msg.text()).await {
-                                    notify_stream_playback_started(&app_handle, message_id, manifest.file_name.clone(), folder_id, manifest.size);
+                                    notify_stream_playback_started(&app_handle, message_id, manifest.filename.clone(), folder_id, manifest.size);
                                     return build_split_media_response(&client, peer.clone(), manifest, folder_id_str.clone(), &req);
                                 }
                                 let mime = mime_type_from_media(&media);
                                 let doc_filename = match &media {
-                                    Media::Document(d) => d.name().map(|s| s.to_string()),
+                                    Media::Document(d) => {
+                                        let n = d.name();
+                                        if !n.is_empty() {
+                                            Some(n.to_string())
+                                        } else {
+                                            None
+                                        }
+                                    },
                                     _ => None,
                                 };
                                 let file_size = media_size(&media).unwrap_or(0);

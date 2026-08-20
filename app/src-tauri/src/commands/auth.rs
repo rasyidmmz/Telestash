@@ -5,7 +5,6 @@ use std::sync::Arc;
 use std::sync::atomic::Ordering;
 use grammers_mtsender::SenderPool;
 use grammers_session::storages::SqliteSession;
-use grammers_session::Session;
 use tokio::sync::oneshot;
 use tokio::time::Duration;
 use base64::{Engine as _, engine::general_purpose::URL_SAFE_NO_PAD};

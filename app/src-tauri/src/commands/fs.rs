@@ -2762,7 +2762,7 @@ pub async fn cmd_upload_from_url(
     bw_state: State<'_, Arc<BandwidthManager>>,
     net_config: State<'_, std::sync::Arc<TransferPolicy>>,
 ) -> Result<String, String> {
-    let mut client_builder = reqwest::Client::builder()
+    let client_builder = reqwest::Client::builder()
         .connect_timeout(std::time::Duration::from_secs(30))
         .redirect(reqwest::redirect::Policy::limited(10));
     
