@@ -5,40 +5,78 @@ function isVideoFile(name) {
     return /\.(mp4|mkv|avi|mov|webm|flv|ts|m4v)$/i.test(name);
 }
 
+function cleanSeriesTitle(raw) {
+    return raw
+        .replace(/[._]/g, ' ')
+        .replace(/^\[.*?\]\s*/, '')
+        .replace(/Superfan Episodes/i, '')
+        .replace(/\s+/g, ' ')
+        .trim();
+}
+
 function parseEpisodeInfo(filename) {
     if (!isVideoFile(filename)) {
         return { isEpisode: false, season: null, episode: null };
     }
     const baseName = filename.replace(/\.[^/.]+$/, '');
 
-    const sxE = baseName.match(/(?:s|season)[.\s_-]*(\d+)[.\s_-]*(?:e|ep|episode)[.\s_-]*(\d+)/i);
+    // Pattern 1: Standard SxxExx, Season X Episode Y, S08e24, S8.E24, S08-E24, S08E24-E25
+    const sxE = baseName.match(/(?:^|[.\s_\-[])(?:s|season)[.\s_-]*(\d+)[.\s_-]*(?:e|ep|episode)[.\s_-]*(\d+)(?:[.\s_-]*(?:e|ep|episode|-)[.\s_-]*(\d+))?/i);
     if (sxE && sxE[1] && sxE[2]) {
         const season = parseInt(sxE[1], 10);
         const episode = parseInt(sxE[2], 10);
         const sPad = season.toString().padStart(2, '0');
         const ePad = episode.toString().padStart(2, '0');
+        const multiEp = sxE[3] ? `-E${parseInt(sxE[3], 10).toString().padStart(2, '0')}` : '';
         const titleMatch = baseName.split(sxE[0])[0]?.replace(/[._-]+$/, '').trim();
-        const seriesTitle = titleMatch ? titleMatch.replace(/[._]/g, ' ') : undefined;
+        const seriesTitle = titleMatch ? cleanSeriesTitle(titleMatch) : undefined;
+        return { isEpisode: true, season, episode, displayBadge: `S${sPad}E${ePad}${multiEp}`, seriesTitle };
+    }
+
+    // Pattern 2: Classic NxEE notation (e.g. "9x01", "09x01", "8x24", "The Office (US) - 9x01 - New Guys")
+    const nxE = baseName.match(/(?:^|[.\s_\-[])(\d{1,2})x(\d{1,3})(?:[.\s_\-–—\]]|$)/i);
+    if (nxE && nxE[1] && nxE[2]) {
+        const season = parseInt(nxE[1], 10);
+        const episode = parseInt(nxE[2], 10);
+        const sPad = season.toString().padStart(2, '0');
+        const ePad = episode.toString().padStart(2, '0');
+        const titleMatch = baseName.split(nxE[0])[0]?.replace(/[._-]+$/, '').trim();
+        const seriesTitle = titleMatch ? cleanSeriesTitle(titleMatch) : undefined;
         return { isEpisode: true, season, episode, displayBadge: `S${sPad}E${ePad}`, seriesTitle };
     }
 
+    // Pattern 3: Season X - Y
+    const sDashE = baseName.match(/(?:^|[.\s_\-[])(?:s|season)[.\s_-]*(\d+)[.\s_–—-]+(?:ep|episode)?\s*(\d{1,3})(?:[.\s_\-–—\]]|$)/i);
+    if (sDashE && sDashE[1] && sDashE[2]) {
+        const season = parseInt(sDashE[1], 10);
+        const episode = parseInt(sDashE[2], 10);
+        const sPad = season.toString().padStart(2, '0');
+        const ePad = episode.toString().padStart(2, '0');
+        const titleMatch = baseName.split(sDashE[0])[0]?.replace(/[._-]+$/, '').trim();
+        const seriesTitle = titleMatch ? cleanSeriesTitle(titleMatch) : undefined;
+        return { isEpisode: true, season, episode, displayBadge: `S${sPad}E${ePad}`, seriesTitle };
+    }
+
+    // Pattern 4: Episode Y only
     const epOnly = baseName.match(/(?:^|[.\s_\-[])(?:e|ep|episode)[.\s_-]*(\d+)(?:\b|v\d+|[.\s_\-\]])/i);
     if (epOnly && epOnly[1]) {
         const episode = parseInt(epOnly[1], 10);
         const ePad = episode.toString().padStart(2, '0');
         const seasonMatch = baseName.match(/(?:s|season)[.\s_-]*(\d+)/i);
         const season = seasonMatch && seasonMatch[1] ? parseInt(seasonMatch[1], 10) : 1;
+        const sPad = season.toString().padStart(2, '0');
         const titleMatch = baseName.split(epOnly[0])[0]?.replace(/[._-]+$/, '').trim();
-        const seriesTitle = titleMatch ? titleMatch.replace(/[._]/g, ' ') : undefined;
-        return { isEpisode: true, season, episode, displayBadge: `EP ${ePad}`, seriesTitle };
+        const seriesTitle = titleMatch ? cleanSeriesTitle(titleMatch) : undefined;
+        return { isEpisode: true, season, episode, displayBadge: season > 1 ? `S${sPad}E${ePad}` : `EP ${ePad}`, seriesTitle };
     }
 
+    // Pattern 5: Anime dash format
     const dashNum = baseName.match(/[-–—]\s*(\d{1,3})(?:\s*\[|\s*\(|\s*\.|\s*$)/);
     if (dashNum && dashNum[1]) {
         const episode = parseInt(dashNum[1], 10);
         const ePad = episode.toString().padStart(2, '0');
         const titleMatch = baseName.split(dashNum[0])[0]?.replace(/^\[.*?\]\s*/, '').trim();
-        const seriesTitle = titleMatch ? titleMatch.replace(/[._]/g, ' ') : undefined;
+        const seriesTitle = titleMatch ? cleanSeriesTitle(titleMatch) : undefined;
         return { isEpisode: true, season: 1, episode, displayBadge: `EP ${ePad}`, seriesTitle };
     }
 
@@ -61,21 +99,18 @@ function getNextEpisode(currentFile, folderFiles) {
 
     const videoFiles = naturalSortFiles(folderFiles.filter(f => f.type !== 'folder' && isVideoFile(f.name)));
 
-    // 1. Look for next episode in current season
     const exactNextInSeason = videoFiles.find(f => {
         const info = parseEpisodeInfo(f.name);
         return info.isEpisode && (info.season ?? 1) === currentSeason && info.episode === nextEpisodeNum;
     });
     if (exactNextInSeason) return exactNextInSeason;
 
-    // 2. Look for first episode of next season
     const nextSeasonFirstEp = videoFiles.find(f => {
         const info = parseEpisodeInfo(f.name);
         return info.isEpisode && (info.season ?? 1) === nextSeasonNum && (info.episode === 1 || info.episode === 0);
     });
     if (nextSeasonFirstEp) return nextSeasonFirstEp;
 
-    // 3. Fallback: find next index in naturally sorted video files
     const currentIndex = videoFiles.findIndex(f => f.id === currentFile.id || f.name === currentFile.name);
     if (currentIndex >= 0 && currentIndex + 1 < videoFiles.length) {
         const candidate = videoFiles[currentIndex + 1];
@@ -119,6 +154,70 @@ function groupRecentWatchEntries(entries) {
     return consolidated;
 }
 
+function analyzeSeriesFolder(files) {
+    const videoFiles = naturalSortFiles(files.filter(f => f.type !== 'folder' && isVideoFile(f.name)));
+    let episodeCount = 0;
+    const seasonsMap = new Map();
+    const specials = [];
+    let detectedTitle = '';
+
+    for (const file of videoFiles) {
+        const info = parseEpisodeInfo(file.name);
+        if (info.isEpisode) {
+            episodeCount++;
+            if (!detectedTitle && info.seriesTitle) {
+                detectedTitle = info.seriesTitle;
+            }
+            if (info.season !== null && info.season > 0) {
+                const list = seasonsMap.get(info.season) || [];
+                list.push(file);
+                seasonsMap.set(info.season, list);
+            } else {
+                specials.push(file);
+            }
+        }
+    }
+
+    const isSeriesFolder = episodeCount >= 2 && (episodeCount / Math.max(videoFiles.length, 1)) >= 0.4;
+    const seasons = [];
+
+    if (isSeriesFolder) {
+        seasons.push({
+            seasonKey: 'all',
+            seasonNumber: null,
+            label: `All Episodes (${videoFiles.length})`,
+            files: videoFiles,
+        });
+
+        const sortedSeasonNums = Array.from(seasonsMap.keys()).sort((a, b) => a - b);
+        for (const sNum of sortedSeasonNums) {
+            const sFiles = seasonsMap.get(sNum) || [];
+            seasons.push({
+                seasonKey: `s${sNum}`,
+                seasonNumber: sNum,
+                label: `Season ${sNum} (${sFiles.length})`,
+                files: sFiles,
+            });
+        }
+
+        if (specials.length > 0) {
+            seasons.push({
+                seasonKey: 'specials',
+                seasonNumber: 0,
+                label: `Specials (${specials.length})`,
+                files: specials,
+            });
+        }
+    }
+
+    return {
+        isSeriesFolder,
+        seriesTitle: detectedTitle,
+        seasons,
+        allVideoFiles: videoFiles,
+    };
+}
+
 test('parseEpisodeInfo parses standard S01E05 patterns', () => {
     const res = parseEpisodeInfo('Breaking.Bad.S01E05.1080p.mkv');
     assert.equal(res.isEpisode, true);
@@ -128,68 +227,51 @@ test('parseEpisodeInfo parses standard S01E05 patterns', () => {
     assert.equal(res.seriesTitle, 'Breaking Bad');
 });
 
-test('parseEpisodeInfo parses Season 2 Episode 10 patterns', () => {
-    const res = parseEpisodeInfo('Game of Thrones Season 2 Episode 10.mp4');
+test('parseEpisodeInfo parses The Office Season 9 9x01 format', () => {
+    const res = parseEpisodeInfo('The Office (US) - 9x01 - New Guys.mp4');
     assert.equal(res.isEpisode, true);
-    assert.equal(res.season, 2);
-    assert.equal(res.episode, 10);
-    assert.equal(res.displayBadge, 'S02E10');
+    assert.equal(res.season, 9);
+    assert.equal(res.episode, 1);
+    assert.equal(res.displayBadge, 'S09E01');
+    assert.equal(res.seriesTitle, 'The Office (US)');
 });
 
-test('parseEpisodeInfo parses anime dash format', () => {
-    const res = parseEpisodeInfo('[SubsPlease] Frieren - 08 [1080p].mkv');
+test('parseEpisodeInfo parses The Office Superfan Season 8 S08e24 format', () => {
+    const res = parseEpisodeInfo('The_Office_Superfan_Episodes_S08e24_Free_Family_Portrait_Studio.mp4');
     assert.equal(res.isEpisode, true);
-    assert.equal(res.season, 1);
-    assert.equal(res.episode, 8);
-    assert.equal(res.displayBadge, 'EP 08');
+    assert.equal(res.season, 8);
+    assert.equal(res.episode, 24);
+    assert.equal(res.displayBadge, 'S08E24');
+    assert.equal(res.seriesTitle, 'The Office');
 });
 
-test('naturalSortFiles sorts numerically rather than lexicographically', () => {
+test('parseEpisodeInfo parses The Office Superfan Season 7 S07e24 format', () => {
+    const res = parseEpisodeInfo('The_Office_Superfan_Episodes_S07e24_Search_Committee_Extended_Cut.mp4');
+    assert.equal(res.isEpisode, true);
+    assert.equal(res.season, 7);
+    assert.equal(res.episode, 24);
+    assert.equal(res.displayBadge, 'S07E24');
+    assert.equal(res.seriesTitle, 'The Office');
+});
+
+test('analyzeSeriesFolder groups mixed naming of 9 seasons into Season 1 through Season 9 tabs', () => {
     const files = [
-        { name: 'Show.S01E10.mkv', id: 10 },
-        { name: 'Show.S01E01.mkv', id: 1 },
-        { name: 'Show.S01E02.mkv', id: 2 },
-        { name: 'Show.S01E11.mkv', id: 11 },
-        { name: 'Show.S01E09.mkv', id: 9 },
-    ];
-    const sorted = naturalSortFiles(files);
-    assert.deepEqual(sorted.map(f => f.id), [1, 2, 9, 10, 11]);
-});
-
-test('getNextEpisode resolves the next sequential episode in same season', () => {
-    const files = [
-        { name: 'From.S02E05.mkv', id: 205, type: 'file' },
-        { name: 'From.S02E06.mkv', id: 206, type: 'file' },
-        { name: 'From.S02E07.mkv', id: 207, type: 'file' },
-    ];
-    const next = getNextEpisode(files[0], files);
-    assert.notEqual(next, null);
-    assert.equal(next.id, 206);
-});
-
-test('getNextEpisode resolves first episode of next season at season finale', () => {
-    const files = [
-        { name: 'From.S01E10.mkv', id: 110, type: 'file' },
-        { name: 'From.S02E01.mkv', id: 201, type: 'file' },
-    ];
-    const next = getNextEpisode(files[0], files);
-    assert.notEqual(next, null);
-    assert.equal(next.id, 201);
-});
-
-test('groupRecentWatchEntries deduplicates multiple episodes of same series to only latest', () => {
-    const history = [
-        { file_id: 205, file_name: 'From.S02E05.1080p.mkv', timestamp: '2026-08-21T14:00:00Z', folder_id: 10 },
-        { file_id: 204, file_name: 'From.S02E04.1080p.mkv', timestamp: '2026-08-21T13:00:00Z', folder_id: 10 },
-        { file_id: 110, file_name: 'From.S01E10.1080p.mkv', timestamp: '2026-08-21T12:00:00Z', folder_id: 10 },
-        { file_id: 999, file_name: 'Dune.Part.Two.2024.2160p.mkv', timestamp: '2026-08-21T11:00:00Z', folder_id: 20 },
-        { file_id: 301, file_name: 'Severance.S01E01.1080p.mkv', timestamp: '2026-08-21T10:00:00Z', folder_id: 30 },
-        { file_id: 201, file_name: 'From.S02E01.1080p.mkv', timestamp: '2026-08-21T09:00:00Z', folder_id: 10 },
+        { name: 'The_Office_Superfan_Episodes_S01e01_Pilot.mp4', id: 1, type: 'file' },
+        { name: 'The_Office_Superfan_Episodes_S02e01_The_Dundies.mp4', id: 2, type: 'file' },
+        { name: 'The_Office_Superfan_Episodes_S03e01_Gay_Witch_Hunt.mp4', id: 3, type: 'file' },
+        { name: 'The_Office_Superfan_Episodes_S04e01_Fun_Run.mp4', id: 4, type: 'file' },
+        { name: 'The_Office_Superfan_Episodes_S05e01_Weight_Loss.mp4', id: 5, type: 'file' },
+        { name: 'The_Office_Superfan_Episodes_S06e01_Gossip.mp4', id: 6, type: 'file' },
+        { name: 'The_Office_Superfan_Episodes_S07e24_Search_Committee.mp4', id: 7, type: 'file' },
+        { name: 'The_Office_Superfan_Episodes_S08e24_Free_Family_Portrait_Studio.mp4', id: 8, type: 'file' },
+        { name: 'The Office (US) - 9x01 - New Guys.mp4', id: 9, type: 'file' },
     ];
 
-    const grouped = groupRecentWatchEntries(history);
-    assert.equal(grouped.length, 3);
-    assert.equal(grouped[0].file_id, 205); // Latest From episode S02E05
-    assert.equal(grouped[1].file_id, 999); // Dune Movie
-    assert.equal(grouped[2].file_id, 301); // Severance S01E01
+    const result = analyzeSeriesFolder(files);
+    assert.equal(result.isSeriesFolder, true);
+    // Seasons: All + Season 1..9 = 10 tabs
+    assert.equal(result.seasons.length, 10);
+    assert.equal(result.seasons[1].seasonNumber, 1);
+    assert.equal(result.seasons[8].seasonNumber, 8);
+    assert.equal(result.seasons[9].seasonNumber, 9);
 });

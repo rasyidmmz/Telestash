@@ -24,8 +24,20 @@ export interface SeriesGroupResult {
 }
 
 /**
+ * Clean and normalize extracted series title.
+ */
+function cleanSeriesTitle(raw: string): string {
+    return raw
+        .replace(/[._]/g, ' ')
+        .replace(/^\[.*?\]\s*/, '')
+        .replace(/Superfan Episodes/i, '')
+        .replace(/\s+/g, ' ')
+        .trim();
+}
+
+/**
  * Parse season and episode information from video filename.
- * Supports standard formats: S01E05, Season 2 Episode 3, EP04, Ep 12, Anime [01], etc.
+ * Supports: S01E05, S08e24, 9x01, Season 2 Episode 3, Season 8 - 24, EP04, Ep 12, Anime [01], etc.
  */
 export function parseEpisodeInfo(filename: string): EpisodeInfo {
     if (!isVideoFile(filename)) {
@@ -35,17 +47,40 @@ export function parseEpisodeInfo(filename: string): EpisodeInfo {
     // Clean extension
     const baseName = filename.replace(/\.[^/.]+$/, '');
 
-    // Pattern 1: S01E05, S1E5, S01.E05, Season 1 Episode 5, s02_ep04
-    const sxE = baseName.match(/(?:s|season)[.\s_-]*(\d+)[.\s_-]*(?:e|ep|episode)[.\s_-]*(\d+)/i);
+    // Pattern 1: Standard SxxExx, Season X Episode Y, S08e24, S8.E24, S08-E24, S08E24-E25
+    const sxE = baseName.match(/(?:^|[.\s_\-[])(?:s|season)[.\s_-]*(\d+)[.\s_-]*(?:e|ep|episode)[.\s_-]*(\d+)(?:[.\s_-]*(?:e|ep|episode|-)[.\s_-]*(\d+))?/i);
     if (sxE && sxE[1] && sxE[2]) {
         const season = parseInt(sxE[1], 10);
         const episode = parseInt(sxE[2], 10);
         const sPad = season.toString().padStart(2, '0');
         const ePad = episode.toString().padStart(2, '0');
         
+        // Multi-episode support (e.g. S08E24-E25)
+        const multiEp = sxE[3] ? `-E${parseInt(sxE[3], 10).toString().padStart(2, '0')}` : '';
+
         // Extract potential series title before the season tag
         const titleMatch = baseName.split(sxE[0])[0]?.replace(/[._-]+$/, '').trim();
-        const seriesTitle = titleMatch ? titleMatch.replace(/[._]/g, ' ') : undefined;
+        const seriesTitle = titleMatch ? cleanSeriesTitle(titleMatch) : undefined;
+
+        return {
+            isEpisode: true,
+            season,
+            episode,
+            displayBadge: `S${sPad}E${ePad}${multiEp}`,
+            seriesTitle
+        };
+    }
+
+    // Pattern 2: Classic NxEE notation (e.g. "9x01", "09x01", "8x24", "The Office (US) - 9x01 - New Guys")
+    const nxE = baseName.match(/(?:^|[.\s_\-[])(\d{1,2})x(\d{1,3})(?:[.\s_\-–—\]]|$)/i);
+    if (nxE && nxE[1] && nxE[2]) {
+        const season = parseInt(nxE[1], 10);
+        const episode = parseInt(nxE[2], 10);
+        const sPad = season.toString().padStart(2, '0');
+        const ePad = episode.toString().padStart(2, '0');
+
+        const titleMatch = baseName.split(nxE[0])[0]?.replace(/[._-]+$/, '').trim();
+        const seriesTitle = titleMatch ? cleanSeriesTitle(titleMatch) : undefined;
 
         return {
             isEpisode: true,
@@ -56,7 +91,27 @@ export function parseEpisodeInfo(filename: string): EpisodeInfo {
         };
     }
 
-    // Pattern 2: Season X without explicit Episode, or Episode Y without explicit Season
+    // Pattern 3: Season X - Y (e.g. "Season 8 - 24" or "S08 - 24" or "S8 24")
+    const sDashE = baseName.match(/(?:^|[.\s_\-[])(?:s|season)[.\s_-]*(\d+)[.\s_–—-]+(?:ep|episode)?\s*(\d{1,3})(?:[.\s_\-–—\]]|$)/i);
+    if (sDashE && sDashE[1] && sDashE[2]) {
+        const season = parseInt(sDashE[1], 10);
+        const episode = parseInt(sDashE[2], 10);
+        const sPad = season.toString().padStart(2, '0');
+        const ePad = episode.toString().padStart(2, '0');
+
+        const titleMatch = baseName.split(sDashE[0])[0]?.replace(/[._-]+$/, '').trim();
+        const seriesTitle = titleMatch ? cleanSeriesTitle(titleMatch) : undefined;
+
+        return {
+            isEpisode: true,
+            season,
+            episode,
+            displayBadge: `S${sPad}E${ePad}`,
+            seriesTitle
+        };
+    }
+
+    // Pattern 4: Episode Y only with or without separate Season elsewhere
     const epOnly = baseName.match(/(?:^|[.\s_\-[])(?:e|ep|episode)[.\s_-]*(\d+)(?:\b|v\d+|[.\s_\-\]])/i);
     if (epOnly && epOnly[1]) {
         const episode = parseInt(epOnly[1], 10);
@@ -65,26 +120,27 @@ export function parseEpisodeInfo(filename: string): EpisodeInfo {
         // Check if there is a Season elsewhere
         const seasonMatch = baseName.match(/(?:s|season)[.\s_-]*(\d+)/i);
         const season = seasonMatch && seasonMatch[1] ? parseInt(seasonMatch[1], 10) : 1;
+        const sPad = season.toString().padStart(2, '0');
 
         const titleMatch = baseName.split(epOnly[0])[0]?.replace(/[._-]+$/, '').trim();
-        const seriesTitle = titleMatch ? titleMatch.replace(/[._]/g, ' ') : undefined;
+        const seriesTitle = titleMatch ? cleanSeriesTitle(titleMatch) : undefined;
 
         return {
             isEpisode: true,
             season,
             episode,
-            displayBadge: `EP ${ePad}`,
+            displayBadge: season > 1 ? `S${sPad}E${ePad}` : `EP ${ePad}`,
             seriesTitle
         };
     }
 
-    // Pattern 3: Anime dash format: "Title - 05 [1080p]" or "[Group] Title - 05"
+    // Pattern 5: Anime dash format: "Title - 05 [1080p]" or "[Group] Title - 05"
     const dashNum = baseName.match(/[-–—]\s*(\d{1,3})(?:\s*\[|\s*\(|\s*\.|\s*$)/);
     if (dashNum && dashNum[1]) {
         const episode = parseInt(dashNum[1], 10);
         const ePad = episode.toString().padStart(2, '0');
         const titleMatch = baseName.split(dashNum[0])[0]?.replace(/^\[.*?\]\s*/, '').trim();
-        const seriesTitle = titleMatch ? titleMatch.replace(/[._]/g, ' ') : undefined;
+        const seriesTitle = titleMatch ? cleanSeriesTitle(titleMatch) : undefined;
 
         return {
             isEpisode: true,
