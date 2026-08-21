@@ -2,7 +2,7 @@ import { Play, Clock, Trash2, History, Sparkles } from 'lucide-react';
 import { WatchHistoryEntry, removeWatchEntry, clearWatchHistory } from '../../../utils/watchHistory';
 import { formatBytes } from '../../../utils';
 import { TelegramFile } from '../../../types';
-import { getNextEpisode } from '../../../utils/seriesParser';
+import { getNextEpisode, groupRecentWatchEntries, parseEpisodeInfo } from '../../../utils/seriesParser';
 import { MediaBadgesList } from '../../shared/MediaBadgesList';
 
 interface RecentWatchBarProps {
@@ -27,8 +27,11 @@ export function RecentWatchBar({ entries, currentFiles, onPlay, onPlayFile, onRe
         onRefresh();
     };
 
+    // Group and deduplicate watch history so each TV series, folder, or movie shows only its latest watch entry
+    const consolidatedEntries = groupRecentWatchEntries(entries);
+
     // Calculate "Next Up" episode based on the latest watched entry
-    const latestWatched = entries[0];
+    const latestWatched = consolidatedEntries[0];
     const latestFileObj: TelegramFile | null = latestWatched ? {
         id: latestWatched.file_id,
         name: latestWatched.file_name,
@@ -51,7 +54,7 @@ export function RecentWatchBar({ entries, currentFiles, onPlay, onPlayFile, onRe
                         Continue Watching / Recent Watch
                     </span>
                     <span className="text-[10px] font-mono px-1.5 py-0.2 rounded bg-slate-900 border border-gray-800 text-cyan-400">
-                        {entries.length}
+                        {consolidatedEntries.length}
                     </span>
                 </div>
                 <button
@@ -65,7 +68,7 @@ export function RecentWatchBar({ entries, currentFiles, onPlay, onPlayFile, onRe
             </div>
 
             <div className="flex items-center gap-3 overflow-x-auto pb-2 scrollbar-thin scrollbar-thumb-gray-800">
-                {/* Highlighted "Next Up" Episode Card */}
+                {/* 1. Distinct Vibrant "Next Up" Episode Card */}
                 {nextEpisodeFile && (
                     <div
                         key={`next-up-${nextEpisodeFile.id}`}
@@ -92,7 +95,7 @@ export function RecentWatchBar({ entries, currentFiles, onPlay, onPlayFile, onRe
                             event.preventDefault();
                             event.currentTarget.click();
                         }}
-                        className="group relative flex-shrink-0 w-64 p-3 rounded-lg bg-gradient-to-br from-cyan-950/80 via-slate-900/95 to-slate-900/95 hover:from-cyan-900/90 hover:via-slate-800/95 hover:to-slate-800/95 border-2 border-cyan-500/60 hover:border-cyan-400 cursor-pointer transition-all duration-200 select-none shadow-[0_0_15px_rgba(6,182,212,0.15)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400"
+                        className="group relative flex-shrink-0 w-64 p-3 rounded-lg bg-gradient-to-br from-cyan-950/80 via-slate-900/95 to-slate-900/95 hover:from-cyan-900/90 hover:via-slate-800/95 hover:to-slate-800/95 border-2 border-cyan-500/60 hover:border-cyan-400 cursor-pointer transition-all duration-200 select-none shadow-[0_0_15px_rgba(6,182,212,0.15)] hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400"
                     >
                         <div className="flex items-center justify-between gap-2 mb-2">
                             <span className="flex items-center gap-1 text-[10px] font-mono font-bold px-2 py-0.5 rounded bg-cyan-500 text-slate-950 uppercase tracking-wide">
@@ -118,9 +121,11 @@ export function RecentWatchBar({ entries, currentFiles, onPlay, onPlayFile, onRe
                     </div>
                 )}
 
-                {/* Standard Watch History Cards */}
-                {entries.slice(0, 10).map((entry) => {
+                {/* 2. Calm, Minimalist Consolidated Recent Watch Cards (Per Series / Movie) */}
+                {consolidatedEntries.slice(0, 10).map((entry) => {
                     const formattedDate = new Date(entry.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                    const epInfo = parseEpisodeInfo(entry.file_name);
+
                     return (
                         <div
                             key={entry.id}
@@ -133,46 +138,54 @@ export function RecentWatchBar({ entries, currentFiles, onPlay, onPlayFile, onRe
                                 event.preventDefault();
                                 event.currentTarget.click();
                             }}
-                            className="group relative flex-shrink-0 w-60 p-3 rounded-lg bg-slate-900/90 hover:bg-slate-800/90 border border-gray-800/80 hover:border-cyan-500/50 cursor-pointer transition-all duration-200 select-none shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400"
+                            className="group relative flex-shrink-0 w-64 p-3 rounded-lg bg-slate-900/80 hover:bg-slate-800/90 border border-slate-700/70 hover:border-slate-500/90 cursor-pointer transition-all duration-200 select-none shadow-[0_2px_8px_rgba(0,0,0,0.3)] hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-400"
                         >
                             <div className="flex items-start justify-between gap-2 mb-2">
-                                <div className="flex-1 min-w-0">
-                                    <div className="text-xs font-medium text-telegram-text truncate group-hover:text-cyan-400 transition-colors" title={entry.file_name}>
-                                        {entry.file_name}
-                                    </div>
-                                    <div className="flex items-center gap-2 mt-1 text-[10px] font-mono text-gray-400">
-                                        <span>{formatBytes(entry.file_size)}</span>
-                                        <span>·</span>
-                                        <span className="flex items-center gap-0.5">
-                                            <Clock className="w-2.5 h-2.5 text-cyan-400" />
-                                            {formattedDate}
+                                <div className="flex items-center gap-1.5">
+                                    <span className="text-[9.5px] font-mono font-medium px-2 py-0.5 rounded bg-slate-800/90 border border-slate-700/80 text-slate-300 tracking-wide">
+                                        {epInfo.isEpisode ? (epInfo.displayBadge || 'EPISODE') : 'MOVIE'}
+                                    </span>
+                                    {epInfo.seriesTitle && (
+                                        <span className="text-[10px] font-medium text-slate-400 truncate max-w-[110px]" title={epInfo.seriesTitle}>
+                                            {epInfo.seriesTitle}
                                         </span>
-                                    </div>
+                                    )}
                                 </div>
 
-                                <button
-                                    onClick={(e) => handleRemove(e, entry.file_id)}
-                                    className="opacity-0 group-hover:opacity-100 p-1 rounded hover:bg-gray-800 text-gray-500 hover:text-red-400 transition-all"
-                                    title="Remove from history"
-                                    aria-label={`Remove ${entry.file_name} from history`}
-                                >
-                                    <Trash2 className="w-3 h-3" />
-                                </button>
+                                <div className="flex items-center gap-1.5">
+                                    <span className="text-[10px] font-mono text-slate-400">
+                                        {formatBytes(entry.file_size)}
+                                    </span>
+                                    <button
+                                        onClick={(e) => handleRemove(e, entry.file_id)}
+                                        className="opacity-0 group-hover:opacity-100 p-0.5 rounded hover:bg-slate-800 text-slate-500 hover:text-red-400 transition-all ml-1"
+                                        title="Remove from history"
+                                        aria-label={`Remove ${entry.file_name} from history`}
+                                    >
+                                        <Trash2 className="w-3 h-3" />
+                                    </button>
+                                </div>
                             </div>
 
-                            <div className="flex items-center justify-between pt-2 border-t border-gray-800/50">
-                                {entry.quality_tag ? (
-                                    <span className="text-[9px] font-mono font-bold px-1.5 py-0.5 rounded bg-cyan-950/80 border border-cyan-500/30 text-cyan-400 uppercase">
-                                        {entry.quality_tag}
-                                    </span>
-                                ) : (
-                                    <span className="text-[9px] font-mono text-emerald-400 uppercase">
-                                        [0-DISK STREAM]
-                                    </span>
-                                )}
+                            <div className="text-xs font-medium text-slate-200 truncate group-hover:text-white transition-colors mb-1.5" title={entry.file_name}>
+                                {entry.file_name}
+                            </div>
 
-                                <span className="inline-flex items-center gap-1 text-[10px] font-mono font-bold text-cyan-400 group-hover:translate-x-0.5 transition-transform">
-                                    <Play className="w-3 h-3 fill-cyan-400" />
+                            <div className="flex items-center gap-2 mb-2 text-[10px] font-mono text-slate-400">
+                                <span className="flex items-center gap-1">
+                                    <Clock className="w-2.5 h-2.5 text-slate-400" />
+                                    {formattedDate}
+                                </span>
+                                {entry.status === 'completed' && (
+                                    <span className="text-[9px] text-emerald-400">Finished</span>
+                                )}
+                            </div>
+
+                            <div className="flex items-center justify-between pt-2 border-t border-slate-800/80">
+                                <MediaBadgesList filename={entry.file_name} maxBadges={2} />
+
+                                <span className="inline-flex items-center gap-1 text-[11px] font-mono font-semibold text-slate-300 group-hover:text-emerald-400 group-hover:translate-x-0.5 transition-all">
+                                    <Play className="w-2.5 h-2.5 fill-slate-300 group-hover:fill-emerald-400 transition-colors" />
                                     Resume
                                 </span>
                             </div>

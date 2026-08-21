@@ -1,7 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
-// Test series episode parsing patterns
 function isVideoFile(name) {
     return /\.(mp4|mkv|avi|mov|webm|flv|ts|m4v)$/i.test(name);
 }
@@ -57,18 +56,27 @@ function getNextEpisode(currentFile, folderFiles) {
     if (!currentInfo.isEpisode || currentInfo.episode === null) return null;
 
     const currentSeason = currentInfo.season ?? 1;
-    const targetEpisode = currentInfo.episode + 1;
+    const nextEpisodeNum = currentInfo.episode + 1;
+    const nextSeasonNum = currentSeason + 1;
 
     const videoFiles = naturalSortFiles(folderFiles.filter(f => f.type !== 'folder' && isVideoFile(f.name)));
 
-    const exactNext = videoFiles.find(f => {
+    // 1. Look for next episode in current season
+    const exactNextInSeason = videoFiles.find(f => {
         const info = parseEpisodeInfo(f.name);
-        return info.isEpisode && (info.season ?? 1) === currentSeason && info.episode === targetEpisode;
+        return info.isEpisode && (info.season ?? 1) === currentSeason && info.episode === nextEpisodeNum;
     });
+    if (exactNextInSeason) return exactNextInSeason;
 
-    if (exactNext) return exactNext;
+    // 2. Look for first episode of next season
+    const nextSeasonFirstEp = videoFiles.find(f => {
+        const info = parseEpisodeInfo(f.name);
+        return info.isEpisode && (info.season ?? 1) === nextSeasonNum && (info.episode === 1 || info.episode === 0);
+    });
+    if (nextSeasonFirstEp) return nextSeasonFirstEp;
 
-    const currentIndex = videoFiles.findIndex(f => f.id === currentFile.id);
+    // 3. Fallback: find next index in naturally sorted video files
+    const currentIndex = videoFiles.findIndex(f => f.id === currentFile.id || f.name === currentFile.name);
     if (currentIndex >= 0 && currentIndex + 1 < videoFiles.length) {
         const candidate = videoFiles[currentIndex + 1];
         const candInfo = parseEpisodeInfo(candidate.name);
@@ -78,6 +86,37 @@ function getNextEpisode(currentFile, folderFiles) {
     }
 
     return null;
+}
+
+function groupRecentWatchEntries(entries) {
+    if (!entries || entries.length === 0) return [];
+    const seenGroups = new Set();
+    const consolidated = [];
+
+    for (const entry of entries) {
+        const info = parseEpisodeInfo(entry.file_name);
+        let groupKey;
+
+        if (info.isEpisode) {
+            const titleKey = info.seriesTitle ? info.seriesTitle.toLowerCase().trim() : '';
+            if (titleKey) {
+                groupKey = `series-title:${titleKey}`;
+            } else if (entry.folder_id !== null && entry.folder_id !== undefined) {
+                groupKey = `series-folder:${entry.folder_id}`;
+            } else {
+                groupKey = `series-file:${entry.file_id}`;
+            }
+        } else {
+            groupKey = `movie:${entry.file_id}`;
+        }
+
+        if (!seenGroups.has(groupKey)) {
+            seenGroups.add(groupKey);
+            consolidated.push(entry);
+        }
+    }
+
+    return consolidated;
 }
 
 test('parseEpisodeInfo parses standard S01E05 patterns', () => {
@@ -117,19 +156,40 @@ test('naturalSortFiles sorts numerically rather than lexicographically', () => {
     assert.deepEqual(sorted.map(f => f.id), [1, 2, 9, 10, 11]);
 });
 
-test('getNextEpisode resolves the next sequential episode', () => {
+test('getNextEpisode resolves the next sequential episode in same season', () => {
     const files = [
-        { name: 'Severance.S01E01.mkv', id: 101, type: 'file' },
-        { name: 'Severance.S01E02.mkv', id: 102, type: 'file' },
-        { name: 'Severance.S01E03.mkv', id: 103, type: 'file' },
+        { name: 'From.S02E05.mkv', id: 205, type: 'file' },
+        { name: 'From.S02E06.mkv', id: 206, type: 'file' },
+        { name: 'From.S02E07.mkv', id: 207, type: 'file' },
     ];
     const next = getNextEpisode(files[0], files);
     assert.notEqual(next, null);
-    assert.equal(next.id, 102);
+    assert.equal(next.id, 206);
+});
 
-    const next2 = getNextEpisode(files[1], files);
-    assert.equal(next2.id, 103);
+test('getNextEpisode resolves first episode of next season at season finale', () => {
+    const files = [
+        { name: 'From.S01E10.mkv', id: 110, type: 'file' },
+        { name: 'From.S02E01.mkv', id: 201, type: 'file' },
+    ];
+    const next = getNextEpisode(files[0], files);
+    assert.notEqual(next, null);
+    assert.equal(next.id, 201);
+});
 
-    const next3 = getNextEpisode(files[2], files);
-    assert.equal(next3, null);
+test('groupRecentWatchEntries deduplicates multiple episodes of same series to only latest', () => {
+    const history = [
+        { file_id: 205, file_name: 'From.S02E05.1080p.mkv', timestamp: '2026-08-21T14:00:00Z', folder_id: 10 },
+        { file_id: 204, file_name: 'From.S02E04.1080p.mkv', timestamp: '2026-08-21T13:00:00Z', folder_id: 10 },
+        { file_id: 110, file_name: 'From.S01E10.1080p.mkv', timestamp: '2026-08-21T12:00:00Z', folder_id: 10 },
+        { file_id: 999, file_name: 'Dune.Part.Two.2024.2160p.mkv', timestamp: '2026-08-21T11:00:00Z', folder_id: 20 },
+        { file_id: 301, file_name: 'Severance.S01E01.1080p.mkv', timestamp: '2026-08-21T10:00:00Z', folder_id: 30 },
+        { file_id: 201, file_name: 'From.S02E01.1080p.mkv', timestamp: '2026-08-21T09:00:00Z', folder_id: 10 },
+    ];
+
+    const grouped = groupRecentWatchEntries(history);
+    assert.equal(grouped.length, 3);
+    assert.equal(grouped[0].file_id, 205); // Latest From episode S02E05
+    assert.equal(grouped[1].file_id, 999); // Dune Movie
+    assert.equal(grouped[2].file_id, 301); // Severance S01E01
 });

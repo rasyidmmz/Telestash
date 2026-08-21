@@ -179,28 +179,39 @@ export function analyzeSeriesFolder(files: TelegramFile[]): SeriesGroupResult {
     };
 }
 
+import { WatchHistoryEntry } from './watchHistory';
+
 /**
  * Finds the next episode in a series based on the currently watched episode.
+ * Supports advancing within the same season (S01E05 -> S01E06) and crossing over
+ * to the next season (S01E10 -> S02E01).
  */
 export function getNextEpisode(currentFile: TelegramFile, folderFiles: TelegramFile[]): TelegramFile | null {
     const currentInfo = parseEpisodeInfo(currentFile.name);
     if (!currentInfo.isEpisode || currentInfo.episode === null) return null;
 
     const currentSeason = currentInfo.season ?? 1;
-    const targetEpisode = currentInfo.episode + 1;
+    const nextEpisodeNum = currentInfo.episode + 1;
+    const nextSeasonNum = currentSeason + 1;
 
     const videoFiles = naturalSortFiles(folderFiles.filter(f => f.type !== 'folder' && isVideoFile(f.name)));
 
-    // Look for (currentSeason, targetEpisode)
-    const exactNext = videoFiles.find(f => {
+    // 1. Look for next episode in current season (e.g. S01E05 -> S01E06)
+    const exactNextInSeason = videoFiles.find(f => {
         const info = parseEpisodeInfo(f.name);
-        return info.isEpisode && (info.season ?? 1) === currentSeason && info.episode === targetEpisode;
+        return info.isEpisode && (info.season ?? 1) === currentSeason && info.episode === nextEpisodeNum;
     });
+    if (exactNextInSeason) return exactNextInSeason;
 
-    if (exactNext) return exactNext;
+    // 2. Look for first episode of next season (e.g. S01E10 -> S02E01)
+    const nextSeasonFirstEp = videoFiles.find(f => {
+        const info = parseEpisodeInfo(f.name);
+        return info.isEpisode && (info.season ?? 1) === nextSeasonNum && (info.episode === 1 || info.episode === 0);
+    });
+    if (nextSeasonFirstEp) return nextSeasonFirstEp;
 
-    // Next fallback: find next index in sorted video files
-    const currentIndex = videoFiles.findIndex(f => f.id === currentFile.id);
+    // 3. Fallback: find next index in naturally sorted video files
+    const currentIndex = videoFiles.findIndex(f => f.id === currentFile.id || f.name === currentFile.name);
     if (currentIndex >= 0 && currentIndex + 1 < videoFiles.length) {
         const candidate = videoFiles[currentIndex + 1];
         const candInfo = parseEpisodeInfo(candidate.name);
@@ -210,4 +221,41 @@ export function getNextEpisode(currentFile: TelegramFile, folderFiles: TelegramF
     }
 
     return null;
+}
+
+/**
+ * Deduplicate and consolidate recent watch history entries so that each TV series,
+ * folder/channel, or standalone movie appears exactly once with its most recent playback progress.
+ */
+export function groupRecentWatchEntries(entries: WatchHistoryEntry[]): WatchHistoryEntry[] {
+    if (!entries || entries.length === 0) return [];
+    const seenGroups = new Set<string>();
+    const consolidated: WatchHistoryEntry[] = [];
+
+    for (const entry of entries) {
+        const info = parseEpisodeInfo(entry.file_name);
+        let groupKey: string;
+
+        if (info.isEpisode) {
+            // Group by series title if extracted, otherwise by folder_id + series pattern
+            const titleKey = info.seriesTitle ? info.seriesTitle.toLowerCase().trim() : '';
+            if (titleKey) {
+                groupKey = `series-title:${titleKey}`;
+            } else if (entry.folder_id !== null && entry.folder_id !== undefined) {
+                groupKey = `series-folder:${entry.folder_id}`;
+            } else {
+                groupKey = `series-file:${entry.file_id}`;
+            }
+        } else {
+            // Standalone video/movie
+            groupKey = `movie:${entry.file_id}`;
+        }
+
+        if (!seenGroups.has(groupKey)) {
+            seenGroups.add(groupKey);
+            consolidated.push(entry);
+        }
+    }
+
+    return consolidated;
 }
