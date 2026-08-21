@@ -368,9 +368,9 @@ export function FileExplorer({
             {seriesAnalysis.isSeriesFolder ? (
                 <div className="mb-4 rounded-xl bg-slate-900/90 border border-slate-800 shadow-sm overflow-hidden divide-y divide-slate-800/80">
                     {/* Top Row: Series Title + Season Tabs + Binge Series Button */}
-                    <div className="p-3 flex flex-wrap items-center justify-between gap-3">
-                        <div className="flex items-center gap-2 overflow-x-auto pb-1 sm:pb-0 scrollbar-none">
-                            <div className="flex items-center gap-1.5 text-xs font-mono font-bold text-cyan-400 mr-2 flex-shrink-0">
+                    <div className="p-3 flex items-center justify-between gap-3">
+                        <div className="flex flex-wrap items-center gap-1.5 flex-1 min-w-0">
+                            <div className="flex items-center gap-1.5 text-xs font-mono font-bold text-cyan-400 mr-1.5 flex-shrink-0">
                                 <Tv className="w-4 h-4" />
                                 <span className="uppercase">{seriesAnalysis.seriesTitle || 'SERIES'}</span>
                             </div>
@@ -380,7 +380,7 @@ export function FileExplorer({
                                     <button
                                         key={season.seasonKey}
                                         onClick={() => setSelectedSeasonKey(season.seasonKey)}
-                                        className={`px-3 py-1 rounded-lg text-xs font-medium font-mono transition-all whitespace-nowrap ${
+                                        className={`px-2.5 py-1 rounded-lg text-xs font-medium font-mono transition-all whitespace-nowrap ${
                                             isActive
                                                 ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 shadow-sm'
                                                 : 'bg-slate-800/60 hover:bg-slate-800 text-gray-400 hover:text-gray-200 border border-transparent'
@@ -394,7 +394,7 @@ export function FileExplorer({
 
                         <button
                             onClick={handleBingePlay}
-                            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-cyan-500 hover:bg-cyan-400 text-slate-950 text-xs font-bold font-mono transition-all shadow-md hover:shadow-cyan-500/20 active:scale-95 flex-shrink-0"
+                            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-cyan-500 hover:bg-cyan-400 text-slate-950 text-xs font-bold font-mono transition-all shadow-md hover:shadow-cyan-500/20 active:scale-95 flex-shrink-0 self-start sm:self-center"
                             title="Play all episodes in continuous MPV playlist"
                         >
                             <Play className="w-3.5 h-3.5 fill-current" />
