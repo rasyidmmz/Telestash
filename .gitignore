@@ -14,6 +14,8 @@ dist/
 .vscode/
 .idea/
 .codex/
+AGENTS.md
+CLAUDE.md
 
 # Misc
 .github/hooks/
