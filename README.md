@@ -81,8 +81,11 @@ The data path is intentionally short and deterministic: the Windows application 
 
 ## 🚀 Key Features
 
+* 🎬 **Smart Series & Season Auto-Grouping**: Automatic episode detection (`S01E01`, `EP 02`, anime formats) with season tab filtering (`All Episodes`, `Season 1`, `Season 2`) and natural numeric sorting.
+* ⏭️ **"Next Up" Progression Banner**: Instant 1-click continuation card in Continue Watching for the next sequential episode of your TV series.
+* 🍿 **"Binge Series / Play All" Mode**: 1-click header button to queue and play an entire season continuously from episode 1 in MPV.
+* 🏷️ **Auto-Badge Format & Media Tagging**: Automatic filename analysis displaying micro-badges for `4K UHD`, `1080p`, `HDR`, `10-bit`, `HEVC`, `AV1`, `Dual Audio`, and `Atmos`.
 * 🎥 **Native MPV Cinema Engine**: Playback for compatible HEVC/H.265, 10-bit HDR, MKV, MP4, and surround-audio media.
-* ⏭️ **MPV Native Playlist Auto-Play**: Seamless sequential auto-play for TV series and movie folders.
 * 🔔 **Windows 11 System Tray**: Background minimization with quick slim native context menu (Resume Video, Downloads, Upload, Check Updates, Settings, Open, Exit).
 * 📊 **Folder Storage Analytics Dashboard**: Visual distribution charts for Video, Audio, Subtitle, and Document space allocation.
 * 🍿 **Recent Watch Bar & Dedicated Watch Logs**: Continue watching strip with instant playback resume and separate activity logs.
