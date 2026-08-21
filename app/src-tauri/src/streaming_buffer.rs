@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::collections::BTreeMap;
 use std::sync::Arc;
 use tokio::sync::RwLock;
 
@@ -10,8 +10,9 @@ pub struct CachedChunk {
 }
 
 /// A thread-safe ring buffer that stores up to 16MB of forward media pre-fetch data per stream.
+/// Uses BTreeMap for O(1) sorted eviction and zero-allocation range invalidation.
 pub struct MediaStreamBuffer {
-    chunks: HashMap<u64, Vec<u8>>,
+    chunks: BTreeMap<u64, Vec<u8>>,
     max_bytes: usize,
     current_bytes: usize,
 }
@@ -19,7 +20,7 @@ pub struct MediaStreamBuffer {
 impl MediaStreamBuffer {
     pub fn new(max_mb: usize) -> Self {
         Self {
-            chunks: HashMap::new(),
+            chunks: BTreeMap::new(),
             max_bytes: max_mb * 1024 * 1024,
             current_bytes: 0,
         }
@@ -35,12 +36,12 @@ impl MediaStreamBuffer {
         }
 
         let chunk_len = data.len();
-        // Evict oldest chunks if capacity exceeded
+        // O(1) eviction of the oldest/lowest offset chunk if capacity is exceeded
         while self.current_bytes + chunk_len > self.max_bytes && !self.chunks.is_empty() {
-            if let Some(&min_offset) = self.chunks.keys().min() {
-                if let Some(removed) = self.chunks.remove(&min_offset) {
-                    self.current_bytes = self.current_bytes.saturating_sub(removed.len());
-                }
+            if let Some((_old_offset, removed)) = self.chunks.pop_first() {
+                self.current_bytes = self.current_bytes.saturating_sub(removed.len());
+            } else {
+                break;
             }
         }
 
@@ -49,16 +50,13 @@ impl MediaStreamBuffer {
     }
 
     pub fn invalidate_before(&mut self, offset: u64) {
-        let keys_to_remove: Vec<u64> = self
-            .chunks
-            .keys()
-            .copied()
-            .filter(|&k| k < offset.saturating_sub(2 * 1024 * 1024))
-            .collect();
-
-        for k in keys_to_remove {
-            if let Some(removed) = self.chunks.remove(&k) {
+        let cutoff = offset.saturating_sub(2 * 1024 * 1024);
+        while let Some(entry) = self.chunks.first_entry() {
+            if *entry.key() < cutoff {
+                let removed = entry.remove();
                 self.current_bytes = self.current_bytes.saturating_sub(removed.len());
+            } else {
+                break;
             }
         }
     }
@@ -74,3 +72,4 @@ pub type SharedStreamBuffer = Arc<RwLock<MediaStreamBuffer>>;
 pub fn create_stream_buffer(max_mb: usize) -> SharedStreamBuffer {
     Arc::new(RwLock::new(MediaStreamBuffer::new(max_mb)))
 }
+

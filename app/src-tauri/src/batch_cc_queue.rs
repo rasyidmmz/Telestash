@@ -18,48 +18,50 @@ pub struct BatchCcQueueStatus {
     pub is_running: bool,
 }
 
+struct BatchCcInnerState {
+    queue: VecDeque<BatchCcTask>,
+    is_running: bool,
+    current_file: Option<String>,
+    completed_count: usize,
+}
+
 pub struct BatchCcQueueManager {
-    queue: Arc<Mutex<VecDeque<BatchCcTask>>>,
-    is_running: Arc<Mutex<bool>>,
-    current_file: Arc<Mutex<Option<String>>>,
-    completed_count: Arc<Mutex<usize>>,
+    state: Arc<Mutex<BatchCcInnerState>>,
 }
 
 impl BatchCcQueueManager {
     pub fn new() -> Self {
         Self {
-            queue: Arc::new(Mutex::new(VecDeque::new())),
-            is_running: Arc::new(Mutex::new(false)),
-            current_file: Arc::new(Mutex::new(None)),
-            completed_count: Arc::new(Mutex::new(0)),
+            state: Arc::new(Mutex::new(BatchCcInnerState {
+                queue: VecDeque::new(),
+                is_running: false,
+                current_file: None,
+                completed_count: 0,
+            })),
         }
     }
 
     pub async fn enqueue_tasks(&self, tasks: Vec<BatchCcTask>) {
-        let mut q = self.queue.lock().await;
+        let mut s = self.state.lock().await;
         for t in tasks {
-            q.push_back(t);
+            s.queue.push_back(t);
         }
     }
 
     pub async fn get_status(&self) -> BatchCcQueueStatus {
-        let q = self.queue.lock().await;
-        let running = *self.is_running.lock().await;
-        let current = self.current_file.lock().await.clone();
-        let completed = *self.completed_count.lock().await;
-
+        let s = self.state.lock().await;
         BatchCcQueueStatus {
-            total_queued: q.len(),
-            completed_count: completed,
-            current_file: current,
-            is_running: running,
+            total_queued: s.queue.len(),
+            completed_count: s.completed_count,
+            current_file: s.current_file.clone(),
+            is_running: s.is_running,
         }
     }
 
     pub async fn clear_queue(&self) {
-        let mut q = self.queue.lock().await;
-        q.clear();
-        *self.current_file.lock().await = None;
-        *self.is_running.lock().await = false;
+        let mut s = self.state.lock().await;
+        s.queue.clear();
+        s.current_file = None;
+        s.is_running = false;
     }
 }

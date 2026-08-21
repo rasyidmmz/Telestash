@@ -168,30 +168,31 @@ pub fn build_media_response(
         while let Some(chunk) = download_iter.next().await.transpose() {
             match chunk {
                 Ok(data) => {
-                    let mut data_slice = data;
+                    let mut bytes = web::Bytes::from(data);
 
                     if skipped < bytes_to_skip {
                         let to_skip = bytes_to_skip - skipped;
-                        if data_slice.len() <= to_skip {
-                            skipped += data_slice.len();
+                        if bytes.len() <= to_skip {
+                            skipped += bytes.len();
                             continue;
                         } else {
-                            data_slice = data_slice[to_skip..].to_vec();
+                            bytes = bytes.slice(to_skip..);
                             skipped = bytes_to_skip;
                         }
                     }
 
-                    if total_yielded + data_slice.len() as u64 > content_length {
+                    if total_yielded + bytes.len() as u64 > content_length {
                         let allowed = (content_length - total_yielded) as usize;
                         if allowed > 0 {
-                            yield Ok::<_, actix_web::Error>(web::Bytes::from(data_slice[..allowed].to_vec()));
+                            let sub = bytes.slice(..allowed);
                             total_yielded += allowed as u64;
+                            yield Ok::<_, actix_web::Error>(sub);
                         }
                         break;
                     } else {
-                        let len = data_slice.len() as u64;
-                        yield Ok::<_, actix_web::Error>(web::Bytes::from(data_slice));
+                        let len = bytes.len() as u64;
                         total_yielded += len;
+                        yield Ok::<_, actix_web::Error>(bytes);
                         if total_yielded >= content_length {
                             break;
                         }

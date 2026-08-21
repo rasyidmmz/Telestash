@@ -44,6 +44,10 @@ pub fn init_db(app: &AppHandle) -> Result<DbConnection, String> {
             )
         })?
     };
+
+    // Optimize SQLite with WAL mode, normal synchronous, and 5000ms busy timeout
+    // to allow lock-free concurrent reads and prevent "database is locked" errors during parallel transfers
+    let _ = conn.execute("PRAGMA journal_mode = WAL; PRAGMA synchronous = NORMAL; PRAGMA busy_timeout = 5000;");
     
     // Run migration (also with retry for locked-database scenarios)
     {
