@@ -71,24 +71,26 @@ export function parseEpisodeInfo(filename: string): EpisodeInfo {
         };
     }
 
-    // Pattern 2: Classic NxEE notation (e.g. "9x01", "09x01", "8x24", "The Office (US) - 9x01 - New Guys")
-    const nxE = baseName.match(/(?:^|[.\s_\-[])(\d{1,2})x(\d{1,3})(?:[.\s_\-–—\]]|$)/i);
+    // Pattern 2: Classic NxEE notation (e.g. "9x01", "09x01", "8x24", "The Office (US) - 9x01 'New Guys'", "(9x01)", "[9x01]")
+    const nxE = baseName.match(/(?:^|[^a-zA-Z0-9])(\d{1,2})x(\d{1,3})(?:[^a-zA-Z0-9]|$)/i);
     if (nxE && nxE[1] && nxE[2]) {
         const season = parseInt(nxE[1], 10);
         const episode = parseInt(nxE[2], 10);
-        const sPad = season.toString().padStart(2, '0');
-        const ePad = episode.toString().padStart(2, '0');
+        if (season <= 50 && episode <= 999) {
+            const sPad = season.toString().padStart(2, '0');
+            const ePad = episode.toString().padStart(2, '0');
 
-        const titleMatch = baseName.split(nxE[0])[0]?.replace(/[._-]+$/, '').trim();
-        const seriesTitle = titleMatch ? cleanSeriesTitle(titleMatch) : undefined;
+            const titleMatch = baseName.split(nxE[0])[0]?.replace(/[._-]+$/, '').trim();
+            const seriesTitle = titleMatch ? cleanSeriesTitle(titleMatch) : undefined;
 
-        return {
-            isEpisode: true,
-            season,
-            episode,
-            displayBadge: `S${sPad}E${ePad}`,
-            seriesTitle
-        };
+            return {
+                isEpisode: true,
+                season,
+                episode,
+                displayBadge: `S${sPad}E${ePad}`,
+                seriesTitle
+            };
+        }
     }
 
     // Pattern 3: Season X - Y (e.g. "Season 8 - 24" or "S08 - 24" or "S8 24")
