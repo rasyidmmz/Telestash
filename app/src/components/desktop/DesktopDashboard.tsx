@@ -162,7 +162,6 @@ export function Dashboard({ onLogout }: { onLogout: () => void }) {
     // System Tray Menu & Stream Playback Event Listeners
     useEffect(() => {
         let unlistenContinue: (() => void) | undefined;
-        let unlistenToggle: (() => void) | undefined;
         let unlistenStreamPlayback: (() => void) | undefined;
 
         listen<{ file_id: number; file_name: string; folder_id: number | null; file_size: number }>(
@@ -187,7 +186,7 @@ export function Dashboard({ onLogout }: { onLogout: () => void }) {
             unlistenStreamPlayback = fn;
         });
 
-        listen('tray-continue-watching', () => {
+        const handleResumePlayback = () => {
             const history = getRecentWatchHistory();
             if (history.length > 0) {
                 const latest = history[0];
@@ -204,18 +203,38 @@ export function Dashboard({ onLogout }: { onLogout: () => void }) {
             } else {
                 toast.info("No recent watch history found.");
             }
-        }).then(fn => { unlistenContinue = fn; });
+        };
 
-        listen('tray-toggle-transfers', () => {
-            toast.info("Transfer queue status toggled from system tray.");
-        }).then(fn => { unlistenToggle = fn; });
+        let unlistenLegacy: (() => void) | undefined;
+        let unlistenUpload: (() => void) | undefined;
+        let unlistenSettings: (() => void) | undefined;
+        let unlistenUpdates: (() => void) | undefined;
+
+        listen('tray-resume-video', handleResumePlayback).then(fn => { unlistenContinue = fn; });
+        listen('tray-continue-watching', handleResumePlayback).then(fn => { unlistenLegacy = fn; });
+
+        listen('tray-open-upload', () => {
+            handleManualUpload();
+        }).then(fn => { unlistenUpload = fn; });
+
+        listen('tray-open-settings', () => {
+            setShowSettings(true);
+        }).then(fn => { unlistenSettings = fn; });
+
+        listen('tray-check-updates', () => {
+            setShowSettings(true);
+            toast.info("Checking for TeleStash updates...");
+        }).then(fn => { unlistenUpdates = fn; });
 
         return () => {
             unlistenStreamPlayback?.();
             unlistenContinue?.();
-            unlistenToggle?.();
+            unlistenLegacy?.();
+            unlistenUpload?.();
+            unlistenSettings?.();
+            unlistenUpdates?.();
         };
-    }, [refreshWatchHistory]);
+    }, [refreshWatchHistory, handleManualUpload]);
 
     const {
         handleDelete, handleBulkDelete, handleBulkDownload,
