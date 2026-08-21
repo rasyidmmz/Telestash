@@ -83,7 +83,7 @@ The data path is intentionally short and deterministic: the Windows application 
 
 * 🎥 **Native MPV Cinema Engine**: Playback for compatible HEVC/H.265, 10-bit HDR, MKV, MP4, and surround-audio media.
 * ⏭️ **MPV Native Playlist Auto-Play**: Seamless sequential auto-play for TV series and movie folders.
-* 🔔 **Windows 11 System Tray**: Background minimization with quick tray context menu ("Buka TeleStash", "Keluar").
+* 🔔 **Windows 11 System Tray**: Background minimization with quick slim native context menu (Resume Video, Downloads, Upload, Check Updates, Settings, Open, Exit).
 * 📊 **Folder Storage Analytics Dashboard**: Visual distribution charts for Video, Audio, Subtitle, and Document space allocation.
 * 🍿 **Recent Watch Bar & Dedicated Watch Logs**: Continue watching strip with instant playback resume and separate activity logs.
 * ⚡ **Direct Telegram Transfer Engine**: Shared retry classification, protocol backoff, and diagnostic logs for uploads and downloads.
@@ -97,8 +97,6 @@ The data path is intentionally short and deterministic: the Windows application 
 ---
 
 ## 🎨 Brand Identity & Visual System
-
-![TeleStash Brand Identity System](docs/assets/telestash_brand_identity_kit.png)
 
 ### Core Brand Metaphor: *The Vault & The Stream*
 TeleStash fuses **The Vault** (a personal, immutable Telegram-backed library) with **The Stream** (instant local MPV playback from an in-memory ring buffer). The visual identity balances high-precision developer tooling with a dark, cinematic media experience.
