@@ -1782,14 +1782,18 @@ pub async fn cmd_rename_file(
 
     let input_peer = match &peer {
         Peer::User(u) => {
-            let (id, access_hash) = match &u.raw {
-                tl::enums::User::User(usr) => (usr.id, usr.access_hash.unwrap_or(0)),
-                tl::enums::User::Empty(usr) => (usr.id, 0),
-            };
-            tl::enums::InputPeer::User(tl::types::InputPeerUser {
-                user_id: id,
-                access_hash,
-            })
+            if folder_id.is_none() {
+                tl::enums::InputPeer::Self_
+            } else {
+                let (id, access_hash) = match &u.raw {
+                    tl::enums::User::User(usr) => (usr.id, usr.access_hash.unwrap_or(0)),
+                    tl::enums::User::Empty(usr) => (usr.id, 0),
+                };
+                tl::enums::InputPeer::User(tl::types::InputPeerUser {
+                    user_id: id,
+                    access_hash,
+                })
+            }
         }
         Peer::Channel(c) => {
             tl::enums::InputPeer::Channel(tl::types::InputPeerChannel {
@@ -1800,37 +1804,20 @@ pub async fn cmd_rename_file(
         _ => return Err("Unsupported peer type".to_string()),
     };
 
-    // 1. First attempt: Direct in-place EditMessage
-    let edit_res = client.invoke(&tl::functions::messages::EditMessage {
+    client.invoke(&tl::functions::messages::EditMessage {
         peer: input_peer,
         id: message_id,
         no_webpage: false,
         invert_media: false,
-        message: Some(new_name.clone()),
+        message: Some(new_name),
         media: None,
         reply_markup: None,
         entities: None,
         schedule_date: None,
         quick_reply_shortcut_id: None,
         schedule_repeat_period: None,
-    }).await;
+    }).await.map_err(|e| format!("Failed to rename file: {}", e))?;
 
-    if edit_res.is_ok() {
-        return Ok(true);
-    }
-
-    // 2. Fallback for forwarded / moved / immutable messages:
-    // If the message was forwarded (e.g. moved between channels/folders), Telegram rejects in-place
-    // edits with MESSAGE_ID_INVALID. We re-send the existing media reference with the new caption and remove the old message.
-    if let Some(media) = target_msg.media() {
-        let input_msg = InputMessage::new().text(new_name).file(media);
-        if client.send_message(&peer, input_msg).await.is_ok() {
-            let _ = delete_message_ids(&client, &peer, &[message_id], "Rename fallback cleanup").await;
-            return Ok(true);
-        }
-    }
-
-    edit_res.map_err(|e| format!("Failed to rename file: {}", e))?;
     Ok(true)
 }
 
