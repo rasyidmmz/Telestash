@@ -1,5 +1,21 @@
 # Changelog
 
+## [1.1.7]
+
+### Added
+
+- **Dynamic In-Folder Series Progress Tracker**: Dedicated progress strip inside series folders showing last watched episode, 1-click Resume, and instant "Next Up" continuation action that dynamically updates as you switch between different series folders (e.g. *The Office*, *Silo*, etc.).
+- **Smart Deduplication for Recent Watch / Continue Watching**: Automatically consolidates multiple episodes of the same TV series or folder into a single latest watch card, removing old intermediate episodes while preserving full logs in the Watch History modal.
+- **Calm Minimalist Recent Watch Cards**: Refined dark editorial highlight cards with subtle slate/emerald tone, crisp monospace metadata, and tactile hover feedback compliant with `/design-taste-frontend` and `/minimalist-ui`.
+- **Automated Dependabot Security Config**: Added `.github/dependabot.yml` for automated weekly vulnerability auditing across npm and cargo dependencies.
+
+### Fixed
+
+- **MPV Playlist `.m3u8` Architecture**: Replaced command-line argument expansion with temporary `.m3u8` playlist files, completely eliminating Windows `os error 206` ("The filename or extension is too long") when playing or binging large series folders with hundreds of episodes (e.g. *The Mentalist* 7 seasons / 168+ episodes).
+- **Universal Episode Regex Parser**: Added multi-pattern support for classic scene `NxEE` notations (e.g. `9x01`, `09x01`), Superfan rip naming conventions, season dashes (`Season 8 - 24`), and multi-episode parts (`S08E24-E25`).
+- **Dependency Security**: Upgraded `pdfjs-dist` to `^6.2.108` and resolved all npm audit vulnerabilities (0 vulnerabilities).
+- **CI/CD Workflow**: Added quoted environment variable strings to silence GitHub runner Node 20 deprecation notices.
+
 ## [1.1.6]
 
 ### Added
