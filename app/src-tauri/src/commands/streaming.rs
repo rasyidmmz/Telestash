@@ -114,6 +114,7 @@ pub fn cmd_play_in_mpv(
         "--save-position-on-quit".to_string(),
         "--write-filename-in-watch-later-config=yes".to_string(),
         "--keep-open=no".to_string(),
+        "--input-default-bindings=yes".to_string(),
     ];
 
     if let Some(dir) = &watch_later_dir {
@@ -220,6 +221,7 @@ fn build_mpv_args(url: &str, watch_later_dir: Option<&Path>) -> Vec<String> {
     let mut args = vec![
         "--save-position-on-quit".to_string(),
         "--write-filename-in-watch-later-config=yes".to_string(),
+        "--input-default-bindings=yes".to_string(),
     ];
     if let Some(dir) = watch_later_dir {
         args.push(format!("--watch-later-dir={}", dir.display()));
@@ -289,6 +291,7 @@ mod tests {
         let args = build_mpv_args("http://localhost:14201/stream/home/10?token=abc123", Some(&dir));
 
         assert!(args.contains(&"--save-position-on-quit".to_string()));
+        assert!(args.contains(&"--input-default-bindings=yes".to_string()));
         assert!(args.contains(&r"--watch-later-dir=C:\TeleStash\mpv-watch-later".to_string()));
         assert!(args.contains(&"--http-header-fields=X-TeleStash-Stream-Token: abc123".to_string()));
         assert_eq!(args.last().map(String::as_str), Some("http://localhost:14201/stream/home/10"));

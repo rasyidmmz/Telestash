@@ -6,6 +6,9 @@ on:
       - 'v*'
   workflow_dispatch:
 
+env:
+  ACTIONS_RUNNER_FORCED_NODE_VERSION_WARNING: false
+
 jobs:
   validate-release:
     runs-on: windows-latest
