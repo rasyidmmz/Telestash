@@ -1,5 +1,11 @@
 # Changelog
 
+## [1.1.9]
+
+### Fixed
+
+- **Smart Re-Post Rename for Forwarded Media (`copy_media`)**: Resolved Telegram MTProto `MESSAGE_ID_INVALID` error when renaming forwarded files (e.g. files moved into a new folder) by seamlessly using `InputMessage::copy_media` to re-send the cloud media reference under the new filename and purge the old forwarded message record.
+
 ## [1.1.8]
 
 ### Added

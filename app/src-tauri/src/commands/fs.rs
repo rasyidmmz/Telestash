@@ -1770,12 +1770,15 @@ pub async fn cmd_rename_file(
     let messages = client.get_messages_by_id(&peer, &[message_id])
         .await
         .map_err(|e| format!("Failed to fetch message for rename: {}", e))?;
-    if messages.iter().flatten().next().is_none() {
-        return Err(format!(
-            "Message {} not found in folder {:?}. The file may have been moved or deleted. Please refresh the folder.",
-            message_id, folder_id
-        ));
-    }
+    let target_msg = match messages.into_iter().flatten().next() {
+        Some(m) => m,
+        None => {
+            return Err(format!(
+                "Message {} not found in folder {:?}. The file may have been moved or deleted. Please refresh the folder.",
+                message_id, folder_id
+            ));
+        }
+    };
 
     let input_peer = match &peer {
         Peer::User(u) => {
@@ -1801,20 +1804,38 @@ pub async fn cmd_rename_file(
         _ => return Err("Unsupported peer type".to_string()),
     };
 
-    client.invoke(&tl::functions::messages::EditMessage {
+    // 1. First attempt: Direct in-place EditMessage
+    let edit_res = client.invoke(&tl::functions::messages::EditMessage {
         peer: input_peer,
         id: message_id,
         no_webpage: false,
         invert_media: false,
-        message: Some(new_name),
+        message: Some(new_name.clone()),
         media: None,
         reply_markup: None,
         entities: None,
         schedule_date: None,
         quick_reply_shortcut_id: None,
         schedule_repeat_period: None,
-    }).await.map_err(|e| format!("Failed to rename file: {}", e))?;
+    }).await;
 
+    if edit_res.is_ok() {
+        return Ok(true);
+    }
+
+    // 2. Fallback for forwarded / moved / immutable messages:
+    // When messages are forwarded (such as when moved between folders), Telegram MTProto
+    // prohibits in-place message text edits and returns MESSAGE_ID_INVALID.
+    // We seamlessly re-send the existing cloud media with the new name and delete the old message.
+    if let Some(media) = target_msg.media() {
+        let input_msg = InputMessage::new().text(new_name).copy_media(&media);
+        if client.send_message(&peer, input_msg).await.is_ok() {
+            let _ = delete_message_ids(&client, &peer, &[message_id], "Rename forwarded message fallback").await;
+            return Ok(true);
+        }
+    }
+
+    edit_res.map_err(|e| format!("Failed to rename file: {}", e))?;
     Ok(true)
 }
 
