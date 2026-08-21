@@ -4,6 +4,8 @@ import { VideoMetadata } from '../../types';
 interface VideoMetaBadgeProps {
     metadata: VideoMetadata | null | undefined;
     isLoading: boolean;
+    filename?: string;
+    hideResolution?: boolean;
 }
 
 function formatDuration(secs: number): string {
@@ -24,7 +26,7 @@ function getResolutionTag(width: number): string {
     return `${width}p`;
 }
 
-export function VideoMetaBadge({ metadata, isLoading }: VideoMetaBadgeProps) {
+export function VideoMetaBadge({ metadata, isLoading, filename, hideResolution }: VideoMetaBadgeProps) {
     if (isLoading || !metadata) return null;
 
     const hasDuration = typeof metadata.duration_secs === 'number' && metadata.duration_secs > 0;
@@ -32,7 +34,9 @@ export function VideoMetaBadge({ metadata, isLoading }: VideoMetaBadgeProps) {
 
     if (!hasDuration && !hasResolution) return null;
 
-    const resTag = hasResolution ? getResolutionTag(metadata.width!) : null;
+    const filenameHasRes = filename ? /(?:2160p|4k|uhd|1080p|fhd|720p|hd|480p|sd)/i.test(filename) : false;
+    const shouldShowRes = hasResolution && !hideResolution && !filenameHasRes;
+    const resTag = shouldShowRes ? getResolutionTag(metadata.width!) : null;
 
     return (
         <span className="inline-flex items-center gap-1.5 text-[10px] font-mono tracking-wider">

@@ -1,5 +1,18 @@
 # Changelog
 
+## [1.1.8]
+
+### Added
+
+- **Automatic English Subtitle Selection in MPV**: MPV now automatically selects and displays embedded/external English subtitle tracks across US & UK regional variations (`--slang=en,eng,enUS,en-US,enGB,en-GB,en-UK,enUK,English,eng-US,eng-GB`), even if not marked as the default track in the media container.
+- **Media Badge Resolution Deduplication**: Intelligently prevents duplicated resolution badges (e.g. `1080p` and `1080P`) when a file has both filename resolution tags and container-probed metadata.
+- **Multi-Season Flex-Wrap Layout**: Season tabs container in series folders now wraps responsively so Season 9 and beyond are always visible on screen without clipping.
+
+### Fixed
+
+- **Smart Rename Fallback for Forwarded / Moved Files**: Resolved Telegram MTProto `MESSAGE_ID_INVALID` error when renaming forwarded or moved files between channels by automatically re-posting the existing cloud media reference with the new caption and removing the old message record.
+- **Universal Episode Delimiter Matching**: Enhanced episode parser regex with non-alphanumeric boundaries to support single quotes, unicode smart quotes, and parentheses around `NxEE` tags (e.g. `'New Guys'`, `(US) - 9x01`).
+
 ## [1.1.7]
 
 ### Added

@@ -179,7 +179,7 @@ export function FileCard({ file, onDelete, onDownload, onPreview, onShare, isSel
                     <div className="flex items-center gap-1.5 mt-1 flex-wrap">
                         <p className={`text-xs ${thumbnail ? 'text-white/70' : 'text-telegram-subtext'}`}>{file.sizeStr}</p>
                         <MediaBadgesList filename={file.name} maxBadges={3} />
-                        <VideoMetaBadge metadata={videoMeta} isLoading={videoMetaLoading} />
+                        <VideoMetaBadge metadata={videoMeta} isLoading={videoMetaLoading} filename={file.name} />
                         {cachedQualities.length > 0 && (
                             <span className="inline-flex items-center gap-0.5">
                                 {cachedQualities.map(q => (

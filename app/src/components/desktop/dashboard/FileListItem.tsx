@@ -100,7 +100,7 @@ export function FileListItem({
             <div className="min-w-0 flex items-center gap-2 text-sm text-telegram-text font-medium flex-wrap">
                 <span className="truncate">{file.name}</span>
                 <MediaBadgesList filename={file.name} maxBadges={3} />
-                <VideoMetaBadge metadata={videoMeta} isLoading={videoMetaLoading} />
+                <VideoMetaBadge metadata={videoMeta} isLoading={videoMetaLoading} filename={file.name} />
                 {cachedQualities.length > 0 && (
                     <span className="inline-flex items-center gap-0.5 ml-1.5">
                         {cachedQualities.map(q => (
