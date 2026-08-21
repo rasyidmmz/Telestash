@@ -115,6 +115,9 @@ pub fn cmd_play_in_mpv(
         "--write-filename-in-watch-later-config=yes".to_string(),
         "--keep-open=no".to_string(),
         "--input-default-bindings=yes".to_string(),
+        "--slang=en,eng,enUS,en-US,English".to_string(),
+        "--sub-auto=fuzzy".to_string(),
+        "--sub-visibility=yes".to_string(),
     ];
 
     if let Some(dir) = &watch_later_dir {
