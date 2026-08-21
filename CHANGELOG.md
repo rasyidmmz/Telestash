@@ -2,6 +2,18 @@
 
 ## [1.1.9]
 
+### Added
+
+- **Custom MPV Player Keybindings**:
+  - `Up` / `Down` & `Mouse Wheel`: Adjust volume (+/- 2%).
+  - `Ctrl + Left/Right`: Fast 30-second seek (`seek -30` / `seek +30`).
+  - `Shift + Left/Right`: Precise 10-second seek (`seek -10` / `seek +10`).
+  - `c`: Cycle / roll subtitle tracks.
+  - `Enter`: Toggle fullscreen mode.
+  - `Tab`: Display full technical media overlay (codecs, bitrate, fps, dropped frames, audio/sub tracks).
+  - `Ctrl + f`: Jump to previous episode / playlist item.
+  - `Ctrl + j`: Jump to next episode / playlist item.
+
 ### Fixed
 
 - **Smart Re-Post Rename for Forwarded Media (`copy_media`)**: Resolved Telegram MTProto `MESSAGE_ID_INVALID` error when renaming forwarded files (e.g. files moved into a new folder) by seamlessly using `InputMessage::copy_media` to re-send the cloud media reference under the new filename and purge the old forwarded message record.

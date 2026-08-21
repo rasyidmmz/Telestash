@@ -110,6 +110,12 @@ pub fn cmd_play_in_mpv(
         let _ = std::fs::create_dir_all(dir);
     }
 
+    let mpv_config_dir = app_handle
+        .path()
+        .app_data_dir()
+        .ok()
+        .map(|dir| dir.join("mpv-config"));
+
     let mut args = vec![
         "--save-position-on-quit".to_string(),
         "--write-filename-in-watch-later-config=yes".to_string(),
@@ -122,6 +128,14 @@ pub fn cmd_play_in_mpv(
 
     if let Some(dir) = &watch_later_dir {
         args.push(format!("--watch-later-dir={}", dir.display()));
+    }
+
+    if let Some(dir) = &mpv_config_dir {
+        let _ = std::fs::create_dir_all(dir);
+        let input_conf = dir.join("input.conf");
+        let conf_content = "# TeleStash MPV Custom Keybindings\nUP add volume 2\nDOWN add volume -2\nWHEEL_UP add volume 2\nWHEEL_DOWN add volume -2\nCtrl+RIGHT seek 30\nCtrl+LEFT seek -30\nShift+RIGHT seek 10\nShift+LEFT seek -10\nc cycle sub\nENTER cycle fullscreen\nKP_ENTER cycle fullscreen\nTAB script-binding stats/display-stats-toggle\nCtrl+f playlist-prev\nCtrl+j playlist-next\n";
+        let _ = std::fs::write(&input_conf, conf_content);
+        args.push(format!("--input-conf={}", input_conf.display()));
     }
 
     if let Some(items) = playlist.filter(|p| !p.is_empty()) {
