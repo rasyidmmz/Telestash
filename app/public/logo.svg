@@ -1,0 +1,79 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" fill="none">
+  <defs>
+    <linearGradient id="telestash-grad" x1="60" y1="40" x2="460" y2="480" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#38BDF8" />
+      <stop offset="35%" stop-color="#06B6D4" />
+      <stop offset="80%" stop-color="#0284C7" />
+      <stop offset="100%" stop-color="#0369A1" />
+    </linearGradient>
+    <filter id="telestash-shadow" x="-10%" y="-10%" width="125%" height="125%">
+      <feDropShadow dx="0" dy="8" stdDeviation="12" flood-color="#022C43" flood-opacity="0.35" />
+    </filter>
+  </defs>
+
+  <!-- Main TeleStash Logo Mark with Transparent Background -->
+  <g filter="url(#telestash-shadow)">
+    <!-- Base Shape with Cutouts (evenodd fill rule) -->
+    <path fill-rule="evenodd" clip-rule="evenodd" fill="url(#telestash-grad)" d="
+      M 256 70
+      A 175 175 0 1 0 380 345
+      L 460 345
+      A 15 15 0 0 1 475 360
+      L 475 405
+      A 15 15 0 0 1 460 420
+      L 256 420
+      A 175 175 0 0 1 256 70
+      Z
+
+      M 256 216
+      A 29 29 0 1 1 256 274
+      A 29 29 0 1 1 256 216
+      Z
+
+      M 256 99
+      A 45 45 0 1 1 256 189
+      A 45 45 0 1 1 256 99
+      Z
+
+      M 363 177
+      A 45 45 0 1 1 363 267
+      A 45 45 0 1 1 363 177
+      Z
+
+      M 322 303
+      A 45 45 0 1 1 322 393
+      A 45 45 0 1 1 322 303
+      Z
+
+      M 190 303
+      A 45 45 0 1 1 190 393
+      A 45 45 0 1 1 190 303
+      Z
+
+      M 149 177
+      A 45 45 0 1 1 149 267
+      A 45 45 0 1 1 149 177
+      Z
+
+      M 288 213
+      A 9 9 0 1 1 288 231
+      A 9 9 0 1 1 288 213
+      Z
+
+      M 288 281
+      A 9 9 0 1 1 288 299
+      A 9 9 0 1 1 288 281
+      Z
+
+      M 224 281
+      A 9 9 0 1 1 224 299
+      A 9 9 0 1 1 224 281
+      Z
+
+      M 224 213
+      A 9 9 0 1 1 224 231
+      A 9 9 0 1 1 224 213
+      Z
+    " />
+  </g>
+</svg>
