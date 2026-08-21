@@ -7,11 +7,16 @@ on:
   workflow_dispatch:
 
 env:
-  ACTIONS_RUNNER_FORCED_NODE_VERSION_WARNING: false
+  ACTIONS_RUNNER_FORCED_NODE_VERSION_WARNING: 'false'
+  ACTIONS_RUNNER_FORCE_NODE24: 'true'
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE20: 'false'
 
 jobs:
   validate-release:
     runs-on: windows-latest
+    env:
+      ACTIONS_RUNNER_FORCED_NODE_VERSION_WARNING: 'false'
+      ACTIONS_RUNNER_FORCE_NODE24: 'true'
     steps:
       - uses: actions/checkout@v4
 
@@ -147,6 +152,9 @@ jobs:
   build-tauri:
     needs: validate-release
     runs-on: windows-latest
+    env:
+      ACTIONS_RUNNER_FORCED_NODE_VERSION_WARNING: 'false'
+      ACTIONS_RUNNER_FORCE_NODE24: 'true'
     steps:
       - uses: actions/checkout@v4
 
@@ -289,6 +297,9 @@ jobs:
     runs-on: windows-latest
     permissions:
       contents: write
+    env:
+      ACTIONS_RUNNER_FORCED_NODE_VERSION_WARNING: 'false'
+      ACTIONS_RUNNER_FORCE_NODE24: 'true'
     steps:
       - uses: actions/checkout@v4
 
