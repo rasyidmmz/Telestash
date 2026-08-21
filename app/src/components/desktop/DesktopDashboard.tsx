@@ -799,6 +799,14 @@ export function Dashboard({ onLogout }: { onLogout: () => void }) {
                 <div className="px-6 pt-4">
                     <RecentWatchBar
                         entries={watchHistory}
+                        currentFiles={displayedFiles}
+                        onPlayFile={(file) => {
+                            const entryFolderId = file.folder_id ?? null;
+                            if (entryFolderId !== activeFolderId) {
+                                setActiveFolderId(entryFolderId);
+                            }
+                            setPlayingFile(file);
+                        }}
                         onPlay={(entry) => {
                             // Always build targetFile from history entry so the
                             // correct file identity (id, name, folder_id) is used.

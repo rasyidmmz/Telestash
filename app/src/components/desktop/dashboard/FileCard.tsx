@@ -8,6 +8,7 @@ import { FileTypeIcon } from '../../shared/FileTypeIcon';
 import { useVideoMetadata } from '../../../hooks/useVideoMetadata';
 import { useCachedVariants } from '../../../hooks/useCachedVariants';
 import { VideoMetaBadge } from '../../shared/VideoMetaBadge';
+import { MediaBadgesList } from '../../shared/MediaBadgesList';
 
 interface FileCardProps {
     file: TelegramFile;
@@ -175,8 +176,9 @@ export function FileCard({ file, onDelete, onDownload, onPreview, onShare, isSel
                 {/* File info overlay at bottom */}
                 <div className={`absolute bottom-0 left-0 right-0 p-3 ${thumbnail ? 'text-white' : 'text-telegram-text'}`}>
                     <h3 className="text-sm font-medium truncate w-full" title={file.name}>{file.name}</h3>
-                    <div className="flex items-center gap-2 mt-0.5">
+                    <div className="flex items-center gap-1.5 mt-1 flex-wrap">
                         <p className={`text-xs ${thumbnail ? 'text-white/70' : 'text-telegram-subtext'}`}>{file.sizeStr}</p>
+                        <MediaBadgesList filename={file.name} maxBadges={3} />
                         <VideoMetaBadge metadata={videoMeta} isLoading={videoMetaLoading} />
                         {cachedQualities.length > 0 && (
                             <span className="inline-flex items-center gap-0.5">

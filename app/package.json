@@ -9,6 +9,7 @@
     "preview": "vite preview",
     "tauri": "tauri",
     "test:updater-signing-key": "node --test scripts/verify-updater-signing-key.test.js",
+    "test:series-parser": "node --test scripts/series-parser.test.js",
     "verify:updater-signing-key": "node scripts/verify-updater-signing-key.js"
   },
   "dependencies": {

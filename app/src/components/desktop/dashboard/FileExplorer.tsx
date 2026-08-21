@@ -1,5 +1,5 @@
 import { useState, useMemo, useCallback, useRef, useEffect } from 'react';
-import { Plus, ArrowUpDown, ArrowUp, ArrowDown, FolderUp, ZoomIn, ZoomOut } from 'lucide-react';
+import { Plus, ArrowUpDown, ArrowUp, ArrowDown, FolderUp, ZoomIn, ZoomOut, Tv, Play } from 'lucide-react';
 import { useVirtualizer } from '@tanstack/react-virtual';
 import { useTranslation } from 'react-i18next';
 import { useSettings } from '../../../context/SettingsContext';
@@ -10,6 +10,7 @@ import { ContextMenu } from './ContextMenu';
 import { FileListItem } from './FileListItem';
 import { invoke } from '@tauri-apps/api/core';
 import { toast } from 'sonner';
+import { analyzeSeriesFolder } from '../../../utils/seriesParser';
 
 type SortField = 'name' | 'size' | 'date';
 type SortDirection = 'asc' | 'desc';
@@ -162,8 +163,31 @@ export function FileExplorer({
         }
     };
 
+    const [selectedSeasonKey, setSelectedSeasonKey] = useState<string>('all');
+
+    // Reset season selection when folder changes
+    useEffect(() => {
+        setSelectedSeasonKey('all');
+    }, [activeFolderId]);
+
+    const seriesAnalysis = useMemo(() => {
+        return analyzeSeriesFolder(files);
+    }, [files]);
+
+    // Filter files if a specific season is selected
+    const activeSeasonFiles = useMemo(() => {
+        if (!seriesAnalysis.isSeriesFolder || selectedSeasonKey === 'all') {
+            return files;
+        }
+        const foundSeason = seriesAnalysis.seasons.find(s => s.seasonKey === selectedSeasonKey);
+        if (!foundSeason) return files;
+        // Keep non-series folders visible, plus episodes in selected season
+        const folderFiles = files.filter(f => f.type === 'folder');
+        return [...folderFiles, ...foundSeason.files];
+    }, [files, seriesAnalysis, selectedSeasonKey]);
+
     const sortedFiles = useMemo(() => {
-        return [...files].sort((a, b) => {
+        return [...activeSeasonFiles].sort((a, b) => {
             let comparison = 0;
             switch (sortField) {
                 case 'name':
@@ -178,7 +202,17 @@ export function FileExplorer({
             }
             return sortDirection === 'asc' ? comparison : -comparison;
         });
-    }, [files, sortField, sortDirection]);
+    }, [activeSeasonFiles, sortField, sortDirection, settings.language]);
+
+    const handleBingePlay = useCallback(() => {
+        const targetSeason = seriesAnalysis.seasons.find(s => s.seasonKey === selectedSeasonKey) || seriesAnalysis.seasons[0];
+        const episodesToPlay = targetSeason && targetSeason.files.length > 0 ? targetSeason.files : seriesAnalysis.allVideoFiles;
+        if (episodesToPlay.length > 0) {
+            const firstEp = episodesToPlay[0];
+            toast.success(`Starting Binge Mode: ${firstEp.name}`);
+            onPreview(firstEp, episodesToPlay);
+        }
+    }, [seriesAnalysis, selectedSeasonKey, onPreview]);
 
     const handlePreviewRequest = useCallback((file: TelegramFile) => {
         onPreview(file, sortedFiles);
@@ -282,6 +316,43 @@ export function FileExplorer({
             ref={parentRef}
             className="flex-1 p-6 overflow-auto custom-scrollbar"
         >
+            {/* Series & Season Auto-Grouping Bar */}
+            {seriesAnalysis.isSeriesFolder && (
+                <div className="mb-4 p-3 rounded-xl bg-slate-900/90 border border-gray-800 flex flex-wrap items-center justify-between gap-3 shadow-sm">
+                    <div className="flex items-center gap-2 overflow-x-auto pb-1 sm:pb-0 scrollbar-none">
+                        <div className="flex items-center gap-1.5 text-xs font-mono font-bold text-cyan-400 mr-2 flex-shrink-0">
+                            <Tv className="w-4 h-4" />
+                            <span className="uppercase">{seriesAnalysis.seriesTitle || 'SERIES'}</span>
+                        </div>
+                        {seriesAnalysis.seasons.map((season) => {
+                            const isActive = selectedSeasonKey === season.seasonKey;
+                            return (
+                                <button
+                                    key={season.seasonKey}
+                                    onClick={() => setSelectedSeasonKey(season.seasonKey)}
+                                    className={`px-3 py-1 rounded-lg text-xs font-medium font-mono transition-all whitespace-nowrap ${
+                                        isActive
+                                            ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 shadow-sm'
+                                            : 'bg-slate-800/60 hover:bg-slate-800 text-gray-400 hover:text-gray-200 border border-transparent'
+                                    }`}
+                                >
+                                    {season.label}
+                                </button>
+                            );
+                        })}
+                    </div>
+
+                    <button
+                        onClick={handleBingePlay}
+                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-cyan-500 hover:bg-cyan-400 text-slate-950 text-xs font-bold font-mono transition-all shadow-md hover:shadow-cyan-500/20 active:scale-95 flex-shrink-0"
+                        title="Play all episodes in continuous MPV playlist"
+                    >
+                        <Play className="w-3.5 h-3.5 fill-current" />
+                        <span>Binge Series</span>
+                    </button>
+                </div>
+            )}
+
             {viewMode === 'grid' ? (
                 <>
 

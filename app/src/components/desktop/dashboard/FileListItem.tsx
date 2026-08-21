@@ -6,6 +6,7 @@ import { FileTypeIcon } from '../../shared/FileTypeIcon';
 import { useVideoMetadata } from '../../../hooks/useVideoMetadata';
 import { useCachedVariants } from '../../../hooks/useCachedVariants';
 import { VideoMetaBadge } from '../../shared/VideoMetaBadge';
+import { MediaBadgesList } from '../../shared/MediaBadgesList';
 
 
 interface FileListItemProps {
@@ -96,8 +97,9 @@ export function FileListItem({
             <div className="flex justify-center">
                 {isFolder ? <Folder className="w-5 h-5 text-telegram-primary" /> : <FileTypeIcon filename={file.name} className="w-5 h-5" />}
             </div>
-            <div className="min-w-0 truncate text-sm text-telegram-text font-medium">
-                <span>{file.name}</span>
+            <div className="min-w-0 flex items-center gap-2 text-sm text-telegram-text font-medium flex-wrap">
+                <span className="truncate">{file.name}</span>
+                <MediaBadgesList filename={file.name} maxBadges={3} />
                 <VideoMetaBadge metadata={videoMeta} isLoading={videoMetaLoading} />
                 {cachedQualities.length > 0 && (
                     <span className="inline-flex items-center gap-0.5 ml-1.5">
