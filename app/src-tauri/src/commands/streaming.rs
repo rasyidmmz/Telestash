@@ -133,24 +133,39 @@ pub fn cmd_play_in_mpv(
         }
 
         if items.len() > 1 {
-            for item in items {
+            let playlist_dir = app_handle
+                .path()
+                .app_data_dir()
+                .ok()
+                .map(|dir| dir.join("mpv-playlists"))
+                .unwrap_or_else(|| std::env::temp_dir().join("telestash-playlists"));
+            let _ = std::fs::create_dir_all(&playlist_dir);
+            let playlist_file = playlist_dir.join("current_playlist.m3u8");
+
+            let mut m3u_content = String::from("#EXTM3U\n");
+            for item in &items {
                 let (stable_url, _) = strip_token_query(&item.url);
-                args.push("--{".to_string());
                 if let Some(t) = &item.title {
-                    args.push(format!("--force-media-title={}", t));
-                    args.push(format!("--title={}", t));
-                    args.push(format!("--script-opts=osc-title={}", t));
+                    m3u_content.push_str(&format!("#EXTINF:-1,{}\n", t));
+                } else {
+                    m3u_content.push_str("#EXTINF:-1,Untitled\n");
                 }
-                if let (Some(msg_id), Some(f_id)) = (item.message_id, item.folder_id) {
-                    if let Ok(app_dir) = app_handle.path().app_data_dir() {
-                        let srt_path = app_dir.join("streaming").join("captions").join(format!("{}_{}.en.srt", f_id, msg_id));
-                        if srt_path.exists() {
-                            args.push(format!("--sub-file={}", srt_path.to_string_lossy()));
-                        }
-                    }
-                }
+                m3u_content.push_str(&format!("{}\n", stable_url));
+            }
+
+            if std::fs::write(&playlist_file, m3u_content).is_ok() {
+                args.push(format!("--playlist={}", playlist_file.display()));
+            } else {
+                let (stable_url, _) = strip_token_query(&items[0].url);
                 args.push(stable_url);
-                args.push("--}".to_string());
+            }
+
+            // Pass captions search path so MPV can auto-match subtitles for any playlist item
+            if let Ok(app_dir) = app_handle.path().app_data_dir() {
+                let captions_dir = app_dir.join("streaming").join("captions");
+                if captions_dir.exists() {
+                    args.push(format!("--sub-file-paths={}", captions_dir.to_string_lossy()));
+                }
             }
         } else {
             let item = &items[0];
