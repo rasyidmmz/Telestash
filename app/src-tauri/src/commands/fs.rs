@@ -1770,20 +1770,17 @@ pub async fn cmd_rename_file(
     let messages = client.get_messages_by_id(&peer, &[message_id])
         .await
         .map_err(|e| format!("Failed to fetch message for rename: {}", e))?;
-    let target_msg = match messages.into_iter().flatten().next() {
-        Some(m) => m,
-        None => {
-            return Err(format!(
-                "Message {} not found in folder {:?}. The file may have been moved or deleted. Please refresh the folder.",
-                message_id, folder_id
-            ));
-        }
-    };
+    if messages.iter().flatten().next().is_none() {
+        return Err(format!(
+            "Message {} not found in folder {:?}. The file may have been moved or deleted. Please refresh the folder.",
+            message_id, folder_id
+        ));
+    }
 
     let input_peer = match &peer {
         Peer::User(u) => {
             if folder_id.is_none() {
-                tl::enums::InputPeer::Self_
+                tl::enums::InputPeer::PeerSelf
             } else {
                 let (id, access_hash) = match &u.raw {
                     tl::enums::User::User(usr) => (usr.id, usr.access_hash.unwrap_or(0)),
