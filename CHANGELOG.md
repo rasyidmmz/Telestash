@@ -1,5 +1,23 @@
 # Changelog
 
+## [1.1.6]
+
+### Added
+
+- Smart series and season auto-grouping with tab navigation (All Episodes, Season 1, Season 2, Specials) and natural numeric sorting.
+- "Next Up" progression card in Continue Watching for instant 1-click continuation of series episodes.
+- "Binge Series / Play All" button on season headers to launch sequential continuous MPV playlist playback.
+- Automatic media format and quality badge tagging (4K UHD, 1080p, 720p, DV, HDR10+, 10-bit, HEVC, AV1, Dual Audio, Atmos).
+- High-resolution transparent vector-grade application and installer icon across all desktop and installer sizes.
+
+### Optimized
+
+- Modernized slim, native Windows system tray menu with high-utility actions (Resume Video, Downloads, Upload, Check Updates, Settings, Open, Exit).
+- SQLite concurrency with WAL mode, normal synchronous setting, and 5000ms busy timeout to eliminate lock contention during parallel chunk uploads.
+- O(1) BTreeMap streaming ring buffer eviction for zero-latency high-bitrate media playback.
+- Zero-copy byte slicing on HTTP range requests to minimize memory allocations during video seeking.
+- Unified atomic mutex state for batch caption generation queue.
+
 ## [1.1.5]
 
 ### Fixed
