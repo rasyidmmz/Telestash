@@ -10,9 +10,10 @@ dist/
 **/*.rs.bk
 /app/src-tauri/resources/
 
-# Editors
+# Editors & Agent tools
 .vscode/
 .idea/
+.codex/
 
 # Misc
 .github/hooks/
