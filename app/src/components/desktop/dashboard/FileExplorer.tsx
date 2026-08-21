@@ -1,5 +1,5 @@
 import { useState, useMemo, useCallback, useRef, useEffect } from 'react';
-import { Plus, ArrowUpDown, ArrowUp, ArrowDown, FolderUp, ZoomIn, ZoomOut, Tv, Play } from 'lucide-react';
+import { Plus, ArrowUpDown, ArrowUp, ArrowDown, FolderUp, ZoomIn, ZoomOut, Tv, Play, Sparkles } from 'lucide-react';
 import { useVirtualizer } from '@tanstack/react-virtual';
 import { useTranslation } from 'react-i18next';
 import { useSettings } from '../../../context/SettingsContext';
@@ -10,7 +10,9 @@ import { ContextMenu } from './ContextMenu';
 import { FileListItem } from './FileListItem';
 import { invoke } from '@tauri-apps/api/core';
 import { toast } from 'sonner';
-import { analyzeSeriesFolder } from '../../../utils/seriesParser';
+import { analyzeSeriesFolder, parseEpisodeInfo, getNextEpisode } from '../../../utils/seriesParser';
+import { WatchHistoryEntry } from '../../../utils/watchHistory';
+import { formatBytes } from '../../../utils';
 
 type SortField = 'name' | 'size' | 'date';
 type SortDirection = 'asc' | 'desc';
@@ -42,6 +44,7 @@ interface FileExplorerProps {
     searchTerm: string;
     onClearSearch: () => void;
     onRetry: () => void;
+    watchHistory?: WatchHistoryEntry[];
 }
 
 
@@ -80,7 +83,7 @@ function useGridColumns(containerRef: React.RefObject<HTMLDivElement | null>) {
 export function FileExplorer({
     files, loading, error, viewMode, selectedIds, activeFolderId,
     onFileClick, onDelete, onDownload, onPreview, onManualUpload, onFolderUpload, showFolderUpload, onToggleSelection, onDrop, onDragStart, onDragEnd, onShare, onRename, onFileMove,
-    folders, cardScale, onCardScaleChange, searchTerm, onClearSearch, onRetry
+    folders, cardScale, onCardScaleChange, searchTerm, onClearSearch, onRetry, watchHistory
 }: FileExplorerProps) {
     const [sortField, setSortField] = useState<SortField>('name');
     const [sortDirection, setSortDirection] = useState<SortDirection>('asc');
@@ -173,6 +176,51 @@ export function FileExplorer({
     const seriesAnalysis = useMemo(() => {
         return analyzeSeriesFolder(files);
     }, [files]);
+
+    // Find latest watch history entry that belongs to this active folder or this series
+    const folderWatchProgress = useMemo(() => {
+        if (!watchHistory || watchHistory.length === 0 || files.length === 0) return null;
+
+        const fileIdsInFolder = new Set(files.map(f => f.id));
+        const seriesTitle = seriesAnalysis.seriesTitle?.toLowerCase().trim();
+
+        // Find the latest history entry matching this folder's files or series title
+        const latestMatch = watchHistory.find(entry => {
+            if (fileIdsInFolder.has(entry.file_id)) return true;
+            if (activeFolderId !== null && entry.folder_id === activeFolderId) return true;
+            if (seriesTitle) {
+                const entryInfo = parseEpisodeInfo(entry.file_name);
+                if (entryInfo.seriesTitle && entryInfo.seriesTitle.toLowerCase().trim() === seriesTitle) {
+                    return true;
+                }
+            }
+            return false;
+        });
+
+        if (!latestMatch) return null;
+
+        // Resolve matching TelegramFile object from folder files if available
+        const lastWatchedFile: TelegramFile = files.find(f => f.id === latestMatch.file_id) || {
+            id: latestMatch.file_id,
+            name: latestMatch.file_name,
+            size: latestMatch.file_size,
+            sizeStr: formatBytes(latestMatch.file_size),
+            folder_id: latestMatch.folder_id ?? undefined,
+            type: 'file'
+        };
+
+        const nextEpisodeFile = getNextEpisode(lastWatchedFile, files);
+        const lastWatchedInfo = parseEpisodeInfo(latestMatch.file_name);
+        const nextEpisodeInfo = nextEpisodeFile ? parseEpisodeInfo(nextEpisodeFile.name) : null;
+
+        return {
+            lastWatchedFile,
+            lastWatchedEntry: latestMatch,
+            lastWatchedInfo,
+            nextEpisodeFile,
+            nextEpisodeInfo,
+        };
+    }, [watchHistory, files, activeFolderId, seriesAnalysis]);
 
     // Filter files if a specific season is selected
     const activeSeasonFiles = useMemo(() => {
@@ -317,41 +365,105 @@ export function FileExplorer({
             className="flex-1 p-6 overflow-auto custom-scrollbar"
         >
             {/* Series & Season Auto-Grouping Bar */}
-            {seriesAnalysis.isSeriesFolder && (
-                <div className="mb-4 p-3 rounded-xl bg-slate-900/90 border border-gray-800 flex flex-wrap items-center justify-between gap-3 shadow-sm">
-                    <div className="flex items-center gap-2 overflow-x-auto pb-1 sm:pb-0 scrollbar-none">
-                        <div className="flex items-center gap-1.5 text-xs font-mono font-bold text-cyan-400 mr-2 flex-shrink-0">
-                            <Tv className="w-4 h-4" />
-                            <span className="uppercase">{seriesAnalysis.seriesTitle || 'SERIES'}</span>
+            {seriesAnalysis.isSeriesFolder ? (
+                <div className="mb-4 rounded-xl bg-slate-900/90 border border-slate-800 shadow-sm overflow-hidden divide-y divide-slate-800/80">
+                    {/* Top Row: Series Title + Season Tabs + Binge Series Button */}
+                    <div className="p-3 flex flex-wrap items-center justify-between gap-3">
+                        <div className="flex items-center gap-2 overflow-x-auto pb-1 sm:pb-0 scrollbar-none">
+                            <div className="flex items-center gap-1.5 text-xs font-mono font-bold text-cyan-400 mr-2 flex-shrink-0">
+                                <Tv className="w-4 h-4" />
+                                <span className="uppercase">{seriesAnalysis.seriesTitle || 'SERIES'}</span>
+                            </div>
+                            {seriesAnalysis.seasons.map((season) => {
+                                const isActive = selectedSeasonKey === season.seasonKey;
+                                return (
+                                    <button
+                                        key={season.seasonKey}
+                                        onClick={() => setSelectedSeasonKey(season.seasonKey)}
+                                        className={`px-3 py-1 rounded-lg text-xs font-medium font-mono transition-all whitespace-nowrap ${
+                                            isActive
+                                                ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 shadow-sm'
+                                                : 'bg-slate-800/60 hover:bg-slate-800 text-gray-400 hover:text-gray-200 border border-transparent'
+                                        }`}
+                                    >
+                                        {season.label}
+                                    </button>
+                                );
+                            })}
                         </div>
-                        {seriesAnalysis.seasons.map((season) => {
-                            const isActive = selectedSeasonKey === season.seasonKey;
-                            return (
+
+                        <button
+                            onClick={handleBingePlay}
+                            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-cyan-500 hover:bg-cyan-400 text-slate-950 text-xs font-bold font-mono transition-all shadow-md hover:shadow-cyan-500/20 active:scale-95 flex-shrink-0"
+                            title="Play all episodes in continuous MPV playlist"
+                        >
+                            <Play className="w-3.5 h-3.5 fill-current" />
+                            <span>Binge Series</span>
+                        </button>
+                    </div>
+
+                    {/* Bottom Row: Dynamic In-Folder Series Progress Tracker (The Office / Silo / etc.) */}
+                    {folderWatchProgress && (
+                        <div className="px-3.5 py-2.5 bg-slate-950/40 flex flex-wrap items-center justify-between gap-3">
+                            <div className="flex items-center gap-2 min-w-0">
+                                <span className="text-[9.5px] font-mono font-bold px-2 py-0.5 rounded bg-slate-800 border border-slate-700/80 text-slate-300 tracking-wide flex-shrink-0">
+                                    TRACKING PROGRESS
+                                </span>
+                                <div className="text-xs text-slate-300 truncate">
+                                    <span className="text-slate-400">Last watched: </span>
+                                    <span className="font-semibold text-white">
+                                        {folderWatchProgress.lastWatchedInfo.displayBadge ? `${folderWatchProgress.lastWatchedInfo.displayBadge} · ` : ''}
+                                        {folderWatchProgress.lastWatchedEntry.file_name}
+                                    </span>
+                                </div>
+                            </div>
+
+                            <div className="flex items-center gap-2 flex-shrink-0">
                                 <button
-                                    key={season.seasonKey}
-                                    onClick={() => setSelectedSeasonKey(season.seasonKey)}
-                                    className={`px-3 py-1 rounded-lg text-xs font-medium font-mono transition-all whitespace-nowrap ${
-                                        isActive
-                                            ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 shadow-sm'
-                                            : 'bg-slate-800/60 hover:bg-slate-800 text-gray-400 hover:text-gray-200 border border-transparent'
-                                    }`}
+                                    onClick={() => onPreview(folderWatchProgress.lastWatchedFile, seriesAnalysis.allVideoFiles)}
+                                    className="flex items-center gap-1 px-2.5 py-1 rounded-md bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-mono font-medium border border-slate-700 transition-colors"
+                                    title={`Resume ${folderWatchProgress.lastWatchedEntry.file_name}`}
                                 >
-                                    {season.label}
+                                    <Play className="w-3 h-3 fill-slate-300" />
+                                    <span>Resume {folderWatchProgress.lastWatchedInfo.displayBadge || 'Episode'}</span>
                                 </button>
-                            );
-                        })}
+
+                                {folderWatchProgress.nextEpisodeFile && (
+                                    <button
+                                        onClick={() => onPreview(folderWatchProgress.nextEpisodeFile!, seriesAnalysis.allVideoFiles)}
+                                        className="flex items-center gap-1 px-2.5 py-1 rounded-md bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-300 text-xs font-mono font-bold border border-cyan-500/40 transition-colors shadow-sm"
+                                        title={`Play Next: ${folderWatchProgress.nextEpisodeFile.name}`}
+                                    >
+                                        <Sparkles className="w-3 h-3 fill-cyan-400" />
+                                        <span>Next Up ({folderWatchProgress.nextEpisodeInfo?.displayBadge || 'Next'})</span>
+                                    </button>
+                                )}
+                            </div>
+                        </div>
+                    )}
+                </div>
+            ) : folderWatchProgress ? (
+                <div className="mb-4 px-3.5 py-2.5 rounded-xl bg-slate-900/90 border border-slate-800 shadow-sm flex flex-wrap items-center justify-between gap-3">
+                    <div className="flex items-center gap-2 min-w-0">
+                        <span className="text-[9.5px] font-mono font-bold px-2 py-0.5 rounded bg-slate-800 border border-slate-700/80 text-slate-300 tracking-wide flex-shrink-0">
+                            LAST WATCHED
+                        </span>
+                        <div className="text-xs text-slate-300 truncate">
+                            <span className="font-semibold text-white">
+                                {folderWatchProgress.lastWatchedEntry.file_name}
+                            </span>
+                        </div>
                     </div>
 
                     <button
-                        onClick={handleBingePlay}
-                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-cyan-500 hover:bg-cyan-400 text-slate-950 text-xs font-bold font-mono transition-all shadow-md hover:shadow-cyan-500/20 active:scale-95 flex-shrink-0"
-                        title="Play all episodes in continuous MPV playlist"
+                        onClick={() => onPreview(folderWatchProgress.lastWatchedFile, files)}
+                        className="flex items-center gap-1 px-2.5 py-1 rounded-md bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-mono font-medium border border-slate-700 transition-colors"
                     >
-                        <Play className="w-3.5 h-3.5 fill-current" />
-                        <span>Binge Series</span>
+                        <Play className="w-3 h-3 fill-slate-300" />
+                        <span>Resume</span>
                     </button>
                 </div>
-            )}
+            ) : null}
 
             {viewMode === 'grid' ? (
                 <>

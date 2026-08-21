@@ -861,6 +861,7 @@ export function Dashboard({ onLogout }: { onLogout: () => void }) {
                     searchTerm={searchTerm}
                     onClearSearch={() => setSearchTerm('')}
                     onRetry={() => queryClient.invalidateQueries({ queryKey: ['files', activeFolderId] })}
+                    watchHistory={watchHistory}
                 />
             </main>
 
