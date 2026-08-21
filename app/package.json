@@ -30,7 +30,7 @@
     "framer-motion": "^12.43.0",
     "i18next": "^26.3.6",
     "lucide-react": "^0.562.0",
-    "pdfjs-dist": "^5.7.284",
+    "pdfjs-dist": "^6.2.108",
     "qrcode.react": "^4.2.0",
     "react": "^19.2.8",
     "react-dom": "^19.2.8",
