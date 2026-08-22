@@ -123,8 +123,34 @@ export function Dashboard({ onLogout }: { onLogout: () => void }) {
     });
 
 
-    const { uploadQueue, setUploadQueue, handleManualUpload, handleFolderUpload, handleUrlUpload, cancelAll: cancelUploads, cancelItem: cancelUploadItem, retryItem: retryUploadItem } = useFileUpload(activeFolderId, store);
-    const { downloadQueue, queueDownload, queueBulkDownload, clearFinished: clearDownloads, cancelAll: cancelDownloads, cancelItem: cancelDownloadItem, retryItem: retryDownloadItem } = useFileDownload(store);
+    const {
+        uploadQueue,
+        setUploadQueue,
+        handleManualUpload,
+        handleFolderUpload,
+        handleUrlUpload,
+        cancelAll: cancelUploads,
+        cancelItem: cancelUploadItem,
+        pauseUpload,
+        resumeUpload,
+        pauseAll: pauseAllUploads,
+        resumeAll: resumeAllUploads,
+        retryItem: retryUploadItem,
+    } = useFileUpload(activeFolderId, store);
+
+    const {
+        downloadQueue,
+        queueDownload,
+        queueBulkDownload,
+        clearFinished: clearDownloads,
+        cancelAll: cancelDownloads,
+        cancelItem: cancelDownloadItem,
+        pauseDownload,
+        resumeDownload,
+        pauseAll: pauseAllDownloads,
+        resumeAll: resumeAllDownloads,
+        retryItem: retryDownloadItem,
+    } = useFileDownload(store);
 
     useEffect(() => {
         const activeKeys = new Set<string>();
@@ -161,8 +187,9 @@ export function Dashboard({ onLogout }: { onLogout: () => void }) {
 
     // System Tray Menu & Stream Playback Event Listeners
     useEffect(() => {
-        let unlistenContinue: (() => void) | undefined;
         let unlistenStreamPlayback: (() => void) | undefined;
+        let unlistenSettings: (() => void) | undefined;
+        let unlistenUpdates: (() => void) | undefined;
 
         listen<{ file_id: number; file_name: string; folder_id: number | null; file_size: number }>(
             'stream-playback-started',
@@ -186,37 +213,6 @@ export function Dashboard({ onLogout }: { onLogout: () => void }) {
             unlistenStreamPlayback = fn;
         });
 
-        const handleResumePlayback = () => {
-            const history = getRecentWatchHistory();
-            if (history.length > 0) {
-                const latest = history[0];
-                const targetFile: TelegramFile = {
-                    id: latest.file_id,
-                    name: latest.file_name,
-                    size: latest.file_size,
-                    sizeStr: formatBytes(latest.file_size),
-                    folder_id: latest.folder_id ?? undefined,
-                    type: 'file'
-                };
-                setPlayingFile(targetFile);
-                toast.success(`Resuming: ${latest.file_name}`);
-            } else {
-                toast.info("No recent watch history found.");
-            }
-        };
-
-        let unlistenLegacy: (() => void) | undefined;
-        let unlistenUpload: (() => void) | undefined;
-        let unlistenSettings: (() => void) | undefined;
-        let unlistenUpdates: (() => void) | undefined;
-
-        listen('tray-resume-video', handleResumePlayback).then(fn => { unlistenContinue = fn; });
-        listen('tray-continue-watching', handleResumePlayback).then(fn => { unlistenLegacy = fn; });
-
-        listen('tray-open-upload', () => {
-            handleManualUpload();
-        }).then(fn => { unlistenUpload = fn; });
-
         listen('tray-open-settings', () => {
             setShowSettings(true);
         }).then(fn => { unlistenSettings = fn; });
@@ -228,13 +224,10 @@ export function Dashboard({ onLogout }: { onLogout: () => void }) {
 
         return () => {
             unlistenStreamPlayback?.();
-            unlistenContinue?.();
-            unlistenLegacy?.();
-            unlistenUpload?.();
             unlistenSettings?.();
             unlistenUpdates?.();
         };
-    }, [refreshWatchHistory, handleManualUpload]);
+    }, [refreshWatchHistory]);
 
     const {
         handleDelete, handleBulkDelete, handleBulkDownload,
@@ -901,6 +894,10 @@ export function Dashboard({ onLogout }: { onLogout: () => void }) {
                 onClearFinished={() => setUploadQueue(q => q.filter(i => i.status !== 'success' && i.status !== 'error' && i.status !== 'cancelled'))}
                 onCancelAll={cancelUploads}
                 onCancelItem={cancelUploadItem}
+                onPauseItem={pauseUpload}
+                onResumeItem={resumeUpload}
+                onPauseAll={pauseAllUploads}
+                onResumeAll={resumeAllUploads}
                 onRetryItem={retryUploadItem}
             />
             <DownloadQueue
@@ -908,6 +905,10 @@ export function Dashboard({ onLogout }: { onLogout: () => void }) {
                 onClearFinished={clearDownloads}
                 onCancelAll={cancelDownloads}
                 onCancelItem={cancelDownloadItem}
+                onPauseItem={pauseDownload}
+                onResumeItem={resumeDownload}
+                onPauseAll={pauseAllDownloads}
+                onResumeAll={resumeAllDownloads}
                 onRetryItem={retryDownloadItem}
             />
 

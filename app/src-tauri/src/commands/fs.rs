@@ -316,17 +316,29 @@ struct ProgressPayload {
 pub(crate) struct ProgressReader {
     inner: tokio::io::BufReader<tokio::fs::File>,
     bytes_read: std::sync::Arc<std::sync::atomic::AtomicU64>,
+    paused_state: Option<(Arc<tokio::sync::RwLock<HashSet<String>>>, String)>,
 }
 
 impl ProgressReader {
     pub(crate) async fn new(path: &str, _limit: u64) -> Result<(Self, u64, std::sync::Arc<std::sync::atomic::AtomicU64>), String> {
+        Self::new_with_pause(path, _limit, None, "").await
+    }
+
+    pub(crate) async fn new_with_pause(
+        path: &str,
+        _limit: u64,
+        paused_set: Option<Arc<tokio::sync::RwLock<HashSet<String>>>>,
+        tid: &str,
+    ) -> Result<(Self, u64, std::sync::Arc<std::sync::atomic::AtomicU64>), String> {
         let file = tokio::fs::File::open(path).await.map_err(|e| e.to_string())?;
         let metadata = file.metadata().await.map_err(|e| e.to_string())?;
         let size = metadata.len();
         let counter = std::sync::Arc::new(std::sync::atomic::AtomicU64::new(0));
+        let paused_state = paused_set.map(|s| (s, tid.to_string()));
         let reader = Self {
             inner: tokio::io::BufReader::new(file),
             bytes_read: counter.clone(),
+            paused_state,
         };
         Ok((reader, size, counter))
     }
@@ -338,7 +350,18 @@ impl tokio::io::AsyncRead for ProgressReader {
         cx: &mut std::task::Context<'_>,
         buf: &mut tokio::io::ReadBuf<'_>,
     ) -> std::task::Poll<std::io::Result<()>> {
-        // Perform the read without application-side rate limiting.
+        if let Some((paused_set, tid)) = &self.paused_state {
+            if let Ok(guard) = paused_set.try_read() {
+                if guard.contains(tid) {
+                    let waker = cx.waker().clone();
+                    tokio::spawn(async move {
+                        tokio::time::sleep(std::time::Duration::from_millis(200)).await;
+                        waker.wake();
+                    });
+                    return std::task::Poll::Pending;
+                }
+            }
+        }
         let before = buf.filled().len();
         let result = std::pin::Pin::new(&mut self.inner).poll_read(cx, buf);
         if let std::task::Poll::Ready(Ok(())) = &result {
@@ -595,7 +618,7 @@ async fn upload_path_and_send(
             return Err("Transfer cancelled".to_string());
         }
 
-        let (mut reader, file_size, bytes_counter) = ProgressReader::new(path, limit).await?;
+        let (mut reader, file_size, bytes_counter) = ProgressReader::new_with_pause(path, limit, Some(state.paused_transfers.clone()), tid).await?;
         let progress_handle = app_handle.clone();
         let progress_tid = tid.to_string();
         let progress_task = if !tid.is_empty() {
@@ -1236,6 +1259,23 @@ async fn download_split_file(
                 return Err("Transfer cancelled".to_string());
             }
 
+            while state.paused_transfers.read().await.contains(tid) {
+                let notifier = {
+                    let mut map = state.pause_notifiers.lock().unwrap();
+                    map.entry(tid.to_string())
+                        .or_insert_with(|| Arc::new(tokio::sync::Notify::new()))
+                        .clone()
+                };
+                notifier.notified().await;
+                if state.cancelled_transfers.read().await.contains(tid) {
+                    state.cancelled_transfers.write().await.remove(tid);
+                    drop(file);
+                    cleanup_partial_file(save_path);
+                    bw_state.release_down(manifest.size);
+                    return Err("Transfer cancelled".to_string());
+                }
+            }
+
             let bytes = match chunk {
                 Ok(b) => {
                     chunk_retry_budget = net_config.retry_attempts();
@@ -1352,8 +1392,35 @@ pub async fn cmd_cancel_transfer(
 ) -> Result<bool, String> {
     log::info!("Cancelling transfer: {}", transfer_id);
     state.cancelled_transfers.write().await.insert(transfer_id.clone());
+    state.paused_transfers.write().await.remove(&transfer_id);
+    if let Some(notifier) = state.pause_notifiers.lock().unwrap().remove(&transfer_id) {
+        notifier.notify_waiters();
+    }
     if let Some(tx) = get_upload_cancellations().lock().unwrap().remove(&transfer_id) {
         let _ = tx.send(());
+    }
+    Ok(true)
+}
+
+#[tauri::command]
+pub async fn cmd_pause_transfer(
+    transfer_id: String,
+    state: State<'_, TelegramState>,
+) -> Result<bool, String> {
+    log::info!("Pausing transfer: {}", transfer_id);
+    state.paused_transfers.write().await.insert(transfer_id.clone());
+    Ok(true)
+}
+
+#[tauri::command]
+pub async fn cmd_resume_transfer(
+    transfer_id: String,
+    state: State<'_, TelegramState>,
+) -> Result<bool, String> {
+    log::info!("Resuming transfer: {}", transfer_id);
+    state.paused_transfers.write().await.remove(&transfer_id);
+    if let Some(notifier) = state.pause_notifiers.lock().unwrap().remove(&transfer_id) {
+        notifier.notify_waiters();
     }
     Ok(true)
 }
@@ -1463,7 +1530,7 @@ async fn cmd_upload_file_inner(
         }
 
         // Create progress-tracking reader
-        let (mut reader, file_size, bytes_counter) = match ProgressReader::new(&path, limit).await {
+        let (mut reader, file_size, bytes_counter) = match ProgressReader::new_with_pause(&path, limit, Some(state.paused_transfers.clone()), &tid).await {
             Ok(res) => res,
             Err(e) => {
                 bw_state.release_up(size);
@@ -2014,6 +2081,24 @@ pub async fn cmd_download_file(
             cleanup_partial_file(&actual_save_path);
             bw_state.release_down(total_size);
             return Err("Transfer cancelled".to_string());
+        }
+
+        // Check pause
+        while state.paused_transfers.read().await.contains(&tid) {
+            let notifier = {
+                let mut map = state.pause_notifiers.lock().unwrap();
+                map.entry(tid.clone())
+                    .or_insert_with(|| Arc::new(tokio::sync::Notify::new()))
+                    .clone()
+            };
+            notifier.notified().await;
+            if state.cancelled_transfers.read().await.contains(&tid) {
+                state.cancelled_transfers.write().await.remove(&tid);
+                drop(file);
+                cleanup_partial_file(&actual_save_path);
+                bw_state.release_down(total_size);
+                return Err("Transfer cancelled".to_string());
+            }
         }
 
         let bytes = match chunk {
@@ -3155,7 +3240,7 @@ pub async fn cmd_upload_from_url(
             return Err("Transfer cancelled".to_string());
         }
 
-        let (mut reader, file_size, bytes_counter) = match ProgressReader::new(&temp_file_str, limit).await {
+        let (mut reader, file_size, bytes_counter) = match ProgressReader::new_with_pause(&temp_file_str, limit, Some(state.paused_transfers.clone()), &transfer_id).await {
             Ok(res) => res,
             Err(e) => {
                 bw_state.release_up(actual_size);

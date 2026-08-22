@@ -74,10 +74,10 @@ export function useFileUpload(activeFolderId: number | null, store: Store | null
         if (!store || initialized) return;
         store.get<QueueItem[]>('uploadQueue').then((saved) => {
             if (saved && saved.length > 0) {
-                const pending = saved.filter(i => i.status === 'pending');
-                if (pending.length > 0) {
-                    setUploadQueue(pending);
-                    toast.info(`Restored ${pending.length} pending uploads`);
+                const resumable = saved.filter(i => i.status === 'pending' || i.status === 'paused');
+                if (resumable.length > 0) {
+                    setUploadQueue(resumable);
+                    toast.info(`Restored ${resumable.length} upload queue items`);
                 }
             }
             setInitialized(true);
@@ -86,8 +86,8 @@ export function useFileUpload(activeFolderId: number | null, store: Store | null
 
     useEffect(() => {
         if (!store || !initialized) return;
-        const pending = uploadQueue.filter(i => i.status === 'pending');
-        store.set('uploadQueue', pending).then(() => store.save());
+        const toSave = uploadQueue.filter(i => i.status === 'pending' || i.status === 'paused');
+        store.set('uploadQueue', toSave).then(() => store.save());
     }, [store, uploadQueue, initialized]);
 
     // Process up to maxConcurrentUploads in parallel
@@ -238,14 +238,14 @@ export function useFileUpload(activeFolderId: number | null, store: Store | null
 
     const cancelAll = () => {
         setUploadQueue(q => {
-            const activeItems = q.filter(i => i.status === 'uploading' || i.status === 'downloading');
+            const activeItems = q.filter(i => i.status === 'uploading' || i.status === 'downloading' || i.status === 'paused');
             for (const item of activeItems) {
                 cancelledRef.current.add(item.id);
                 invoke('cmd_cancel_transfer', { transferId: item.id }).catch(() => {});
             }
             return q
                 .filter(i => i.status !== 'pending')
-                .map(i => (i.status === 'uploading' || i.status === 'downloading') ? { ...i, status: 'cancelled' as const } : i);
+                .map(i => (i.status === 'uploading' || i.status === 'downloading' || i.status === 'paused') ? { ...i, status: 'cancelled' as const } : i);
         });
         toast.info('All uploads cancelled');
     };
@@ -253,7 +253,7 @@ export function useFileUpload(activeFolderId: number | null, store: Store | null
     const cancelItem = (id: string) => {
         setUploadQueue(q => {
             const item = q.find(i => i.id === id);
-            if (item?.status === 'uploading' || item?.status === 'downloading') {
+            if (item?.status === 'uploading' || item?.status === 'downloading' || item?.status === 'paused') {
                 cancelledRef.current.add(id);
                 invoke('cmd_cancel_transfer', { transferId: id }).catch(() => {});
                 return q.map(i => i.id === id ? { ...i, status: 'cancelled' as const } : i);
@@ -264,6 +264,52 @@ export function useFileUpload(activeFolderId: number | null, store: Store | null
             }
             return q;
         });
+    };
+
+    const pauseUpload = async (id: string) => {
+        const target = uploadQueue.find(i => i.id === id);
+        if (!target) return;
+        if (target.status === 'pending') {
+            setUploadQueue(q => q.map(i => i.id === id ? { ...i, status: 'paused' as const } : i));
+            return;
+        }
+        if (target.status === 'uploading' || target.status === 'downloading') {
+            try {
+                await invoke('cmd_pause_transfer', { transferId: id });
+                setUploadQueue(q => q.map(i => i.id === id ? { ...i, status: 'paused' as const, speedBytesPerSec: 0 } : i));
+            } catch (e) {
+                console.error('[Upload] Pause error:', e);
+            }
+        }
+    };
+
+    const resumeUpload = async (id: string) => {
+        const target = uploadQueue.find(i => i.id === id);
+        if (!target) return;
+        if (target.status === 'paused') {
+            try {
+                await invoke('cmd_resume_transfer', { transferId: id });
+            } catch {
+                // Ignore if backend wasn't in active wait
+            }
+            setUploadQueue(q => q.map(i => i.id === id ? { ...i, status: 'pending' as const } : i));
+        }
+    };
+
+    const pauseAll = async () => {
+        const itemsToPause = uploadQueue.filter(i => i.status === 'uploading' || i.status === 'downloading' || i.status === 'pending');
+        for (const item of itemsToPause) {
+            await pauseUpload(item.id);
+        }
+        toast.info('All uploads paused');
+    };
+
+    const resumeAll = async () => {
+        const itemsToResume = uploadQueue.filter(i => i.status === 'paused');
+        for (const item of itemsToResume) {
+            await resumeUpload(item.id);
+        }
+        toast.info('All uploads resumed');
     };
 
     const retryItem = (id: string) => {
@@ -301,6 +347,10 @@ export function useFileUpload(activeFolderId: number | null, store: Store | null
         handleUrlUpload,
         cancelAll,
         cancelItem,
+        pauseUpload,
+        resumeUpload,
+        pauseAll,
+        resumeAll,
         retryItem,
     };
 }

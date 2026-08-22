@@ -261,6 +261,8 @@ pub fn run() {
                 runner_count: Arc::new(std::sync::atomic::AtomicU32::new(0)),
                 peer_cache: Arc::new(tokio::sync::RwLock::new(HashMap::new())),
                 cancelled_transfers: Arc::new(tokio::sync::RwLock::new(HashSet::new())),
+                paused_transfers: Arc::new(tokio::sync::RwLock::new(HashSet::new())),
+                pause_notifiers: Arc::new(std::sync::Mutex::new(HashMap::new())),
             });
             app.manage(Arc::new(bandwidth::BandwidthManager::new(app.handle())));
             app.manage(StreamConfig { token: stream_token.clone(), port: STREAM_PORT });
@@ -325,28 +327,22 @@ pub fn run() {
             restart_api_server(app.handle());
 
             // Windows System Tray Integration
-            let resume_item = tauri::menu::MenuItemBuilder::with_id("resume_video", "Resume Video").build(app);
-            let downloads_item = tauri::menu::MenuItemBuilder::with_id("open_downloads", "Downloads").build(app);
-            let upload_item = tauri::menu::MenuItemBuilder::with_id("upload_file", "Upload").build(app);
-            let updates_item = tauri::menu::MenuItemBuilder::with_id("check_updates", "Check Updates").build(app);
+            let show_item = tauri::menu::MenuItemBuilder::with_id("show", "Open TeleStash").build(app);
+            let updates_item = tauri::menu::MenuItemBuilder::with_id("check_updates", "Check for Updates").build(app);
             let settings_item = tauri::menu::MenuItemBuilder::with_id("settings", "Settings").build(app);
-            let show_item = tauri::menu::MenuItemBuilder::with_id("show", "Open").build(app);
             let quit_item = tauri::menu::MenuItemBuilder::with_id("quit", "Exit").build(app);
             let sep1 = tauri::menu::PredefinedMenuItem::separator(app);
             let sep2 = tauri::menu::PredefinedMenuItem::separator(app);
 
-            if let (Ok(resume), Ok(downloads), Ok(upload), Ok(updates), Ok(settings), Ok(show), Ok(quit), Ok(s1), Ok(s2)) = (
-                resume_item, downloads_item, upload_item, updates_item, settings_item, show_item, quit_item, sep1, sep2
+            if let (Ok(show), Ok(updates), Ok(settings), Ok(quit), Ok(s1), Ok(s2)) = (
+                show_item, updates_item, settings_item, quit_item, sep1, sep2
             ) {
                 if let Ok(tray_menu) = tauri::menu::MenuBuilder::new(app).items(&[
-                    &resume,
-                    &downloads,
-                    &upload,
+                    &show,
                     &s1,
                     &updates,
                     &settings,
                     &s2,
-                    &show,
                     &quit,
                 ]).build() {
                     let icon = app.default_window_icon().cloned();
@@ -355,36 +351,12 @@ pub fn run() {
                             .icon(icon)
                             .menu(&tray_menu)
                             .on_menu_event(|app, event| match event.id.as_ref() {
-                                "resume_video" => {
-                                    let _ = app.emit("tray-resume-video", ());
+                                "show" => {
                                     if let Some(window) = app.get_webview_window("main") {
                                         let _ = window.show();
                                         let _ = window.unminimize();
                                         let _ = window.set_focus();
                                     }
-                                }
-                                "open_downloads" => {
-                                    let dl_dir = app.path().download_dir().ok()
-                                        .or_else(|| app.path().app_data_dir().ok().map(|d| d.join("downloads")));
-                                    if let Some(dir) = dl_dir {
-                                        let _ = std::fs::create_dir_all(&dir);
-                                        #[cfg(target_os = "windows")]
-                                        {
-                                            let _ = std::process::Command::new("explorer").arg(&dir).spawn();
-                                        }
-                                        #[cfg(not(target_os = "windows"))]
-                                        {
-                                            let _ = open::that(&dir);
-                                        }
-                                    }
-                                }
-                                "upload_file" => {
-                                    if let Some(window) = app.get_webview_window("main") {
-                                        let _ = window.show();
-                                        let _ = window.unminimize();
-                                        let _ = window.set_focus();
-                                    }
-                                    let _ = app.emit("tray-open-upload", ());
                                 }
                                 "check_updates" => {
                                     if let Some(window) = app.get_webview_window("main") {
@@ -401,13 +373,6 @@ pub fn run() {
                                         let _ = window.set_focus();
                                     }
                                     let _ = app.emit("tray-open-settings", ());
-                                }
-                                "show" => {
-                                    if let Some(window) = app.get_webview_window("main") {
-                                        let _ = window.show();
-                                        let _ = window.unminimize();
-                                        let _ = window.set_focus();
-                                    }
                                 }
                                 "quit" => {
                                     app.exit(0);
@@ -469,6 +434,8 @@ pub fn run() {
             commands::cmd_get_stream_info,
             commands::cmd_play_in_mpv,
             commands::cmd_cancel_transfer,
+            commands::cmd_pause_transfer,
+            commands::cmd_resume_transfer,
             commands::cmd_auth_qr_login,
             commands::cmd_auth_qr_poll,
             commands::cmd_get_api_settings,

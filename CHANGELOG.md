@@ -1,5 +1,21 @@
 # Changelog
 
+## [1.2.0]
+
+### Added
+
+- **Granular Per-File Pause & Resume Transfers**:
+  - Individual **Pause (⏸️)** and **Resume (▶️)** buttons per file row in the transfer queue popup.
+  - **Non-blocking Queue Skipping**: Pausing an active or pending file (e.g. file #7 in a 10-file bulk upload) allows the transfer worker to bypass it and proceed uploading subsequent queued files.
+  - **Batch Controls**: Added header **Pause All** and **Resume All** buttons to pause or resume entire queues with one click.
+  - **Persistent Cross-Session State**: Paused and pending items are persisted to Tauri Store. If the app is closed or the computer is powered off mid-transfer, reopening TeleStash preserves the exact progress and state so transfers resume without restarting from 0%.
+  - **Zero-Resource Backend Suspension**: Async waker-based polling (`Poll::Pending`) in Rust streaming reader ensures paused uploads/downloads consume 0% bandwidth and 0% CPU without dropping stream connections.
+  - **Download Checkpoints DB**: Added `download_checkpoints` SQLite table for persistent tracking.
+
+### Fixed
+
+- **Windows System Tray Infinite Dialog Loop**: Removed `Upload`, `Downloads`, and `Resume Video` from the Windows System Tray menu to eliminate repetitive/infinite file picker dialogs, keeping the tray clean and stable (`Open TeleStash`, `Check for Updates`, `Settings`, `Exit`).
+
 ## [1.1.9]
 
 ### Added

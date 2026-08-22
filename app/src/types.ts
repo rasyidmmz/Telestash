@@ -38,7 +38,7 @@ export interface QueueItem {
     path: string;
     url?: string;
     folderId: number | null;
-    status: 'pending' | 'downloading' | 'uploading' | 'success' | 'error' | 'cancelled';
+    status: 'pending' | 'downloading' | 'uploading' | 'paused' | 'success' | 'error' | 'cancelled';
     error?: string;
     progress?: number; // 0-100
     uploadedBytes?: number;
@@ -57,7 +57,7 @@ export interface DownloadItem {
     messageId: number;
     filename: string;
     folderId: number | null;
-    status: 'pending' | 'downloading' | 'success' | 'error' | 'cancelled';
+    status: 'pending' | 'downloading' | 'paused' | 'success' | 'error' | 'cancelled';
     error?: string;
     progress?: number; // 0-100
     downloadedBytes?: number;

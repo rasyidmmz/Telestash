@@ -90,6 +90,16 @@ pub fn init_db(app: &AppHandle) -> Result<DbConnection, String> {
                     last_part_index INTEGER NOT NULL,
                     total_parts INTEGER NOT NULL,
                     updated_at INTEGER NOT NULL
+                );
+                CREATE TABLE IF NOT EXISTS download_checkpoints (
+                    id TEXT PRIMARY KEY,
+                    message_id INTEGER NOT NULL,
+                    folder_id INTEGER,
+                    file_name TEXT NOT NULL,
+                    total_size INTEGER NOT NULL,
+                    save_path TEXT NOT NULL,
+                    downloaded_bytes INTEGER NOT NULL,
+                    updated_at INTEGER NOT NULL
                 );"
             ) {
                 Ok(_) => {

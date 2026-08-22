@@ -28,6 +28,11 @@ pub struct TelegramState {
     /// Set of transfer IDs that have been cancelled. Checked cooperatively
     /// in upload/download chunk loops. Cleared on logout.
     pub cancelled_transfers: Arc<tokio::sync::RwLock<HashSet<String>>>,
+    /// Set of transfer IDs that have been paused. Checked cooperatively
+    /// in upload/download chunk loops.
+    pub paused_transfers: Arc<tokio::sync::RwLock<HashSet<String>>>,
+    /// Notifiers to wake up paused transfer loops when resumed or cancelled.
+    pub pause_notifiers: Arc<std::sync::Mutex<HashMap<String, Arc<tokio::sync::Notify>>>>,
 }
 
 pub mod auth;
