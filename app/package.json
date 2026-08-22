@@ -10,7 +10,10 @@
     "tauri": "tauri",
     "test:updater-signing-key": "node --test scripts/verify-updater-signing-key.test.js",
     "test:series-parser": "node --test scripts/series-parser.test.js",
-    "verify:updater-signing-key": "node scripts/verify-updater-signing-key.js"
+    "test:versions": "node --test scripts/verify-versions.test.js",
+    "verify:updater-signing-key": "node scripts/verify-updater-signing-key.js",
+    "verify:versions": "node scripts/verify-versions.js",
+    "bump-version": "node scripts/bump-version.js"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",

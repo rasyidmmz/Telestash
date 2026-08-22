@@ -79,6 +79,40 @@ jobs:
           ($context | ConvertTo-Json) | Add-Content $env:GITHUB_STEP_SUMMARY
           '```' | Add-Content $env:GITHUB_STEP_SUMMARY
 
+      - name: Validate release version and changelog
+        shell: pwsh
+        run: |
+          $version = $env:GITHUB_REF -replace '^refs/tags/v', ''
+          if ($version -notmatch '^\d+\.\d+\.\d+$') {
+            throw "Release tags must use vMAJOR.MINOR.PATCH. Received v$version"
+          }
+
+          & npm --prefix app run test:versions
+          if ($LASTEXITCODE -ne 0) {
+            throw "Version unit tests failed"
+          }
+
+          & node app/scripts/verify-versions.js $version
+          if ($LASTEXITCODE -ne 0) {
+            throw "Version synchronization validation failed for version $version"
+          }
+
+          $lines = Get-Content CHANGELOG.md
+          $headerLine = -1
+          for ($index = 0; $index -lt $lines.Count; $index++) {
+            if ($lines[$index] -eq "## [$version]") {
+              $headerLine = $index
+              break
+            }
+          }
+          if ($headerLine -lt 0) { throw "CHANGELOG.md does not contain ## [$version]" }
+          $body = New-Object System.Collections.Generic.List[string]
+          for ($index = $headerLine + 1; $index -lt $lines.Count; $index++) {
+            if ($lines[$index] -match '^## \[') { break }
+            $body.Add($lines[$index])
+          }
+          if (-not ($body -join "`n").Trim()) { throw "CHANGELOG.md entry for $version is empty" }
+
       - name: Provide MPV resource placeholder for Rust validation
         shell: pwsh
         run: |
@@ -98,44 +132,6 @@ jobs:
             Write-Output "::error title=Rust validation::$details"
             exit $LASTEXITCODE
           }
-
-      - name: Validate release version and changelog
-        shell: pwsh
-        run: |
-          $version = $env:GITHUB_REF -replace '^refs/tags/v', ''
-          if ($version -notmatch '^\d+\.\d+\.\d+$') {
-            throw "Release tags must use vMAJOR.MINOR.PATCH. Received v$version"
-          }
-
-          $packageVersion = (Get-Content app/package.json -Raw | ConvertFrom-Json).version
-          $tauriVersion = (Get-Content app/src-tauri/tauri.conf.json -Raw | ConvertFrom-Json).version
-          $cargoToml = Get-Content app/src-tauri/Cargo.toml -Raw
-          $cargoLock = Get-Content app/src-tauri/Cargo.lock -Raw
-          foreach ($actual in @($packageVersion, $tauriVersion)) {
-            if ($actual -ne $version) { throw "Version mismatch: expected $version, found $actual" }
-          }
-          if ($cargoToml -notmatch "(?ms)^\[package\].*?^version\s*=\s*`"$([regex]::Escape($version))`"") {
-            throw "app/src-tauri/Cargo.toml is not version $version"
-          }
-          if ($cargoLock -notmatch "(?ms)^name\s*=\s*`"telestash`"\s*^version\s*=\s*`"$([regex]::Escape($version))`"") {
-            throw "app/src-tauri/Cargo.lock is not version $version"
-          }
-
-          $lines = Get-Content CHANGELOG.md
-          $headerLine = -1
-          for ($index = 0; $index -lt $lines.Count; $index++) {
-            if ($lines[$index] -eq "## [$version]") {
-              $headerLine = $index
-              break
-            }
-          }
-          if ($headerLine -lt 0) { throw "CHANGELOG.md does not contain ## [$version]" }
-          $body = New-Object System.Collections.Generic.List[string]
-          for ($index = $headerLine + 1; $index -lt $lines.Count; $index++) {
-            if ($lines[$index] -match '^## \[') { break }
-            $body.Add($lines[$index])
-          }
-          if (-not ($body -join "`n").Trim()) { throw "CHANGELOG.md entry for $version is empty" }
 
       - name: Upload validation diagnostics
         if: ${{ failure() }}
