@@ -24,7 +24,7 @@ use crate::transfer_log::record_transfer_log;
 use crate::db::DbConnection;
 use sqlite;
 use serde::Serialize;
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::sync::OnceLock;
 use std::sync::Mutex;
 use std::io::SeekFrom;
