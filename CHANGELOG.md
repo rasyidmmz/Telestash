@@ -1,5 +1,18 @@
 # Changelog
 
+## [1.2.1]
+
+### Added
+
+- **External Subtitles Sidecar & Smart Linkage System**:
+  - **Zero-Clutter Series Management**: Subtitle files (`.sub` + `.idx` VobSub, `.srt`, `.ass`, `.ssa`, `.vtt`) uploaded via the sidecar engine are tagged with `#telestash_sub` and automatically hidden from regular file explorer views, keeping the series list 100% clean and pristine.
+  - **Smart Subtitle Matcher**: Automatically scans and pairs video filenames (`The.Office.S01E01.mkv`, `9x01.mkv`, `Superfan S08E24.mkv`) with matching subtitle tracks in `sub/` folders or multiple file selections.
+  - **Multi-Format & Multi-Language Support**: Supports bitmap VobSub pairs (`.idx` + `.sub`), SubRip (`.srt`), Advanced SubStation Alpha (`.ass`), and WebVTT (`.vtt`) with automatic language detection (English, Indonesian, Japanese, etc.).
+  - **Interactive Attach Subtitles Modal**: Added dedicated "Attach Subtitles" button in the Series / Folder toolbar with a live preview matching table before uploading.
+  - **Visual Subtitle Badges**: Displays `SUB: EN` / `SUB: ID` badges on video cards and list items.
+  - **Seamless MPV Playback**: Automatically downloads/caches attached subtitle sidecars and supplies `--sub-file` arguments during playback. Switch tracks instantly on-the-fly via the `c` key in MPV.
+  - **Comprehensive CI/CD Unit Test Suite**: Integrated `npm test` covering `subtitle-matcher`, `series-parser`, `updater-signing-key`, and `versions` verification into the GitHub Actions release workflow.
+
 ## [1.2.0]
 
 ### Added
