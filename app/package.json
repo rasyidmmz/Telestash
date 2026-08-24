@@ -8,6 +8,7 @@
     "build": "tsc && vite build",
     "preview": "vite preview",
     "tauri": "tauri",
+    "test": "npm run test:versions && npm run test:series-parser && npm run test:subtitle-matcher && npm run test:updater-signing-key",
     "test:updater-signing-key": "node --test scripts/verify-updater-signing-key.test.js",
     "test:series-parser": "node --test scripts/series-parser.test.js",
     "test:subtitle-matcher": "node --test scripts/subtitle-matcher.test.js",

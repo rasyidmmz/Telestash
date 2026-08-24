@@ -48,15 +48,15 @@ jobs:
             exit $LASTEXITCODE
           }
 
-      - name: Validate updater signing configuration
+      - name: Run automated unit tests
         working-directory: app
         shell: pwsh
         run: |
-          $logPath = Join-Path $env:RUNNER_TEMP 'updater-signing-validation.log'
-          & npm run test:updater-signing-key 2>&1 | Tee-Object -FilePath $logPath
+          $logPath = Join-Path $env:RUNNER_TEMP 'unit-tests-validation.log'
+          & npm test 2>&1 | Tee-Object -FilePath $logPath
           if ($LASTEXITCODE -ne 0) {
             $details = (Get-Content $logPath | Select-Object -Last 20) -join '%0A'
-            Write-Output "::error title=Updater signing validation::$details"
+            Write-Output "::error title=Unit tests validation::$details"
             exit $LASTEXITCODE
           }
 
