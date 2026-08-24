@@ -100,6 +100,19 @@ pub fn init_db(app: &AppHandle) -> Result<DbConnection, String> {
                     save_path TEXT NOT NULL,
                     downloaded_bytes INTEGER NOT NULL,
                     updated_at INTEGER NOT NULL
+                );
+                CREATE TABLE IF NOT EXISTS video_subtitles (
+                    id TEXT PRIMARY KEY,
+                    folder_id INTEGER,
+                    video_message_id INTEGER NOT NULL,
+                    subtitle_message_id INTEGER,
+                    format TEXT NOT NULL,
+                    language TEXT NOT NULL,
+                    label TEXT,
+                    original_filename TEXT NOT NULL,
+                    is_paired_vobsub INTEGER DEFAULT 0,
+                    paired_message_id INTEGER,
+                    created_at INTEGER NOT NULL
                 );"
             ) {
                 Ok(_) => {

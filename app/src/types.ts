@@ -6,7 +6,21 @@ export interface TelegramFile {
     created_at?: string;
     type?: 'folder' | 'file'; // implied icon_type
     folder_id?: number | null;
-    // Add other fields if backend sends them
+    subtitles?: VideoSubtitleInfo[];
+}
+
+export interface VideoSubtitleInfo {
+    id: string;
+    folder_id?: number | null;
+    video_message_id: number;
+    subtitle_message_id?: number | null;
+    format: 'vobsub_idx' | 'vobsub_sub' | 'srt' | 'ass' | 'ssa' | 'vtt';
+    language: string;
+    label?: string | null;
+    original_filename: string;
+    is_paired_vobsub: boolean;
+    paired_message_id?: number | null;
+    created_at: number;
 }
 
 export interface TelegramFolder {

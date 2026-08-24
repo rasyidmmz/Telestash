@@ -7,6 +7,7 @@ import { createDragGhost } from '../../../utils';
 import { FileTypeIcon } from '../../shared/FileTypeIcon';
 import { useVideoMetadata } from '../../../hooks/useVideoMetadata';
 import { useCachedVariants } from '../../../hooks/useCachedVariants';
+import { useVideoSubtitles } from '../../../hooks/useVideoSubtitles';
 import { VideoMetaBadge } from '../../shared/VideoMetaBadge';
 import { MediaBadgesList } from '../../shared/MediaBadgesList';
 
@@ -55,6 +56,13 @@ export function FileCard({ file, onDelete, onDownload, onPreview, onShare, isSel
         file.name,
     );
     const cachedQualities = (cachedVariants || []).filter(v => v.available).map(v => v.quality);
+
+    // Attached Subtitles
+    const { data: subtitles } = useVideoSubtitles(
+        file.id,
+        file.folder_id ?? null,
+        file.name,
+    );
 
     // Lazy load thumbnail for image files
     useEffect(() => {
@@ -180,6 +188,11 @@ export function FileCard({ file, onDelete, onDownload, onPreview, onShare, isSel
                         <p className={`text-xs ${thumbnail ? 'text-white/70' : 'text-telegram-subtext'}`}>{file.sizeStr}</p>
                         <MediaBadgesList filename={file.name} maxBadges={3} />
                         <VideoMetaBadge metadata={videoMeta} isLoading={videoMetaLoading} filename={file.name} />
+                        {subtitles && subtitles.length > 0 && (
+                            <span className="inline-flex items-center text-[9px] font-mono font-bold tracking-tight px-1.5 py-0.5 rounded border bg-indigo-950/80 text-indigo-400 border-indigo-500/30" title={subtitles.map(s => `${s.label || s.language} (${s.format})`).join(', ')}>
+                                SUB: {Array.from(new Set(subtitles.map(s => s.language.toUpperCase()))).join(', ')}
+                            </span>
+                        )}
                         {cachedQualities.length > 0 && (
                             <span className="inline-flex items-center gap-0.5">
                                 {cachedQualities.map(q => (

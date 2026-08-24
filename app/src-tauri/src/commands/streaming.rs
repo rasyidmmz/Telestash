@@ -91,6 +91,32 @@ fn resolve_mpv_binary(app_handle: &tauri::AppHandle) -> Option<std::path::PathBu
     None
 }
 
+fn attach_matching_subtitles(args: &mut Vec<String>, app_handle: &tauri::AppHandle, folder_id: i64, message_id: i32) {
+    if let Ok(app_dir) = app_handle.path().app_data_dir() {
+        let captions_dir = app_dir.join("streaming").join("captions");
+        if !captions_dir.exists() {
+            return;
+        }
+
+        let prefix = format!("{}_{}", folder_id, message_id);
+        if let Ok(entries) = std::fs::read_dir(&captions_dir) {
+            for entry in entries.flatten() {
+                let path = entry.path();
+                if path.is_file() {
+                    let file_name = path.file_name().and_then(|n| n.to_str()).unwrap_or("");
+                    if file_name.starts_with(&prefix) {
+                        let ext = path.extension().and_then(|e| e.to_str()).unwrap_or("").to_lowercase();
+                        // For VobSub (.idx and .sub), only pass .idx (MPV loads companion .sub automatically)
+                        if ext == "idx" || ext == "srt" || ext == "ass" || ext == "ssa" || ext == "vtt" {
+                            args.push(format!("--sub-file={}", path.to_string_lossy()));
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
 #[tauri::command]
 pub fn cmd_play_in_mpv(
     url: String,
@@ -193,12 +219,7 @@ pub fn cmd_play_in_mpv(
                 args.push(format!("--script-opts=osc-title={}", t));
             }
             if let (Some(msg_id), Some(f_id)) = (item.message_id, item.folder_id) {
-                if let Ok(app_dir) = app_handle.path().app_data_dir() {
-                    let srt_path = app_dir.join("streaming").join("captions").join(format!("{}_{}.en.srt", f_id, msg_id));
-                    if srt_path.exists() {
-                        args.push(format!("--sub-file={}", srt_path.to_string_lossy()));
-                    }
-                }
+                attach_matching_subtitles(&mut args, &app_handle, f_id, msg_id);
             }
             args.push(stable_url);
         }
@@ -213,12 +234,7 @@ pub fn cmd_play_in_mpv(
             args.push(format!("--script-opts=osc-title={}", t));
         }
         if let (Some(msg_id), Some(f_id)) = (message_id, folder_id) {
-            if let Ok(app_dir) = app_handle.path().app_data_dir() {
-                let srt_path = app_dir.join("streaming").join("captions").join(format!("{}_{}.en.srt", f_id, msg_id));
-                if srt_path.exists() {
-                    args.push(format!("--sub-file={}", srt_path.to_string_lossy()));
-                }
-            }
+            attach_matching_subtitles(&mut args, &app_handle, f_id, msg_id);
         }
         args.push(stable_url);
     }

@@ -474,6 +474,10 @@ pub fn run() {
             commands::cmd_assign_folder_to_group,
             commands::cmd_update_group_order,
             commands::cmd_get_groups,
+            commands::cmd_get_video_subtitles,
+            commands::cmd_attach_video_subtitles,
+            commands::cmd_delete_video_subtitle,
+            commands::cmd_list_directory_files,
             transfer_log::cmd_get_transfer_logs,
             transfer_log::cmd_clear_transfer_logs,
         ])

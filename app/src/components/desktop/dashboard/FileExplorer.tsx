@@ -1,5 +1,5 @@
 import { useState, useMemo, useCallback, useRef, useEffect } from 'react';
-import { Plus, ArrowUpDown, ArrowUp, ArrowDown, FolderUp, ZoomIn, ZoomOut, Tv, Play, Sparkles } from 'lucide-react';
+import { Plus, ArrowUpDown, ArrowUp, ArrowDown, FolderUp, ZoomIn, ZoomOut, Tv, Play, Sparkles, Subtitles } from 'lucide-react';
 import { useVirtualizer } from '@tanstack/react-virtual';
 import { useTranslation } from 'react-i18next';
 import { useSettings } from '../../../context/SettingsContext';
@@ -8,6 +8,7 @@ import { EmptyState } from './EmptyState';
 import { TelegramFile, TelegramFolder } from '../../../types';
 import { ContextMenu } from './ContextMenu';
 import { FileListItem } from './FileListItem';
+import { AttachSubtitlesModal } from './AttachSubtitlesModal';
 import { invoke } from '@tauri-apps/api/core';
 import { toast } from 'sonner';
 import { analyzeSeriesFolder, parseEpisodeInfo, getNextEpisode } from '../../../utils/seriesParser';
@@ -167,21 +168,27 @@ export function FileExplorer({
     };
 
     const [selectedSeasonKey, setSelectedSeasonKey] = useState<string>('all');
+    const [isAttachSubtitlesOpen, setIsAttachSubtitlesOpen] = useState(false);
 
     // Reset season selection when folder changes
     useEffect(() => {
         setSelectedSeasonKey('all');
     }, [activeFolderId]);
 
-    const seriesAnalysis = useMemo(() => {
-        return analyzeSeriesFolder(files);
+    // Filter out subtitle sidecars from the general file list to maintain a 100% clean view
+    const cleanFiles = useMemo(() => {
+        return files.filter(f => !f.name.startsWith('#telestash_sub') && !f.name.includes('#telestash_sub'));
     }, [files]);
+
+    const seriesAnalysis = useMemo(() => {
+        return analyzeSeriesFolder(cleanFiles);
+    }, [cleanFiles]);
 
     // Find latest watch history entry that belongs to this active folder or this series
     const folderWatchProgress = useMemo(() => {
-        if (!watchHistory || watchHistory.length === 0 || files.length === 0) return null;
+        if (!watchHistory || watchHistory.length === 0 || cleanFiles.length === 0) return null;
 
-        const fileIdsInFolder = new Set(files.map(f => f.id));
+        const fileIdsInFolder = new Set(cleanFiles.map(f => f.id));
         const seriesTitle = seriesAnalysis.seriesTitle?.toLowerCase().trim();
 
         // Find the latest history entry matching this folder's files or series title
@@ -200,7 +207,7 @@ export function FileExplorer({
         if (!latestMatch) return null;
 
         // Resolve matching TelegramFile object from folder files if available
-        const lastWatchedFile: TelegramFile = files.find(f => f.id === latestMatch.file_id) || {
+        const lastWatchedFile: TelegramFile = cleanFiles.find(f => f.id === latestMatch.file_id) || {
             id: latestMatch.file_id,
             name: latestMatch.file_name,
             size: latestMatch.file_size,
@@ -209,7 +216,7 @@ export function FileExplorer({
             type: 'file'
         };
 
-        const nextEpisodeFile = getNextEpisode(lastWatchedFile, files);
+        const nextEpisodeFile = getNextEpisode(lastWatchedFile, cleanFiles);
         const lastWatchedInfo = parseEpisodeInfo(latestMatch.file_name);
         const nextEpisodeInfo = nextEpisodeFile ? parseEpisodeInfo(nextEpisodeFile.name) : null;
 
@@ -220,19 +227,19 @@ export function FileExplorer({
             nextEpisodeFile,
             nextEpisodeInfo,
         };
-    }, [watchHistory, files, activeFolderId, seriesAnalysis]);
+    }, [watchHistory, cleanFiles, activeFolderId, seriesAnalysis]);
 
     // Filter files if a specific season is selected
     const activeSeasonFiles = useMemo(() => {
         if (!seriesAnalysis.isSeriesFolder || selectedSeasonKey === 'all') {
-            return files;
+            return cleanFiles;
         }
         const foundSeason = seriesAnalysis.seasons.find(s => s.seasonKey === selectedSeasonKey);
-        if (!foundSeason) return files;
+        if (!foundSeason) return cleanFiles;
         // Keep non-series folders visible, plus episodes in selected season
-        const folderFiles = files.filter(f => f.type === 'folder');
+        const folderFiles = cleanFiles.filter(f => f.type === 'folder');
         return [...folderFiles, ...foundSeason.files];
-    }, [files, seriesAnalysis, selectedSeasonKey]);
+    }, [cleanFiles, seriesAnalysis, selectedSeasonKey]);
 
     const sortedFiles = useMemo(() => {
         return [...activeSeasonFiles].sort((a, b) => {
@@ -392,14 +399,25 @@ export function FileExplorer({
                             })}
                         </div>
 
-                        <button
-                            onClick={handleBingePlay}
-                            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-cyan-500 hover:bg-cyan-400 text-slate-950 text-xs font-bold font-mono transition-all shadow-md hover:shadow-cyan-500/20 active:scale-95 flex-shrink-0 self-start sm:self-center"
-                            title="Play all episodes in continuous MPV playlist"
-                        >
-                            <Play className="w-3.5 h-3.5 fill-current" />
-                            <span>Binge Series</span>
-                        </button>
+                        <div className="flex items-center gap-2 flex-shrink-0 self-start sm:self-center">
+                            <button
+                                onClick={() => setIsAttachSubtitlesOpen(true)}
+                                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-indigo-500/20 hover:bg-indigo-500/30 text-indigo-300 border border-indigo-500/40 text-xs font-bold font-mono transition-all shadow-sm active:scale-95 flex-shrink-0"
+                                title="Attach external subtitles (.sub/.idx, .srt, .ass, .vtt) to this series"
+                            >
+                                <Subtitles className="w-3.5 h-3.5" />
+                                <span>Attach Subtitles</span>
+                            </button>
+
+                            <button
+                                onClick={handleBingePlay}
+                                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-cyan-500 hover:bg-cyan-400 text-slate-950 text-xs font-bold font-mono transition-all shadow-md hover:shadow-cyan-500/20 active:scale-95 flex-shrink-0"
+                                title="Play all episodes in continuous MPV playlist"
+                            >
+                                <Play className="w-3.5 h-3.5 fill-current" />
+                                <span>Binge Series</span>
+                            </button>
+                        </div>
                     </div>
 
                     {/* Bottom Row: Dynamic In-Folder Series Progress Tracker (The Office / Silo / etc.) */}
@@ -712,6 +730,13 @@ export function FileExplorer({
                     hasCc={contextMenu.hasCc}
                 />
             )}
+
+            <AttachSubtitlesModal
+                isOpen={isAttachSubtitlesOpen}
+                onClose={() => setIsAttachSubtitlesOpen(false)}
+                folderId={activeFolderId}
+                files={cleanFiles}
+            />
         </div>
     )
 }
