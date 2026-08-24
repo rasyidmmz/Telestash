@@ -86,7 +86,7 @@ pub async fn cmd_attach_video_subtitles(
     state: State<'_, TelegramState>,
     db: State<'_, DbConnection>,
 ) -> Result<VideoSubtitleInfo, String> {
-    let client = state.client.as_ref().ok_or("Telegram client not initialized")?.clone();
+    let client = { state.client.lock().await.clone() }.ok_or("Telegram client not initialized")?;
     let peer = resolve_peer(&client, folder_id, &state.peer_cache).await?;
 
     let primary_file_name = Path::new(&primary_path)
@@ -183,8 +183,8 @@ pub async fn cmd_attach_video_subtitles(
 
     crate::transfer_log::record_transfer_log(
         "Subtitle Attached",
-        &format!("Subtitle {} attached to video message {}", primary_file_name, video_message_id),
-        folder_id,
+        format!("Subtitle {} attached to video message {}", primary_file_name, video_message_id),
+        folder_id.map(|id| format!("folder_id: {}", id)),
     );
 
     Ok(VideoSubtitleInfo {
