@@ -10,6 +10,7 @@
     "tauri": "tauri",
     "test:updater-signing-key": "node --test scripts/verify-updater-signing-key.test.js",
     "test:series-parser": "node --test scripts/series-parser.test.js",
+    "test:subtitle-matcher": "node --test scripts/subtitle-matcher.test.js",
     "test:versions": "node --test scripts/verify-versions.test.js",
     "verify:updater-signing-key": "node scripts/verify-updater-signing-key.js",
     "verify:versions": "node scripts/verify-versions.js",
