@@ -3,6 +3,7 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import crypto from 'crypto';
 import https from 'https';
+import http from 'http';
 import { execSync } from 'child_process';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -20,21 +21,75 @@ function sha256(filePath) {
     return hashSum.digest('hex');
 }
 
-function download(url, dest) {
+function fetchWithRedirects(currentUrl, dest, redirectCount = 0) {
+    if (redirectCount > 10) {
+        return Promise.reject(new Error('Too many redirects while downloading'));
+    }
+
     return new Promise((resolve, reject) => {
-        const file = fs.createWriteStream(dest);
-        https.get(url, (response) => {
-            if (response.statusCode === 302 || response.statusCode === 301) {
-                https.get(response.headers.location, (res) => {
-                    res.pipe(file);
-                    file.on('finish', () => file.close(resolve));
-                }).on('error', reject);
-            } else {
-                response.pipe(file);
-                file.on('finish', () => file.close(resolve));
+        const urlObj = new URL(currentUrl);
+        const client = urlObj.protocol === 'http:' ? http : https;
+
+        const options = {
+            headers: {
+                'User-Agent': 'TeleStash-Build/1.2 (Windows NT 10.0; Win64; x64) Node/' + process.version,
+                'Accept': '*/*',
+            },
+        };
+
+        const req = client.get(currentUrl, options, (response) => {
+            if ([301, 302, 303, 307, 308].includes(response.statusCode) && response.headers.location) {
+                const redirectedUrl = new URL(response.headers.location, currentUrl).toString();
+                response.resume(); // Discard response data
+                return resolve(fetchWithRedirects(redirectedUrl, dest, redirectCount + 1));
             }
-        }).on('error', reject);
+
+            if (response.statusCode && (response.statusCode < 200 || response.statusCode >= 300)) {
+                response.resume();
+                return reject(new Error(`HTTP error ${response.statusCode} for ${currentUrl}`));
+            }
+
+            const file = fs.createWriteStream(dest);
+            response.pipe(file);
+
+            file.on('finish', () => {
+                file.close(resolve);
+            });
+
+            file.on('error', (err) => {
+                fs.unlink(dest, () => {});
+                reject(err);
+            });
+        });
+
+        req.on('error', (err) => {
+            fs.unlink(dest, () => {});
+            reject(err);
+        });
+
+        req.setTimeout(60000, () => {
+            req.destroy(new Error('Download request timed out after 60 seconds'));
+        });
     });
+}
+
+async function downloadWithRetry(url, dest, maxRetries = 5) {
+    let lastError;
+    for (let attempt = 1; attempt <= maxRetries; attempt++) {
+        try {
+            if (attempt > 1) {
+                console.log(`Retry attempt ${attempt}/${maxRetries} for ${url}...`);
+                await new Promise(r => setTimeout(r, 2000 * attempt));
+            }
+            await fetchWithRedirects(url, dest);
+            return;
+        } catch (err) {
+            lastError = err;
+            console.warn(`Download attempt ${attempt} failed: ${err.message || err}`);
+            try { if (fs.existsSync(dest)) fs.unlinkSync(dest); } catch {}
+        }
+    }
+    throw lastError;
 }
 
 async function run() {
@@ -43,7 +98,7 @@ async function run() {
     const modelPath = path.join(whisperDir, 'ggml-base.en.bin');
 
     console.log('Downloading Whisper CLI...');
-    await download(ZIP_URL, zipPath);
+    await downloadWithRetry(ZIP_URL, zipPath);
     console.log('Verifying Whisper CLI hash...');
     const zipActualHash = sha256(zipPath);
     if (zipActualHash !== ZIP_HASH) {
@@ -51,7 +106,7 @@ async function run() {
     }
 
     console.log('Downloading Whisper model...');
-    await download(MODEL_URL, modelPath);
+    await downloadWithRetry(MODEL_URL, modelPath);
     console.log('Verifying Whisper model hash...');
     const modelActualHash = sha256(modelPath);
     if (modelActualHash !== MODEL_HASH) {
