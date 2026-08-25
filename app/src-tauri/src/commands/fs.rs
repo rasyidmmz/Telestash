@@ -7,6 +7,7 @@ use crate::TelegramState;
 use crate::models::{
     FileMetadata, FolderMetadata, SplitManifest, SplitPart, SPLIT_MANIFEST_SUFFIX,
     SPLIT_MANIFEST_UPLOAD_NAME, SPLIT_MANIFEST_VERSION, SPLIT_PART_CAPTION_PREFIX,
+    is_split_part_caption,
 };
 use crate::bandwidth::BandwidthManager;
 use crate::commands::utils::{resolve_peer, map_error};
