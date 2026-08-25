@@ -1,5 +1,30 @@
 # Changelog
 
+## [1.2.2]
+
+### Added
+
+- **Resizable Desktop Sidebar (Adjustable Width)**:
+  - Added an interactive drag-to-resize handle on the right edge of the left navigation sidebar.
+  - Dynamically adjust sidebar width from `200px` to `520px` to comfortably display long folder names without truncation.
+  - Automatically persists user-customized width in `localStorage` (`telestash_sidebar_width`).
+
+### Fixed
+
+- **Cross-Series Episode Isolation in "Next Up" & Parser**:
+  - Strictly enforce `seriesTitle` matching in `getNextEpisode` so watching an episode from Series A (e.g. *Midnight Mass S01E01*) never matches an episode from Series B (e.g. *The Mentalist S01E02*).
+  - Context-aware *Next Up* bar now prioritizes the series folder currently open on screen.
+- **Enhanced MPV External Subtitle Loading in Playlists**:
+  - Implemented multi-key caption caching (including video stem filenames) ensuring MPV fuzzy matching auto-loads subtitles across 100% of playlist episodes.
+  - Injected explicit `--sub-file` arguments during both single-item and playlist playback.
+  - Added Indonesian language codes (`id`, `ind`, `Indonesian`) to `--slang` subtitle auto-selection.
+- **Attach Subtitles Modal State Lifecycle & Feedback**:
+  - Displays instant visual toast confirmation on success (`Successfully attached N subtitle tracks!`).
+  - Automatically clears selection and progress state when upload succeeds or when cancelled, while safely preserving selections if an error occurs.
+  - Automatically invalidates React Query cache so subtitle badges update immediately across the UI.
+- **Clean Global Search Results**:
+  - Filtered out `[telestash-part]` chunk messages, `.tdmanifest.json` files, and `#telestash_sub:` metadata messages from global search results in both backend Rust and frontend UI.
+
 ## [1.2.1]
 
 ### Added
