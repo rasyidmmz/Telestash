@@ -2340,14 +2340,34 @@ fn extract_search_files(msgs: &[tl::enums::Message]) -> Vec<FileMetadata> {
     let mut files = Vec::new();
     for msg in msgs {
         if let tl::enums::Message::Message(m) = msg {
+            // Ignore split parts and subtitle metadata messages
+            if is_split_part_caption(&m.message) || m.message.starts_with("#telestash_sub:") {
+                continue;
+            }
+
             if let Some(tl::enums::MessageMedia::Document(d)) = &m.media {
                 if let Some(tl::enums::Document::Document(doc)) = &d.document {
                     let doc_name = doc.attributes.iter().find_map(|a| match a {
                         tl::enums::DocumentAttribute::Filename(f) => Some(f.file_name.clone()),
                         _ => None
                     }).unwrap_or("Unknown".to_string());
+
+                    // Ignore manifest files and split part documents by filename
+                    if doc_name.ends_with(SPLIT_MANIFEST_SUFFIX)
+                        || doc_name == SPLIT_MANIFEST_UPLOAD_NAME
+                        || is_split_part_caption(&doc_name)
+                    {
+                        continue;
+                    }
+
                     // Prefer the message caption over the built-in document filename
                     let name = if m.message.is_empty() { doc_name.clone() } else { m.message.clone() };
+
+                    // Double-check resolved file name
+                    if is_split_part_caption(&name) || name.starts_with("#telestash_sub:") {
+                        continue;
+                    }
+
                     let size = doc.size as u64;
                     let mime = doc.mime_type.clone();
                     let ext = std::path::Path::new(&doc_name).extension().map(|os| os.to_str().unwrap_or("").to_string());

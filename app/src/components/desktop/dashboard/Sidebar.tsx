@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { HardDrive, Folder, Plus, RefreshCw, LogOut, ChevronLeft, ChevronRight, Settings2, Trash2, Check, X, Eye, EyeOff } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { version as appVersion } from '../../../../package.json';
@@ -142,6 +142,46 @@ export function Sidebar({
     const [groupName, setGroupName] = useState("");
     const [groupColor, setGroupColor] = useState("#3B82F6");
 
+    // Resizable Sidebar Width
+    const [sidebarWidth, setSidebarWidth] = useState<number>(() => {
+        const saved = localStorage.getItem('telestash_sidebar_width');
+        return saved ? Math.max(200, Math.min(520, parseInt(saved, 10))) : 270;
+    });
+    const [isResizing, setIsResizing] = useState(false);
+
+    const startResizing = useCallback((e: React.MouseEvent) => {
+        e.preventDefault();
+        e.stopPropagation();
+        setIsResizing(true);
+    }, []);
+
+    useEffect(() => {
+        if (!isResizing) return;
+
+        const handleMouseMove = (e: MouseEvent) => {
+            const newWidth = Math.max(200, Math.min(520, e.clientX));
+            setSidebarWidth(newWidth);
+        };
+
+        const handleMouseUp = (e: MouseEvent) => {
+            setIsResizing(false);
+            const finalWidth = Math.max(200, Math.min(520, e.clientX));
+            localStorage.setItem('telestash_sidebar_width', finalWidth.toString());
+        };
+
+        document.addEventListener('mousemove', handleMouseMove);
+        document.addEventListener('mouseup', handleMouseUp);
+        document.body.style.cursor = 'col-resize';
+        document.body.style.userSelect = 'none';
+
+        return () => {
+            document.removeEventListener('mousemove', handleMouseMove);
+            document.removeEventListener('mouseup', handleMouseUp);
+            document.body.style.cursor = '';
+            document.body.style.userSelect = '';
+        };
+    }, [isResizing]);
+
     // DND Kit Sensors
     const sensors = useSensors(
         useSensor(PointerSensor, {
@@ -246,7 +286,8 @@ export function Sidebar({
 
     return (
         <aside 
-            className={`transition-all duration-300 ${settings.sidebarCollapsed ? 'w-14' : 'w-64'} bg-telegram-surface border-r border-telegram-border flex flex-col`} 
+            style={settings.sidebarCollapsed ? undefined : { width: `${sidebarWidth}px`, minWidth: `${sidebarWidth}px`, maxWidth: `${sidebarWidth}px` }}
+            className={`relative ${isResizing ? '' : 'transition-all duration-300'} ${settings.sidebarCollapsed ? 'w-14' : ''} bg-telegram-surface border-r border-telegram-border flex flex-col flex-shrink-0`} 
             onClick={e => e.stopPropagation()}
         >
             <div className={`p-4 flex ${settings.sidebarCollapsed ? 'flex-col items-center gap-2' : 'items-center justify-between'} min-h-[64px]`}>
@@ -552,6 +593,17 @@ export function Sidebar({
                     </>
                 )}
             </div>
+
+            {/* Resize Handle */}
+            {!settings.sidebarCollapsed && (
+                <div
+                    onMouseDown={startResizing}
+                    className="absolute top-0 right-0 w-2 h-full cursor-col-resize hover:bg-cyan-500/30 active:bg-cyan-500/50 transition-colors z-40 group flex items-center justify-center -mr-1"
+                    title={t('common.resize_sidebar') || "Drag to resize sidebar"}
+                >
+                    <div className="w-0.5 h-12 rounded-full bg-slate-600/40 group-hover:bg-cyan-400 group-active:bg-cyan-300 transition-colors" />
+                </div>
+            )}
         </aside>
     );
 }

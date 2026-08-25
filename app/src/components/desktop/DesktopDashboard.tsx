@@ -354,7 +354,23 @@ export function Dashboard({ onLogout }: { onLogout: () => void }) {
         const timer = setTimeout(async () => {
             setIsSearching(true);
             const results = await handleGlobalSearch(searchTerm);
-            setSearchResults(results);
+            const cleanResults = (results || []).filter(f => {
+                const name = f.name?.trim() || '';
+                if (
+                    name.startsWith('[telestash-part]') ||
+                    name.startsWith('[teledrive-part]') ||
+                    name.startsWith('[telegram-drive-part]') ||
+                    name.startsWith('[tdrive-part]') ||
+                    name.startsWith('[tg-part]') ||
+                    name.startsWith('#telestash_sub:') ||
+                    name.endsWith('.tdmanifest.json') ||
+                    name === 'telestash.tdmanifest.json'
+                ) {
+                    return false;
+                }
+                return true;
+            });
+            setSearchResults(cleanResults);
             setIsSearching(false);
         }, 500);
 
