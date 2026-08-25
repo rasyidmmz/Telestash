@@ -93,11 +93,25 @@ function getNextEpisode(currentFile, folderFiles) {
     const currentInfo = parseEpisodeInfo(currentFile.name);
     if (!currentInfo.isEpisode || currentInfo.episode === null) return null;
 
+    const currentTitle = currentInfo.seriesTitle ? currentInfo.seriesTitle.toLowerCase().trim() : '';
     const currentSeason = currentInfo.season ?? 1;
     const nextEpisodeNum = currentInfo.episode + 1;
     const nextSeasonNum = currentSeason + 1;
 
-    const videoFiles = naturalSortFiles(folderFiles.filter(f => f.type !== 'folder' && isVideoFile(f.name)));
+    const sameSeriesFiles = folderFiles.filter(f => {
+        if (f.type === 'folder' || !isVideoFile(f.name)) return false;
+        if (currentTitle) {
+            const info = parseEpisodeInfo(f.name);
+            if (info.seriesTitle && info.seriesTitle.toLowerCase().trim() !== currentTitle) {
+                return false;
+            }
+        }
+        return true;
+    });
+
+    if (sameSeriesFiles.length === 0) return null;
+
+    const videoFiles = naturalSortFiles(sameSeriesFiles);
 
     const exactNextInSeason = videoFiles.find(f => {
         const info = parseEpisodeInfo(f.name);
@@ -274,4 +288,23 @@ test('analyzeSeriesFolder groups mixed naming of 9 seasons into Season 1 through
     assert.equal(result.seasons[1].seasonNumber, 1);
     assert.equal(result.seasons[8].seasonNumber, 8);
     assert.equal(result.seasons[9].seasonNumber, 9);
+});
+
+test('getNextEpisode isolates series and never matches next episode from a different series', () => {
+    const mixedFiles = [
+        { name: 'Midnight_Mass_S01E01_Book_I_Genesis.mkv', id: 1, type: 'file' },
+        { name: 'The.Mentalist.S01E02.Red.Hair.and.Silver.mkv', id: 2, type: 'file' },
+        { name: 'The_Mentalist_S02E09_A_Price_Above_Rubies.mkv', id: 3, type: 'file' },
+        { name: 'The_Mentalist_S02E10_Throwing_Fire.mkv', id: 4, type: 'file' },
+    ];
+
+    // Watching Midnight Mass S01E01 when only The Mentalist S01E02 exists in folder
+    const nextForMidnightMass = getNextEpisode(mixedFiles[0], mixedFiles);
+    // Should NOT match The Mentalist S01E02!
+    assert.equal(nextForMidnightMass, null);
+
+    // Watching The Mentalist S02E09
+    const nextForMentalist = getNextEpisode(mixedFiles[2], mixedFiles);
+    // Should match The Mentalist S02E10!
+    assert.equal(nextForMentalist?.name, 'The_Mentalist_S02E10_Throwing_Fire.mkv');
 });

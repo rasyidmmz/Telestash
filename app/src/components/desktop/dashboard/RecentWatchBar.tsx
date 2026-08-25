@@ -30,8 +30,24 @@ export function RecentWatchBar({ entries, currentFiles, onPlay, onPlayFile, onRe
     // Group and deduplicate watch history so each TV series, folder, or movie shows only its latest watch entry
     const consolidatedEntries = groupRecentWatchEntries(entries);
 
-    // Calculate "Next Up" episode based on the latest watched entry
-    const latestWatched = consolidatedEntries[0];
+    // Find the relevant recent watched entry matching current open folder/files,
+    // or default to the most recent watched entry.
+    const matchingWatched = (currentFiles && currentFiles.length > 0)
+        ? consolidatedEntries.find(entry => {
+            const ep = parseEpisodeInfo(entry.file_name);
+            const epTitle = ep.seriesTitle?.toLowerCase().trim();
+            return currentFiles.some(f => {
+                if (entry.folder_id && f.folder_id && entry.folder_id === f.folder_id) return true;
+                if (epTitle) {
+                    const fInfo = parseEpisodeInfo(f.name);
+                    return fInfo.seriesTitle?.toLowerCase().trim() === epTitle;
+                }
+                return false;
+            });
+        })
+        : consolidatedEntries[0];
+
+    const latestWatched = matchingWatched || consolidatedEntries[0];
     const latestFileObj: TelegramFile | null = latestWatched ? {
         id: latestWatched.file_id,
         name: latestWatched.file_name,

@@ -248,11 +248,26 @@ export function getNextEpisode(currentFile: TelegramFile, folderFiles: TelegramF
     const currentInfo = parseEpisodeInfo(currentFile.name);
     if (!currentInfo.isEpisode || currentInfo.episode === null) return null;
 
+    const currentTitle = currentInfo.seriesTitle ? currentInfo.seriesTitle.toLowerCase().trim() : '';
     const currentSeason = currentInfo.season ?? 1;
     const nextEpisodeNum = currentInfo.episode + 1;
     const nextSeasonNum = currentSeason + 1;
 
-    const videoFiles = naturalSortFiles(folderFiles.filter(f => f.type !== 'folder' && isVideoFile(f.name)));
+    // Filter candidate files to only include video files that belong to the SAME series
+    const sameSeriesFiles = folderFiles.filter(f => {
+        if (f.type === 'folder' || !isVideoFile(f.name)) return false;
+        if (currentTitle) {
+            const info = parseEpisodeInfo(f.name);
+            if (info.seriesTitle && info.seriesTitle.toLowerCase().trim() !== currentTitle) {
+                return false;
+            }
+        }
+        return true;
+    });
+
+    if (sameSeriesFiles.length === 0) return null;
+
+    const videoFiles = naturalSortFiles(sameSeriesFiles);
 
     // 1. Look for next episode in current season (e.g. S01E05 -> S01E06)
     const exactNextInSeason = videoFiles.find(f => {
@@ -268,7 +283,7 @@ export function getNextEpisode(currentFile: TelegramFile, folderFiles: TelegramF
     });
     if (nextSeasonFirstEp) return nextSeasonFirstEp;
 
-    // 3. Fallback: find next index in naturally sorted video files
+    // 3. Fallback: find next index in naturally sorted video files of the same series
     const currentIndex = videoFiles.findIndex(f => f.id === currentFile.id || f.name === currentFile.name);
     if (currentIndex >= 0 && currentIndex + 1 < videoFiles.length) {
         const candidate = videoFiles[currentIndex + 1];
