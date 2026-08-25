@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { open } from '@tauri-apps/plugin-dialog';
 import { invoke } from '@tauri-apps/api/core';
+import { useQueryClient } from '@tanstack/react-query';
+import { toast } from 'sonner';
 import { Subtitles, FolderOpen, CheckCircle2, AlertCircle, Loader2, X, FileText, Globe } from 'lucide-react';
 import { TelegramFile } from '../../../types';
 import { isVideoFile } from '../../../utils';
@@ -21,6 +23,7 @@ export const AttachSubtitlesModal: React.FC<AttachSubtitlesModalProps> = ({
     files,
     onSuccess,
 }) => {
+    const queryClient = useQueryClient();
     const [selectedPath, setSelectedPath] = useState<string>('');
     const [matches, setMatches] = useState<SubtitleMatchResult[]>([]);
     const [isScanning, setIsScanning] = useState(false);
@@ -31,6 +34,16 @@ export const AttachSubtitlesModal: React.FC<AttachSubtitlesModalProps> = ({
         currentName: '',
     });
     const [error, setError] = useState<string | null>(null);
+
+    const handleClose = () => {
+        if (!isUploading) {
+            setSelectedPath('');
+            setMatches([]);
+            setUploadProgress({ current: 0, total: 0, currentName: '' });
+            setError(null);
+            onClose();
+        }
+    };
 
     if (!isOpen) return null;
 
@@ -116,6 +129,7 @@ export const AttachSubtitlesModal: React.FC<AttachSubtitlesModalProps> = ({
                     await invoke('cmd_attach_video_subtitles', {
                         folderId,
                         videoMessageId: match.videoFile.id,
+                        videoFileName: match.videoFile.name,
                         primaryPath: sub.path,
                         pairedPath: sub.pairedVobSubPath || null,
                         format: sub.format,
@@ -129,6 +143,12 @@ export const AttachSubtitlesModal: React.FC<AttachSubtitlesModalProps> = ({
             }
 
             setIsUploading(false);
+            toast.success(`Successfully attached ${totalSubtitles} subtitle track${totalSubtitles > 1 ? 's' : ''}!`);
+            queryClient.invalidateQueries({ queryKey: ['video-subtitles'] });
+            setSelectedPath('');
+            setMatches([]);
+            setUploadProgress({ current: 0, total: 0, currentName: '' });
+            setError(null);
             if (onSuccess) onSuccess();
             onClose();
         } catch (e: any) {
@@ -157,7 +177,7 @@ export const AttachSubtitlesModal: React.FC<AttachSubtitlesModalProps> = ({
                     </div>
                     {!isUploading && (
                         <button
-                            onClick={onClose}
+                            onClick={handleClose}
                             className="p-2 text-slate-400 hover:text-white hover:bg-slate-800 rounded-lg transition-colors"
                         >
                             <X className="w-5 h-5" />
@@ -280,7 +300,7 @@ export const AttachSubtitlesModal: React.FC<AttachSubtitlesModalProps> = ({
                 {/* Footer */}
                 <div className="px-6 py-4 border-t border-slate-800 bg-slate-950/50 flex items-center justify-end gap-3">
                     <button
-                        onClick={onClose}
+                        onClick={handleClose}
                         disabled={isUploading}
                         className="px-4 py-2 text-sm font-medium text-slate-400 hover:text-white hover:bg-slate-800 rounded-xl transition-colors disabled:opacity-50"
                     >

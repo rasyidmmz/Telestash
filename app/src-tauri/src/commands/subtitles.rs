@@ -77,6 +77,7 @@ pub async fn cmd_get_video_subtitles(
 pub async fn cmd_attach_video_subtitles(
     folder_id: Option<i64>,
     video_message_id: i64,
+    video_file_name: Option<String>,
     primary_path: String,
     paired_path: Option<String>,
     format: String,
@@ -142,13 +143,36 @@ pub async fn cmd_attach_video_subtitles(
             _ => "srt",
         };
 
+        // Key 1: {folder_id}_{video_message_id}.{ext}
         let local_name = format!("{}_{}.{}", folder_id.unwrap_or(0), video_message_id, local_ext);
         let _ = tokio::fs::write(captions_dir.join(&local_name), &primary_bytes).await;
+
+        // Key 2: {video_message_id}.{ext}
+        let msg_name = format!("{}.{}", video_message_id, local_ext);
+        let _ = tokio::fs::write(captions_dir.join(&msg_name), &primary_bytes).await;
 
         if let Some(ref p_path) = paired_path {
             if let Ok(p_bytes) = tokio::fs::read(p_path).await {
                 let local_paired = format!("{}_{}.sub", folder_id.unwrap_or(0), video_message_id);
                 let _ = tokio::fs::write(captions_dir.join(&local_paired), &p_bytes).await;
+                let msg_paired = format!("{}.sub", video_message_id);
+                let _ = tokio::fs::write(captions_dir.join(&msg_paired), &p_bytes).await;
+            }
+        }
+
+        // Key 3: Exact video filename stem (for MPV fuzzy playlist auto-matching)
+        if let Some(ref v_name) = video_file_name {
+            if let Some(v_stem) = Path::new(v_name).file_stem().and_then(|s| s.to_str()) {
+                if !v_stem.is_empty() {
+                    let stem_name = format!("{}.{}", v_stem, local_ext);
+                    let _ = tokio::fs::write(captions_dir.join(&stem_name), &primary_bytes).await;
+                    if let Some(ref p_path) = paired_path {
+                        if let Ok(p_bytes) = tokio::fs::read(p_path).await {
+                            let paired_stem = format!("{}.sub", v_stem);
+                            let _ = tokio::fs::write(captions_dir.join(&paired_stem), &p_bytes).await;
+                        }
+                    }
+                }
             }
         }
     }

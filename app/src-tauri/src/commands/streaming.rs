@@ -91,23 +91,40 @@ fn resolve_mpv_binary(app_handle: &tauri::AppHandle) -> Option<std::path::PathBu
     None
 }
 
-fn attach_matching_subtitles(args: &mut Vec<String>, app_handle: &tauri::AppHandle, folder_id: i64, message_id: i32) {
+fn attach_matching_subtitles(
+    args: &mut Vec<String>,
+    app_handle: &tauri::AppHandle,
+    folder_id: i64,
+    message_id: i32,
+    title: Option<&str>,
+) {
     if let Ok(app_dir) = app_handle.path().app_data_dir() {
         let captions_dir = app_dir.join("streaming").join("captions");
         if !captions_dir.exists() {
             return;
         }
 
-        let prefix = format!("{}_{}", folder_id, message_id);
+        let prefix_folder = format!("{}_{}", folder_id, message_id);
+        let prefix_msg = format!("{}_", message_id);
+        let prefix_msg_exact = format!("{}.", message_id);
+        let title_stem = title
+            .map(|t| Path::new(t).file_stem().and_then(|s| s.to_str()).unwrap_or(t))
+            .unwrap_or("");
+
         if let Ok(entries) = std::fs::read_dir(&captions_dir) {
             for entry in entries.flatten() {
                 let path = entry.path();
                 if path.is_file() {
                     let file_name = path.file_name().and_then(|n| n.to_str()).unwrap_or("");
-                    if file_name.starts_with(&prefix) {
-                        let ext = path.extension().and_then(|e| e.to_str()).unwrap_or("").to_lowercase();
-                        // For VobSub (.idx and .sub), only pass .idx (MPV loads companion .sub automatically)
-                        if ext == "idx" || ext == "srt" || ext == "ass" || ext == "ssa" || ext == "vtt" {
+                    let ext = path.extension().and_then(|e| e.to_str()).unwrap_or("").to_lowercase();
+                    // For VobSub (.idx and .sub), only pass .idx (MPV loads companion .sub automatically)
+                    if ext == "idx" || ext == "srt" || ext == "ass" || ext == "ssa" || ext == "vtt" {
+                        let is_match = file_name.starts_with(&prefix_folder)
+                            || file_name.starts_with(&prefix_msg)
+                            || file_name.starts_with(&prefix_msg_exact)
+                            || (!title_stem.is_empty() && file_name.starts_with(title_stem));
+
+                        if is_match {
                             args.push(format!("--sub-file={}", path.to_string_lossy()));
                         }
                     }
@@ -147,7 +164,7 @@ pub fn cmd_play_in_mpv(
         "--write-filename-in-watch-later-config=yes".to_string(),
         "--keep-open=no".to_string(),
         "--input-default-bindings=yes".to_string(),
-        "--slang=en,eng,enUS,en-US,enGB,en-GB,en-UK,enUK,English,eng-US,eng-GB".to_string(),
+        "--slang=en,eng,enUS,en-US,enGB,en-GB,en-UK,enUK,English,eng-US,eng-GB,id,ind,Indonesian".to_string(),
         "--sub-auto=fuzzy".to_string(),
         "--sub-visibility=yes".to_string(),
     ];
@@ -162,6 +179,14 @@ pub fn cmd_play_in_mpv(
         let conf_content = "# TeleStash MPV Custom Keybindings\nUP add volume 2\nDOWN add volume -2\nWHEEL_UP add volume 2\nWHEEL_DOWN add volume -2\nCtrl+RIGHT seek 30\nCtrl+LEFT seek -30\nShift+RIGHT seek 10\nShift+LEFT seek -10\nc cycle sub\nENTER cycle fullscreen\nKP_ENTER cycle fullscreen\nTAB script-binding stats/display-stats-toggle\nCtrl+f playlist-prev\nCtrl+j playlist-next\n";
         let _ = std::fs::write(&input_conf, conf_content);
         args.push(format!("--input-conf={}", input_conf.display()));
+    }
+
+    // Pass captions search path so MPV can auto-match subtitles for any playlist or stream item
+    if let Ok(app_dir) = app_handle.path().app_data_dir() {
+        let captions_dir = app_dir.join("streaming").join("captions");
+        if captions_dir.exists() {
+            args.push(format!("--sub-file-paths={}", captions_dir.to_string_lossy()));
+        }
     }
 
     if let Some(items) = playlist.filter(|p| !p.is_empty()) {
@@ -203,12 +228,14 @@ pub fn cmd_play_in_mpv(
                 args.push(stable_url);
             }
 
-            // Pass captions search path so MPV can auto-match subtitles for any playlist item
-            if let Ok(app_dir) = app_handle.path().app_data_dir() {
-                let captions_dir = app_dir.join("streaming").join("captions");
-                if captions_dir.exists() {
-                    args.push(format!("--sub-file-paths={}", captions_dir.to_string_lossy()));
-                }
+            // Explicitly attach current item's subtitles for immediate playback
+            let current_item = start_index.and_then(|idx| items.get(idx)).unwrap_or(&items[0]);
+            let active_msg_id = message_id.or(current_item.message_id);
+            let active_folder_id = folder_id.or(current_item.folder_id).unwrap_or(0);
+            let active_title = title.as_deref().or(current_item.title.as_deref());
+
+            if let Some(msg_id) = active_msg_id {
+                attach_matching_subtitles(&mut args, &app_handle, active_folder_id, msg_id, active_title);
             }
         } else {
             let item = &items[0];
@@ -218,8 +245,11 @@ pub fn cmd_play_in_mpv(
                 args.push(format!("--title={}", t));
                 args.push(format!("--script-opts=osc-title={}", t));
             }
-            if let (Some(msg_id), Some(f_id)) = (item.message_id, item.folder_id) {
-                attach_matching_subtitles(&mut args, &app_handle, f_id, msg_id);
+            let active_msg_id = item.message_id.or(message_id);
+            let active_folder_id = item.folder_id.or(folder_id).unwrap_or(0);
+            let active_title = item.title.as_deref().or(title.as_deref());
+            if let Some(msg_id) = active_msg_id {
+                attach_matching_subtitles(&mut args, &app_handle, active_folder_id, msg_id, active_title);
             }
             args.push(stable_url);
         }
@@ -233,8 +263,9 @@ pub fn cmd_play_in_mpv(
             args.push(format!("--title={}", t));
             args.push(format!("--script-opts=osc-title={}", t));
         }
-        if let (Some(msg_id), Some(f_id)) = (message_id, folder_id) {
-            attach_matching_subtitles(&mut args, &app_handle, f_id, msg_id);
+        if let Some(msg_id) = message_id {
+            let active_folder_id = folder_id.unwrap_or(0);
+            attach_matching_subtitles(&mut args, &app_handle, active_folder_id, msg_id, title.as_deref());
         }
         args.push(stable_url);
     }
