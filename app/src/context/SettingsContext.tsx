@@ -14,9 +14,6 @@ export interface Settings {
     hideGroups: boolean;
 
     windowsAutostart: boolean;       // Launch on Windows Startup
-
-    // ── Transcode cache ─────────────────────────────────────
-    transcodeCacheMaxGb: number;     // 1–50 GB, default 5
 }
 
 const defaultSettings: Settings = {
@@ -31,8 +28,6 @@ const defaultSettings: Settings = {
     hideGroups: false,
 
     windowsAutostart: false,
-
-    transcodeCacheMaxGb: 5,
 };
 
 interface SettingsContextType {
@@ -62,7 +57,7 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
                         'pollingMinSec', 'pollingMaxSec', 'preferredDC', 'dcFallbackAttempts',
                         'floodWaitRespect', 'peerCacheSize', 'bandwidthLimitUpKBs',
                         'bandwidthLimitDownKBs', 'chunkSizeKb', 'keepAliveIntervalSec',
-                        'autoDetectVpn', 'archiveMaxBytes',
+                        'autoDetectVpn', 'archiveMaxBytes', 'transcodeCacheMaxGb',
                     ]) {
                         delete savedSettings[key];
                     }

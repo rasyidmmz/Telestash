@@ -62,8 +62,6 @@ pub mod server;
 pub mod api_routes;
 pub mod db;
 pub mod share_routes;
-pub mod transcode;
-pub mod fmp4_remux;
 pub mod mp4_utils;
 
 
@@ -262,25 +260,7 @@ pub fn run() {
             app.manage(ActixServerHandle(server_handle_for_setup.clone()));
             app.manage(ApiServerHandle(Arc::new(std::sync::Mutex::new(None))));
             app.manage(ApiServerRunning(Arc::new(std::sync::atomic::AtomicBool::new(false))));
-            
-            // Initialize TranscodeManager for HLS streaming
-            let app_data_dir = app.path().app_data_dir().map_err(|e| {
-                log::error!("Failed to get app data dir: {}", e);
-                e
-            })?;
-            let cache_root = app_data_dir.join("streaming");
-            let transcode_manager = transcode::TranscodeManager::new(cache_root);
-            // Detect FFmpeg (non-blocking spawn)
-            let app_handle = app.handle().clone();
-            let ffmpeg_path_arc = transcode_manager.ffmpeg_path.clone();
-            tauri::async_runtime::spawn(async move {
-                if let Some(ffmpeg) = transcode::detect_ffmpeg(&app_handle).await {
-                    *ffmpeg_path_arc.lock().await = Some(ffmpeg);
-                }
-            });
-            let transcode_arc = Arc::new(transcode_manager);
-            app.manage(transcode_arc.clone());
-            app.manage(fmp4_remux::Fmp4RemuxState::new());
+
             let net_config = Arc::new(transfer_policy::TransferPolicy::new());
             app.manage(net_config.clone());
             app.manage(commands::english_cc::EnglishCcManager::new());
@@ -296,13 +276,12 @@ pub fn run() {
             let token_for_server = stream_token.clone();
             let handle_for_thread = server_handle_for_setup.clone();
             let db_pool_for_server = db_pool.clone();
-            let transcode_for_server = transcode_arc.clone();
             let app_handle_for_server = app.handle().clone();
             std::thread::spawn(move || {
                 init_com_on_worker_thread();
                 let sys = actix_rt::System::new();
                 sys.block_on(async move {
-                    match server::start_server(state, STREAM_PORT, token_for_server, db_pool_for_server, transcode_for_server, app_handle_for_server).await {
+                    match server::start_server(state, STREAM_PORT, token_for_server, db_pool_for_server, app_handle_for_server).await {
                         Ok(server) => {
                             if let Ok(mut handle) = handle_for_thread.lock() {
                                 *handle = Some(server.handle());
@@ -440,18 +419,6 @@ pub fn run() {
             commands::cmd_export_folder_invite,
             cmd_get_system_diagnostics,
             commands::cmd_get_video_metadata,
-            transcode::cmd_get_transcode_capabilities,
-            transcode::cmd_prepare_transcoded_stream,
-            transcode::cmd_get_transcode_status,
-            transcode::cmd_cancel_transcode,
-            transcode::cmd_get_master_playlist_info,
-            transcode::cmd_get_transcode_cache_info,
-            transcode::cmd_set_transcode_cache_limit,
-            transcode::cmd_get_cached_variants,
-            transcode::cmd_get_detailed_transcode_cache,
-            transcode::cmd_clear_transcode_cache,
-            fmp4_remux::cmd_prepare_fmp4_stream,
-            fmp4_remux::cmd_get_fmp4_status,
             commands::cmd_list_archive_contents,
             commands::cmd_extract_archive_entry,
             commands::cmd_get_enriched_folders,

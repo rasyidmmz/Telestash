@@ -9,7 +9,7 @@ import { useConfirm } from '../../../context/ConfirmContext';
 import { useTranslation } from 'react-i18next';
 import { useUpdate } from '../../../context/UpdateContext';
 import { LANGUAGES } from '../../../i18n/languages';
-import { ShareInfo, CacheEntry, DetailedCacheInfo } from '../../../types';
+import { ShareInfo } from '../../../types';
 import { version as appVersion } from '../../../../package.json';
 import { useTheme } from '../../../context/ThemeContext';
 import { CustomTheme, ThemeColorPalette, generateThemeId } from '../../../theme/themeEngine';
@@ -38,10 +38,6 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
     const { t } = useTranslation();
     const [clearing, setClearing] = useState(false);
 
-    // Transcode cache state
-    const [transcodeCache, setTranscodeCache] = useState<DetailedCacheInfo | null>(null);
-    const [cacheLoading, setCacheLoading] = useState(false);
-    const [clearingVariant, setClearingVariant] = useState<string | null>(null); // file_key:quality being cleared
     const [activeTab, setActiveTab] = useState<SettingsTab>('general');
 
     const {
@@ -168,26 +164,6 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
             setKeyCopied(false);
         }
     }, [isOpen, fetchApiSettings]);
-
-    // Fetch transcode cache info
-    const fetchTranscodeCache = useCallback(async () => {
-        setCacheLoading(true);
-        try {
-            const info = await invoke<DetailedCacheInfo>('cmd_get_detailed_transcode_cache');
-            setTranscodeCache(info);
-        } catch {
-            setTranscodeCache(null);
-        } finally {
-            setCacheLoading(false);
-        }
-    }, []);
-
-    // Load transcode cache when on general tab
-    useEffect(() => {
-        if (isOpen && activeTab === 'general') {
-            fetchTranscodeCache();
-        }
-    }, [isOpen, activeTab, fetchTranscodeCache]);
 
     // Poll API status while modal is open and API is enabled
     useEffect(() => {
@@ -578,27 +554,6 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                                     {t('settings.storage')}
                                 </h3>
 
-                                {/* Transcode Cache Size */}
-                                <div className="p-3 rounded-lg bg-telegram-hover/50 space-y-2">
-                                    <div className="flex items-center justify-between">
-                                        <div className="flex items-center gap-2">
-                                            <HardDrive className="w-4 h-4 text-telegram-subtext" />
-                                            <div>
-                                                <p className="text-sm text-telegram-text font-medium">{t('settings.transcode_cache_limit')}</p>
-                                                <p className="text-xs text-telegram-subtext">{t('settings.transcode_cache_desc')}</p>
-                                            </div>
-                                        </div>
-                                        <span className="text-sm text-telegram-primary font-mono font-medium">{settings.transcodeCacheMaxGb} GB</span>
-                                    </div>
-                                    <input type="range" min="1" max="50" step="1" value={settings.transcodeCacheMaxGb}
-                                        onChange={e => {
-                                            const gb = parseInt(e.target.value);
-                                            updateSetting('transcodeCacheMaxGb', gb);
-                                            invoke('cmd_set_transcode_cache_limit', { maxGb: gb }).catch(() => {});
-                                        }}
-                                        className="w-full h-1.5 rounded-full appearance-none bg-telegram-border accent-telegram-primary cursor-pointer" />
-                                </div>
-
                                 <div className="flex items-center justify-between p-3 rounded-lg bg-telegram-hover/50">
                                     <div className="flex items-center gap-2">
                                         <Trash2 className="w-4 h-4 text-telegram-subtext" />
@@ -633,137 +588,6 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                                     </button>
                                 </div>
 
-                                {/* Transcode Cache */}
-                                <div className="p-3 rounded-lg bg-telegram-hover/50 space-y-3">
-                                    <div className="flex items-center justify-between">
-                                        <div className="flex items-center gap-2">
-                                            <HardDrive className="w-4 h-4 text-telegram-subtext" />
-                                            <div>
-                                                <p className="text-sm text-telegram-text font-medium">{t('settings.transcode_cache')}</p>
-                                                <p className="text-xs text-telegram-subtext">
-                                                    {transcodeCache
-                                                        ? `${(transcodeCache.total_bytes / 1048576).toFixed(1)} MB / ${(transcodeCache.max_bytes / 1073741824).toFixed(1)} GB`
-                                                        : t('common.loading')}
-                                                </p>
-                                            </div>
-                                        </div>
-                                        <div className="flex items-center gap-1.5">
-                                            <button
-                                                onClick={fetchTranscodeCache}
-                                                disabled={cacheLoading}
-                                                className="p-1.5 rounded-md hover:bg-telegram-hover text-telegram-subtext hover:text-telegram-text transition"
-                                                title={t('settings.refresh_links')}
-                                            >
-                                                <RefreshCw className={`w-3 h-3 ${cacheLoading ? 'animate-spin' : ''}`} />
-                                            </button>
-                                            <button
-                                                disabled={!transcodeCache || transcodeCache.entries.length === 0}
-                                                onClick={async () => {
-                                                    const ok = await confirm({
-                                                        title: t('settings.clear_transcode_title'),
-                                                        message: t('settings.clear_transcode_message'),
-                                                        confirmText: t('settings.clear_all'),
-                                                        variant: 'danger',
-                                                    });
-                                                    if (!ok) return;
-                                                    setClearingVariant('__all__');
-                                                    try {
-                                                        const msg = await invoke<string>('cmd_clear_transcode_cache', {});
-                                                        toast.success(msg);
-                                                        fetchTranscodeCache();
-                                                    } catch (e) {
-                                                        toast.error(t('settings.failed_prefix', { error: e }));
-                                                    } finally {
-                                                        setClearingVariant(null);
-                                                    }
-                                                }}
-                                                className="px-2.5 py-1 rounded-md text-[10px] font-medium bg-red-500/10 text-red-400 hover:bg-red-500/20 transition disabled:opacity-50 disabled:cursor-not-allowed"
-                                            >
-                                                {clearingVariant === '__all__' ? t('settings.clearing') : t('settings.clear_all')}
-                                            </button>
-                                        </div>
-                                    </div>
-
-                                    {/* Cache entries list */}
-                                    {transcodeCache && transcodeCache.entries.length > 0 ? (
-                                        <div className="space-y-1.5 max-h-[200px] overflow-y-auto pr-1 custom-scrollbar">
-                                            {/* Group HLS variants by file_key (exclude originals, which are cleared via per-file Clear or Clear All) */}
-                                            {(() => {
-                                                const grouped: Record<string, CacheEntry[]> = {};
-                                                for (const e of transcodeCache.entries) {
-                                                    // Skip original entries — they're cleared via per-file or Clear All only
-                                                    if (e.quality === 'original') continue;
-                                                    if (!grouped[e.file_key]) grouped[e.file_key] = [];
-                                                    grouped[e.file_key].push(e);
-                                                }
-                                                return Object.entries(grouped).map(([fileKey, entries]) => (
-                                                    <div key={fileKey} className="p-2 rounded bg-telegram-bg/50 border border-telegram-border/30">
-                                                        <div className="flex items-center justify-between mb-1">
-                                                            <span className="text-[10px] font-mono text-telegram-subtext truncate max-w-[180px]" title={fileKey}>
-                                                                {fileKey}
-                                                            </span>
-                                                            <button
-                                                                disabled={clearingVariant !== null}
-                                                                onClick={async () => {
-                                                                    setClearingVariant(fileKey);
-                                                                    try {
-                                                                        const msg = await invoke<string>('cmd_clear_transcode_cache', { fileKey });
-                                                                        toast.success(msg);
-                                                                        fetchTranscodeCache();
-                                                                    } catch (e) {
-                                                                        toast.error(t('settings.failed_prefix', { error: e }));
-                                                                    } finally {
-                                                                        setClearingVariant(null);
-                                                                    }
-                                                                }}
-                                                                className="text-[9px] text-red-400/60 hover:text-red-400 transition px-1 py-0.5 rounded hover:bg-red-500/10 disabled:opacity-30"
-                                                                title={t('settings.clear_variants_for', { key: fileKey })}
-                                                            >
-                                                                {clearingVariant === fileKey ? '...' : t('settings.clear')}
-                                                            </button>
-                                                        </div>
-                                                        <div className="flex flex-wrap gap-1">
-                                                            {entries.map(e => (
-                                                                <button
-                                                                    key={`${e.file_key}:${e.quality}`}
-                                                                    disabled={clearingVariant !== null}
-                                                                    onClick={async () => {
-                                                                        const variantKey = `${e.file_key}:${e.quality}`;
-                                                                        setClearingVariant(variantKey);
-                                                                        try {
-                                                                            const msg = await invoke<string>('cmd_clear_transcode_cache', { fileKey: e.file_key, quality: e.quality });
-                                                                            toast.success(msg);
-                                                                            fetchTranscodeCache();
-                                                                        } catch (err) {
-                                                                            toast.error(t('settings.failed_prefix', { error: err }));
-                                                                        } finally {
-                                                                            setClearingVariant(null);
-                                                                        }
-                                                                    }}
-                                                                    className={`flex items-center gap-1 px-1.5 py-0.5 rounded text-[9px] font-medium transition ${
-                                                                        e.playlist_exists
-                                                                            ? 'bg-emerald-500/10 text-emerald-400 hover:bg-red-500/10 hover:text-red-400 border border-emerald-500/20'
-                                                                            : 'bg-amber-500/10 text-amber-400/60 border border-amber-500/20'
-                                                                    } disabled:opacity-30`}
-                                                                    title={`${e.quality} — ${(e.size_bytes / 1048576).toFixed(2)} MB${e.playlist_exists ? ' (ready)' : ' (partial)'}`}
-                                                                >
-                                     {e.quality === 'original' ? t('settings.original') : e.quality}
-                                                                    <span className="text-[8px] opacity-60">{e.playlist_exists ? '✓' : '~'}</span>
-                                                                </button>
-                                                            ))}
-                                                        </div>
-                                                    </div>
-                                                ));
-                                            })()}
-                                        </div>
-                                    ) : transcodeCache && transcodeCache.entries.length === 0 ? (
-                                        <p className="text-[11px] text-telegram-subtext/50 text-center py-2">{t('settings.no_transcoded_cached')}</p>
-                                    ) : (
-                                        <div className="flex items-center justify-center py-2">
-                                            <RefreshCw className="w-3 h-3 text-telegram-subtext animate-spin" />
-                                        </div>
-                                    )}
-                                </div>
                             </section>
 
                             {/* Updates Section */}

@@ -1,6 +1,5 @@
 // ── Shared MP4 Box Parsing ─────────────────────────────────────────────
-// Used by both transcode.rs (for source resolution detection) and
-// commands/video_metadata.rs (for video metadata extraction).
+// Used by commands/video_metadata.rs for video metadata extraction.
 
 /// Read a big-endian u32 at `offset` from `data`.
 pub fn read_u32_be(data: &[u8], offset: usize) -> Option<u32> {

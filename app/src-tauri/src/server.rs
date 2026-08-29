@@ -6,7 +6,6 @@ use crate::commands::streaming::stream_token_header_name;
 use crate::commands::utils::resolve_peer;
 use grammers_client::types::Media;
 use grammers_client::types::Peer;
-use crate::transcode::TranscodeManager;
 use crate::models::SplitManifest;
 use crate::transfer_log::record_transfer_log;
 
@@ -625,13 +624,11 @@ pub async fn start_server(
     port: u16,
     token: String,
     db_pool: crate::db::DbConnection,
-    transcode_manager: Arc<TranscodeManager>,
     app_handle: tauri::AppHandle,
 ) -> std::io::Result<actix_web::dev::Server> {
     let state_data = web::Data::new(state);
     let token_data = web::Data::new(StreamTokenData { token });
     let db_data = web::Data::new(db_pool);
-    let transcode_data = web::Data::new(transcode_manager);
     let app_handle_data = web::Data::new(app_handle);
     
     log::info!("Starting Streaming Server on port {}", port);
@@ -678,13 +675,10 @@ pub async fn start_server(
             .app_data(state_data.clone())
             .app_data(token_data.clone())
             .app_data(db_data.clone())
-            .app_data(transcode_data.clone())
             .app_data(app_handle_data.clone())
             .service(stream_media_named)
             .service(stream_media)
             .configure(crate::share_routes::configure_share_routes)
-            .configure(crate::transcode::configure_hls_routes)
-            .configure(crate::fmp4_remux::configure_fmp4_routes)
     })
     .listen(listener)?
     .run();

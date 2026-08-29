@@ -1,10 +1,9 @@
 import { useState } from 'react';
-import { Folder, MoreVertical, Check } from 'lucide-react';
+import { Folder, MoreVertical } from 'lucide-react';
 import { TelegramFile } from '../../../types';
 import { createDragGhost } from '../../../utils';
 import { FileTypeIcon } from '../../shared/FileTypeIcon';
 import { useVideoMetadata } from '../../../hooks/useVideoMetadata';
-import { useCachedVariants } from '../../../hooks/useCachedVariants';
 import { useVideoSubtitles } from '../../../hooks/useVideoSubtitles';
 import { VideoMetaBadge } from '../../shared/VideoMetaBadge';
 import { MediaBadgesList } from '../../shared/MediaBadgesList';
@@ -33,14 +32,6 @@ export function FileListItem({
         file.folder_id ?? null,
         file.name,
     );
-
-    // Cached HLS variants
-    const { data: cachedVariants } = useCachedVariants(
-        file.id,
-        file.folder_id ?? null,
-        file.name,
-    );
-    const cachedQualities = (cachedVariants || []).filter(v => v.available).map(v => v.quality);
 
     // Attached Subtitles
     const { data: subtitles } = useVideoSubtitles(
@@ -112,16 +103,6 @@ export function FileListItem({
                 {subtitles && subtitles.length > 0 && (
                     <span className="inline-flex items-center text-[9px] font-mono font-bold tracking-tight px-1.5 py-0.5 rounded border bg-indigo-950/80 text-indigo-400 border-indigo-500/30" title={subtitles.map(s => `${s.label || s.language} (${s.format})`).join(', ')}>
                         SUB: {Array.from(new Set(subtitles.map(s => s.language.toUpperCase()))).join(', ')}
-                    </span>
-                )}
-                {cachedQualities.length > 0 && (
-                    <span className="inline-flex items-center gap-0.5 ml-1.5">
-                        {cachedQualities.map(q => (
-                            <span key={q} className="inline-flex items-center gap-0.5 text-[9px] font-medium text-emerald-400 bg-emerald-500/10 px-1 py-0.5 rounded">
-                                <Check className="w-2.5 h-2.5" />
-                                {q}
-                            </span>
-                        ))}
                     </span>
                 )}
             </div>
