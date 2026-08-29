@@ -13,6 +13,7 @@ export function useNetworkStatus() {
 
     useEffect(() => {
         let interval: ReturnType<typeof setInterval> | null = null;
+        let visibilityHandler: (() => void) | null = null;
 
         // Import Tauri invoke
         import('@tauri-apps/api/core').then(({ invoke }) => {
@@ -28,15 +29,27 @@ export function useNetworkStatus() {
                 }
             };
 
+            // While the window is hidden in the tray the webview must stay
+            // idle; refresh immediately once it becomes visible again.
+            const maybeCheck = () => {
+                if (document.hidden) return;
+                checkNetwork();
+            };
+
             // Initial check
             checkNetwork();
 
             // Poll every 10 seconds (very lightweight, ~2ms per check)
-            interval = setInterval(checkNetwork, 10000);
+            interval = setInterval(maybeCheck, 10000);
+            visibilityHandler = maybeCheck;
+            document.addEventListener('visibilitychange', maybeCheck);
         });
 
         return () => {
             if (interval) clearInterval(interval);
+            if (visibilityHandler) {
+                document.removeEventListener('visibilitychange', visibilityHandler);
+            }
         };
     }, []);
 

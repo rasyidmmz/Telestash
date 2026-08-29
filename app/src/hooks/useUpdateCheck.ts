@@ -18,6 +18,10 @@ interface UseUpdateCheckOptions {
     intervalMs?: number;
 }
 
+// Re-checking on window restore is throttled so alt-tabbing back and forth
+// does not spam the update endpoint.
+const VISIBILITY_RECHECK_THROTTLE_MS = 10 * 60 * 1000;
+
 function updateErrorMessage(err: unknown, fallback: string) {
     if (err instanceof Error && err.message) return err.message;
     if (typeof err === 'string' && err.trim()) return err;
@@ -42,6 +46,7 @@ export function useUpdateCheck(options: UseUpdateCheckOptions = {}) {
     });
     const [update, setUpdate] = useState<Update | null>(null);
     const checkingRef = useRef(false);
+    const lastCheckAtRef = useRef(0);
 
     const checkForUpdates = useCallback(async (): Promise<Update | null | undefined> => {
         if (checkingRef.current) return undefined;
@@ -49,6 +54,7 @@ export function useUpdateCheck(options: UseUpdateCheckOptions = {}) {
         setState(s => ({ ...s, checking: true, error: null }));
         try {
             const updateInfo = await check();
+            lastCheckAtRef.current = Date.now();
             if (updateInfo) {
                 setUpdate(updateInfo);
                 setState(s => ({
@@ -64,6 +70,7 @@ export function useUpdateCheck(options: UseUpdateCheckOptions = {}) {
             }
         } catch (err: unknown) {
             const message = updateErrorMessage(err, 'Failed to check for updates');
+            lastCheckAtRef.current = Date.now();
             setState(s => ({
                 ...s,
                 checking: false,
@@ -132,19 +139,28 @@ export function useUpdateCheck(options: UseUpdateCheckOptions = {}) {
 
     useEffect(() => {
         if (!autoCheck) return;
-        const timer = setTimeout(() => {
+        // No update traffic while the window is hidden in the tray; the
+        // visibility listener catches up as soon as it is visible again.
+        const tick = () => {
+            if (document.hidden) return;
             checkForUpdates().catch(console.error);
-        }, 5000);
+        };
+        const timer = setTimeout(tick, 5000);
         // Keep looking for new releases while the app stays open so the
         // update banner appears without an app restart.
         const interval = intervalMs && intervalMs > 0
-            ? setInterval(() => {
-                checkForUpdates().catch(console.error);
-            }, intervalMs)
+            ? setInterval(tick, intervalMs)
             : null;
+        const onVisibility = () => {
+            if (document.hidden) return;
+            if (Date.now() - lastCheckAtRef.current < VISIBILITY_RECHECK_THROTTLE_MS) return;
+            checkForUpdates().catch(console.error);
+        };
+        document.addEventListener('visibilitychange', onVisibility);
         return () => {
             clearTimeout(timer);
             if (interval) clearInterval(interval);
+            document.removeEventListener('visibilitychange', onVisibility);
         };
     }, [autoCheck, intervalMs, checkForUpdates]);
 
