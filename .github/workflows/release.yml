@@ -74,14 +74,19 @@ jobs:
       - name: Validate release version and changelog
         shell: pwsh
         run: |
-          $version = $env:GITHUB_REF -replace '^refs/tags/v', ''
-          if ($version -notmatch '^\d+\.\d+\.\d+$') {
-            throw "Release tags must use vMAJOR.MINOR.PATCH. Received v$version"
-          }
-
           & npm --prefix app run test:versions
           if ($LASTEXITCODE -ne 0) {
             throw "Version unit tests failed"
+          }
+
+          if ($env:GITHUB_REF_TYPE -ne 'tag') {
+            Write-Output "Ref is $($env:GITHUB_REF_TYPE), not a tag — skipping tag version/changelog assertions."
+            exit 0
+          }
+
+          $version = $env:GITHUB_REF -replace '^refs/tags/v', ''
+          if ($version -notmatch '^\d+\.\d+\.\d+$') {
+            throw "Release tags must use vMAJOR.MINOR.PATCH. Received v$version"
           }
 
           & node app/scripts/verify-versions.js $version
