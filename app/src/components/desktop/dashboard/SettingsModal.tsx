@@ -7,7 +7,7 @@ import { toast } from 'sonner';
 import { useSettings } from '../../../context/SettingsContext';
 import { useConfirm } from '../../../context/ConfirmContext';
 import { useTranslation } from 'react-i18next';
-import { useUpdateCheck } from '../../../hooks/useUpdateCheck';
+import { useUpdate } from '../../../context/UpdateContext';
 import { LANGUAGES } from '../../../i18n/languages';
 import { ShareInfo, CacheEntry, DetailedCacheInfo } from '../../../types';
 import { version as appVersion } from '../../../../package.json';
@@ -55,7 +55,8 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
         error: updateError,
         checkForUpdates,
         downloadAndInstall,
-    } = useUpdateCheck({ autoCheck: false });
+        remindLater,
+    } = useUpdate();
 
     // Diagnostics state
     const [diagLoading, setDiagLoading] = useState(false);
@@ -64,11 +65,23 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
         const updateInfo = await checkForUpdates();
         if (updateInfo === undefined) return;
         if (updateInfo) {
-            toast.success(t('settings.update_available_toast', { version: updateInfo.version }));
+            const downloadNow = await confirm({
+                title: t('settings.update_dialog_title'),
+                message: t('settings.update_dialog_desc', { version: updateInfo.version }),
+                confirmText: t('settings.download_now'),
+                cancelText: t('settings.remind_later'),
+                variant: 'info',
+            });
+            if (downloadNow) {
+                await downloadAndInstall();
+            } else {
+                remindLater();
+                toast.success(t('settings.remind_later_toast'));
+            }
         } else {
             toast.success(t('settings.latest_version_toast'));
         }
-    }, [checkForUpdates, t]);
+    }, [checkForUpdates, downloadAndInstall, remindLater, confirm, t]);
 
     const handleInstallUpdate = useCallback(async () => {
         await downloadAndInstall();

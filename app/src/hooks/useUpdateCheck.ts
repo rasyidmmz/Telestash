@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { check, Update } from '@tauri-apps/plugin-updater';
 import { relaunch } from '@tauri-apps/plugin-process';
 
@@ -15,6 +15,7 @@ interface UpdateState {
 
 interface UseUpdateCheckOptions {
     autoCheck?: boolean;
+    intervalMs?: number;
 }
 
 function updateErrorMessage(err: unknown, fallback: string) {
@@ -28,7 +29,7 @@ function updateErrorMessage(err: unknown, fallback: string) {
 }
 
 export function useUpdateCheck(options: UseUpdateCheckOptions = {}) {
-    const { autoCheck = true } = options;
+    const { autoCheck = true, intervalMs } = options;
     const [state, setState] = useState<UpdateState>({
         checking: false,
         available: false,
@@ -40,8 +41,11 @@ export function useUpdateCheck(options: UseUpdateCheckOptions = {}) {
         version: null,
     });
     const [update, setUpdate] = useState<Update | null>(null);
+    const checkingRef = useRef(false);
 
     const checkForUpdates = useCallback(async (): Promise<Update | null | undefined> => {
+        if (checkingRef.current) return undefined;
+        checkingRef.current = true;
         setState(s => ({ ...s, checking: true, error: null }));
         try {
             const updateInfo = await check();
@@ -67,6 +71,8 @@ export function useUpdateCheck(options: UseUpdateCheckOptions = {}) {
                 error: message,
             }));
             return undefined;
+        } finally {
+            checkingRef.current = false;
         }
     }, []);
 
@@ -129,8 +135,18 @@ export function useUpdateCheck(options: UseUpdateCheckOptions = {}) {
         const timer = setTimeout(() => {
             checkForUpdates().catch(console.error);
         }, 5000);
-        return () => clearTimeout(timer);
-    }, [autoCheck, checkForUpdates]);
+        // Keep looking for new releases while the app stays open so the
+        // update banner appears without an app restart.
+        const interval = intervalMs && intervalMs > 0
+            ? setInterval(() => {
+                checkForUpdates().catch(console.error);
+            }, intervalMs)
+            : null;
+        return () => {
+            clearTimeout(timer);
+            if (interval) clearInterval(interval);
+        };
+    }, [autoCheck, intervalMs, checkForUpdates]);
 
     return {
         ...state,

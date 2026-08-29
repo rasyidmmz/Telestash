@@ -39,6 +39,7 @@ import { useFileDownload } from '../../hooks/useFileDownload';
 import { useKeyboardShortcuts } from '../../hooks/useKeyboardShortcuts';
 import { useSettings } from '../../context/SettingsContext';
 import { useConfirm } from '../../context/ConfirmContext';
+import { useUpdate } from '../../context/UpdateContext';
 import { recordErrorLog } from '../../errorLogs';
 
 const SettingsModal = lazy(() => import('./dashboard/SettingsModal').then(m => ({ default: m.SettingsModal })));
@@ -58,6 +59,7 @@ export function Dashboard({ onLogout }: { onLogout: () => void }) {
 
     const { settings, updateSetting } = useSettings();
     const { confirm } = useConfirm();
+    const { checkForUpdates } = useUpdate();
     const viewMode = settings.viewMode;
     const setViewMode = (mode: 'grid' | 'list') => updateSetting('viewMode', mode);
 
@@ -220,6 +222,7 @@ export function Dashboard({ onLogout }: { onLogout: () => void }) {
         listen('tray-check-updates', () => {
             setShowSettings(true);
             toast.info("Checking for TeleStash updates...");
+            checkForUpdates().catch(console.error);
         }).then(fn => { unlistenUpdates = fn; });
 
         return () => {
@@ -227,7 +230,7 @@ export function Dashboard({ onLogout }: { onLogout: () => void }) {
             unlistenSettings?.();
             unlistenUpdates?.();
         };
-    }, [refreshWatchHistory]);
+    }, [refreshWatchHistory, checkForUpdates]);
 
     const {
         handleDelete, handleBulkDelete, handleBulkDownload,

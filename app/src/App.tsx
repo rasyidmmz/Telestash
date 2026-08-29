@@ -5,7 +5,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { AuthWizard } from "./components/shared/AuthWizard";
 import { ErrorBoundary } from "./components/shared/ErrorBoundary";
 import { UpdateBanner } from "./components/shared/UpdateBanner";
-import { useUpdateCheck } from "./hooks/useUpdateCheck";
+import { UpdateProvider, useUpdate } from "./context/UpdateContext";
 import "./App.css";
 
 const DesktopDashboard = React.lazy(() => import("./components/desktop/DesktopDashboard").then(m => ({ default: m.Dashboard })));
@@ -24,9 +24,7 @@ function AppContent() {
   const [authStatus, setAuthStatus] = useState<AuthStatus>("loading");
   const { theme } = useTheme();
   const { settings, isLoaded } = useSettings();
-  const { available, version, downloading, installing, restarting, progress, error: updateError, downloadAndInstall, dismissUpdate } = useUpdateCheck({
-    autoCheck: isLoaded && settings.autoUpdate,
-  });
+  const { bannerAvailable: available, version, downloading, installing, restarting, progress, error: updateError, downloadAndInstall, remindLater } = useUpdate();
   const { i18n } = useTranslation();
 
   // Handle active language and RTL direction changes
@@ -145,7 +143,7 @@ function AppContent() {
         progress={progress}
         error={updateError}
         onUpdate={downloadAndInstall}
-        onDismiss={dismissUpdate}
+        onDismiss={remindLater}
       />
       <Toaster theme={theme} position="bottom-center" />
       {authStatus === "authenticated" && (
@@ -173,7 +171,9 @@ function App() {
         <QueryClientProvider client={queryClient}>
           <ConfirmProvider>
             <SettingsProvider>
-              <AppContent />
+              <UpdateProvider>
+                <AppContent />
+              </UpdateProvider>
             </SettingsProvider>
           </ConfirmProvider>
         </QueryClientProvider>
