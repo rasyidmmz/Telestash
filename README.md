@@ -87,6 +87,8 @@ The data path is intentionally short and deterministic: the Windows application 
 * 🏷️ **Auto-Badge Format & Media Tagging**: Automatic filename analysis displaying micro-badges for `4K UHD`, `1080p`, `HDR`, `10-bit`, `HEVC`, `AV1`, `Dual Audio`, and `Atmos`.
 * 🎥 **Native MPV Cinema Engine**: Playback for compatible HEVC/H.265, 10-bit HDR, MKV, MP4, and surround-audio media.
 * 🔔 **Windows 11 System Tray**: Background minimization with quick slim native context menu (Resume Video, Downloads, Upload, Check Updates, Settings, Open, Exit).
+* 🔄 **Live Update Experience**: The update banner appears while the app is running — no restart needed. "Check for Updates" offers **Download Now** or **Remind Me Later** (24-hour snooze), and tray "Check for Updates" runs a real check.
+* 🌙 **Cinema Low-Power Mode**: While you watch in MPV with TeleStash hidden in the tray, the webview performs zero scheduled work — only the MPV stream relay stays active.
 * 📊 **Folder Storage Analytics Dashboard**: Visual distribution charts for Video, Audio, Subtitle, and Document space allocation.
 * 🍿 **Recent Watch Bar & Dedicated Watch Logs**: Continue watching strip with instant playback resume and separate activity logs.
 * ⚡ **Direct Telegram Transfer Engine**: Shared retry classification, protocol backoff, and diagnostic logs for uploads and downloads.

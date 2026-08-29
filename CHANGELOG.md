@@ -1,5 +1,32 @@
 # Changelog
 
+## [1.2.3]
+
+### Added
+
+- **Live Update Banner (No Restart Required)**:
+  - TeleStash now checks for new releases every 30 minutes while the app is open, so the top update ribbon appears live the moment a release is published — no more exit-and-relaunch.
+  - A shared updater state connects the ribbon, Settings, and the tray: a manual check from anywhere instantly surfaces the banner.
+  - Tray **Check for Updates** now actually performs a check (previously it only opened Settings).
+- **Update Dialog with Actions**:
+  - Settings "Check Now" now opens a dialog offering **Download Now** (with live progress in the ribbon and Settings) or **Remind Me Later**.
+  - **Remind Me Later** snoozes the update banner for 24 hours (`telestash_update_snooze_until` in localStorage); the banner's X button snoozes the same way instead of reappearing on the next check.
+  - Localized dialog strings across all 13 supported languages.
+
+### Changed
+
+- **Cinema Low-Power Behavior (Tray Idle)**:
+  - While the window is hidden in the tray (e.g., watching via MPV), the webview performs zero scheduled work: the 10-second network status poll and the 30-minute update check skip entirely while `document.hidden`, and the 5-second bandwidth query auto-pauses as before.
+  - On restore from tray, network status refreshes instantly and update checks resume (throttled to once per 10 minutes so alt-tabbing stays quiet).
+  - The MPV streaming path (loopback HTTP → Telegram MTProto) is untouched.
+
+### Removed
+
+- **Dead Code & Dependency Cleanup (~3,650 lines)**:
+  - Removed the unreachable HLS-transcode/fMP4 subsystem (`transcode.rs`, `fmp4_remux.rs`, 12 commands, `/hls` + `/fmp4` routes, `actix-files`, FFmpeg detection, and the related Settings cache UI, file-card badges, and types) — playback has always used the `/stream` loopback path.
+  - Removed dead Rust modules (`streaming_buffer`, `upload_checkpoint`, `session_health`, `batch_cc_queue`), two unused SQLite checkpoint tables, three never-invoked commands, and dead frontend hooks/scripts (`useStreamingSettings`, `moovCache`, `useFileDrop`, `check-i18n.cjs`, `sync-keys.cjs`).
+  - Uninstalled unused npm packages (`@tauri-apps/plugin-opener`, `plugin-os`, `plugin-deep-link`) and dropped unused crate declarations; legacy `transcodeCacheMaxGb` setting is pruned on load.
+
 ## [1.2.2]
 
 ### Added
