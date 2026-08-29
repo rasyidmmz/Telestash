@@ -81,26 +81,6 @@ pub fn init_db(app: &AppHandle) -> Result<DbConnection, String> {
                     group_id INTEGER,
                     FOREIGN KEY(group_id) REFERENCES groups(id) ON DELETE SET NULL
                 );
-                CREATE TABLE IF NOT EXISTS upload_checkpoints (
-                    id TEXT PRIMARY KEY,
-                    file_path TEXT NOT NULL,
-                    file_size INTEGER NOT NULL,
-                    modified_time INTEGER NOT NULL,
-                    telegram_file_id INTEGER NOT NULL,
-                    last_part_index INTEGER NOT NULL,
-                    total_parts INTEGER NOT NULL,
-                    updated_at INTEGER NOT NULL
-                );
-                CREATE TABLE IF NOT EXISTS download_checkpoints (
-                    id TEXT PRIMARY KEY,
-                    message_id INTEGER NOT NULL,
-                    folder_id INTEGER,
-                    file_name TEXT NOT NULL,
-                    total_size INTEGER NOT NULL,
-                    save_path TEXT NOT NULL,
-                    downloaded_bytes INTEGER NOT NULL,
-                    updated_at INTEGER NOT NULL
-                );
                 CREATE TABLE IF NOT EXISTS video_subtitles (
                     id TEXT PRIMARY KEY,
                     folder_id INTEGER,

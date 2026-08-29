@@ -46,10 +46,6 @@ pub mod split_manifest;
 pub mod transfer_log;
 pub mod failure_classifier;
 pub mod split_upload_resume;
-pub mod upload_checkpoint;
-pub mod streaming_buffer;
-pub mod session_health;
-pub mod batch_cc_queue;
 
 use tauri::{Manager, Emitter};
 
@@ -238,13 +234,10 @@ pub fn run() {
 
     let builder = tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
-        .plugin(tauri_plugin_os::init())
         .plugin(tauri_plugin_store::Builder::default().build())
         .plugin(tauri_plugin_shell::init())
         .plugin(tauri_plugin_dialog::init())
-        .plugin(tauri_plugin_fs::init())
         .plugin(tauri_plugin_process::init())
-        .plugin(tauri_plugin_deep_link::init())
         .plugin(tauri_plugin_clipboard_manager::init());
 
     let builder = builder.plugin(tauri_plugin_updater::Builder::new().build());
@@ -291,8 +284,6 @@ pub fn run() {
             let net_config = Arc::new(transfer_policy::TransferPolicy::new());
             app.manage(net_config.clone());
             app.manage(commands::english_cc::EnglishCcManager::new());
-            app.manage(Arc::new(session_health::SessionHealthManager::new()));
-            app.manage(Arc::new(batch_cc_queue::BatchCcQueueManager::new()));
             
             // Initialize SQLite Database
             let db_pool = db::init_db(app.handle()).map_err(|e| {
@@ -408,7 +399,6 @@ pub fn run() {
             commands::settings::cmd_set_autostart,
             commands::cmd_connect,
             commands::cmd_log,
-            commands::cmd_check_split_file_health,
             commands::cmd_delete_file,
             commands::cmd_download_file,
             commands::cmd_move_files,
@@ -428,7 +418,6 @@ pub fn run() {
             commands::cmd_search_global,
             commands::cmd_check_connection,
             commands::cmd_is_network_available,
-            commands::cmd_reconnect_with_network_settings,
             commands::cmd_clean_cache,
             commands::cmd_get_thumbnail,
             commands::cmd_get_stream_info,
@@ -451,7 +440,6 @@ pub fn run() {
             commands::cmd_export_folder_invite,
             cmd_get_system_diagnostics,
             commands::cmd_get_video_metadata,
-            commands::cmd_get_video_metadata_batch,
             transcode::cmd_get_transcode_capabilities,
             transcode::cmd_prepare_transcoded_stream,
             transcode::cmd_get_transcode_status,

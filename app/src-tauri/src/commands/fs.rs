@@ -43,40 +43,6 @@ fn requires_split_upload(size: u64) -> bool {
     size > TELEGRAM_SINGLE_FILE_LIMIT
 }
 
-#[derive(Debug, Serialize)]
-pub struct SplitHealthReport {
-    pub is_split: bool,
-    pub ok: bool,
-    pub filename: Option<String>,
-    pub size: Option<u64>,
-    pub part_count: usize,
-    pub issues: Vec<String>,
-}
-
-impl SplitHealthReport {
-    fn not_split() -> Self {
-        Self {
-            is_split: false,
-            ok: true,
-            filename: None,
-            size: None,
-            part_count: 0,
-            issues: Vec::new(),
-        }
-    }
-
-    fn split(manifest: &SplitManifest, issues: Vec<String>) -> Self {
-        Self {
-            is_split: true,
-            ok: issues.is_empty(),
-            filename: Some(manifest.filename.clone()),
-            size: Some(manifest.size),
-            part_count: manifest.parts.len(),
-            issues,
-        }
-    }
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -535,49 +501,6 @@ pub(crate) async fn validate_split_parts_present(
     }
 
     Ok(())
-}
-
-async fn inspect_split_parts(
-    client: &grammers_client::Client,
-    peer: &Peer,
-    manifest: &SplitManifest,
-) -> SplitHealthReport {
-    let mut issues = Vec::new();
-    if let Err(e) = validate_split_manifest(manifest) {
-        issues.push(e);
-    }
-
-    for chunk in manifest.parts.chunks(100) {
-        let ids: Vec<i32> = chunk.iter().map(|part| part.message_id).collect();
-        let messages = match client.get_messages_by_id(peer, &ids).await {
-            Ok(messages) => messages,
-            Err(e) => {
-                issues.push(format!("Failed to fetch split parts: {}", e));
-                return SplitHealthReport::split(manifest, issues);
-            }
-        };
-
-        for (part, msg) in chunk.iter().zip(messages.into_iter()) {
-            let Some(msg) = msg else {
-                issues.push(format!("Missing part message_id {}", part.message_id));
-                continue;
-            };
-            let Some(media) = msg.media() else {
-                issues.push(format!("Part {} has no media", part.message_id));
-                continue;
-            };
-            if let Some(actual_size) = media_size(&media) {
-                if actual_size != part.size {
-                    issues.push(format!(
-                        "Part {} size mismatch: expected {}, got {}",
-                        part.message_id, part.size, actual_size
-                    ));
-                }
-            }
-        }
-    }
-
-    SplitHealthReport::split(manifest, issues)
 }
 
 fn media_size(media: &Media) -> Option<u64> {
@@ -1905,36 +1828,6 @@ pub async fn cmd_rename_file(
 
     edit_res.map_err(|e| format!("Failed to rename file: {}", e))?;
     Ok(true)
-}
-
-#[tauri::command]
-pub async fn cmd_check_split_file_health(
-    message_id: i32,
-    folder_id: Option<i64>,
-    state: State<'_, TelegramState>,
-) -> Result<SplitHealthReport, String> {
-    let client_opt = { state.client.lock().await.clone() };
-    #[cfg(debug_assertions)]
-    if client_opt.is_none() {
-        return Ok(SplitHealthReport::not_split());
-    }
-    let client = client_opt.ok_or_else(|| "Client not connected".to_string())?;
-    let peer = resolve_peer(&client, folder_id, &state.peer_cache).await?;
-    let messages = client
-        .get_messages_by_id(&peer, &[message_id])
-        .await
-        .map_err(|e| format!("Failed to fetch message for split health check: {}", e))?;
-    let Some(msg) = messages.into_iter().flatten().next() else {
-        return Err(format!("Message {} not found", message_id));
-    };
-    let Some(media) = msg.media() else {
-        return Ok(SplitHealthReport::not_split());
-    };
-    let Some(manifest) = split_manifest_from_media(&client, &media, msg.text()).await else {
-        return Ok(SplitHealthReport::not_split());
-    };
-
-    Ok(inspect_split_parts(&client, &peer, &manifest).await)
 }
 
 #[tauri::command]

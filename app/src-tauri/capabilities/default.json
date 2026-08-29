@@ -6,17 +6,12 @@
   ],
   "permissions": [
     "core:default",
-    "os:default",
     "shell:allow-open",
     "store:default",
     "updater:default",
     "process:default",
-    "deep-link:default",
     "clipboard-manager:allow-write-text",
     "dialog:allow-open",
-    "dialog:allow-save",
-    "fs:allow-read",
-    "fs:allow-write",
-    "fs:scope-app-recursive"
+    "dialog:allow-save"
   ]
 }
