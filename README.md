@@ -73,7 +73,7 @@ The data path is intentionally short and deterministic: the Windows application 
 
 ### Core Architectural Layers:
 1. **Tauri v2 + Rust Core**: Manages high-performance native process execution, IPC command routing, system tray integration, and SQLite checkpoint state.
-2. **Direct MTProto Engine**: Multithreaded Grammers client communicating directly with Telegram cloud infrastructure without intermediate proxy servers.
+2. **Direct MTProto Engine**: Multithreaded Grammers 0.10 client (crates.io, session-backed `PeerRef` identity with libsql storage) communicating directly with Telegram cloud infrastructure without intermediate proxy servers.
 3. **Bundled MPV Sidecar Engine**: Zero-copy 4K/10-bit HDR video rendering, multi-channel surround audio, embedded subtitle selection, and natural episode playlist auto-play.
 4. **Local Whisper AI Engine**: System-friendly `whisper-cli` background runner generating `.en.srt` subtitles with `BELOW_NORMAL_PRIORITY_CLASS` and 2-thread CPU cap.
 

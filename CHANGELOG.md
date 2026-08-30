@@ -1,5 +1,25 @@
 # Changelog
 
+## [1.2.4]
+
+### Changed
+
+- **MTProto Core: grammers migrated to crates.io 0.10.0**:
+  - The four `grammers-*` dependencies moved from a frozen GitHub rev (Nov 2025) to the published 0.10.0 releases; grammers itself relocated to Codeberg while continuing to publish on crates.io, and Dependabot can now track these crates natively.
+  - Adapters across 13 Rust files for the 0.10 API: module split (`types` → `media`/`peer`/`message`), peer identity now flows as session-backed `PeerRef`, `Client` construction via the sender-pool fat handle, async `SqliteSession::open`, `Document::size()`/`name()` returning Options.
+  - Closes the last two security alerts: hickory-proto 0.25.2 (NSEC3 unbounded-loop HIGH and O(n²) name-compression MEDIUM) are gone — mtsender 0.10 pulls hickory-resolver 0.26.1.
+
+### Fixed
+
+- **"Restoring session..." hang with grammers 0.10 (critical)**:
+  - libsql 0.9.30 asserts `SQLITE_CONFIG_SERIALIZED` can still be set during its global init, but `db.rs` initialized SQLite first in the process, so the config call returned `SQLITE_MISUSE`, the assertion panicked, libsql's internal task died silently and `SqliteSession::open().await` stayed pending forever — session restore hung with no error, even after a clean install and fresh login.
+  - Fix: open a throwaway libsql session at the very start of `run()` so libsql's threading config is applied before every other SQLite user in the process.
+- **Session restore diagnostics**: restore errors and 30-second hangs now surface as visible toasts (previously `console.warn`-only, invisible in installed builds).
+
+### Improved
+
+- **CI/CD**: `publish-release` is skipped for non-tag workflow dispatches so manual builds end green; release workflow actions bumped to Node 24-native majors (checkout v7, setup-node v7, upload-artifact v7, download-artifact v8, github-script v8), removing the per-job Node.js 20 deprecation annotations.
+
 ## [1.2.3]
 
 ### Added
