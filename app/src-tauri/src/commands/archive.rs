@@ -122,12 +122,12 @@ async fn prepare_archive_operation(
     let media = msg.media().ok_or("Message has no media")?;
 
     let filename = match &media {
-        Media::Document(d) => d.name().to_string(),
+        Media::Document(d) => d.name().unwrap_or_default().to_string(),
         _ => "unknown".to_string(),
     };
 
     let file_size = match &media {
-        Media::Document(d) => d.size() as u64,
+        Media::Document(d) => d.size().unwrap_or(0) as u64,
         _ => 0,
     };
 

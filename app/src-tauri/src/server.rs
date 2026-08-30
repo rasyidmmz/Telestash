@@ -542,7 +542,7 @@ async fn handle_stream_media_request(
                                 let mime = mime_type_from_media(&media);
                                 let doc_filename = match &media {
                                     Media::Document(d) => {
-                                        let n = d.name();
+                                        let n = d.name().unwrap_or_default();
                                         if !n.is_empty() {
                                             Some(n.to_string())
                                         } else {

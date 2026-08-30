@@ -500,7 +500,7 @@ pub(crate) async fn validate_split_parts_present(
 
 fn media_size(media: &Media) -> Option<u64> {
     match media {
-        Media::Document(d) => Some(d.size()? as u64),
+        Media::Document(d) => Some(d.size().unwrap_or(0) as u64),
         _ => None,
     }
 }
@@ -1912,7 +1912,7 @@ pub async fn cmd_download_file(
     }
 
     let expected_file_size = match &media {
-        Media::Document(d) => Some(d.size()? as u64),
+        Media::Document(d) => Some(d.size().unwrap_or(0) as u64),
         _ => None,
     };
     let total_size = expected_file_size.unwrap_or(match &media {

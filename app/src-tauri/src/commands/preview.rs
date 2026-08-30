@@ -153,7 +153,7 @@ pub async fn cmd_get_preview(
         if let Some(media) = msg.media() {
             let ext = match &media {
                 Media::Document(d) => {
-                    let mut e = std::path::Path::new(d.name())
+                    let mut e = std::path::Path::new(d.name().unwrap_or_default())
                         .extension()
                         .map(|s| s.to_string_lossy().to_string())
                         .unwrap_or_default();
@@ -194,7 +194,7 @@ pub async fn cmd_get_preview(
                     let _ = tokio::fs::remove_file(&save_path).await;
                 }
                 let size = match &media {
-                    Media::Document(d) => d.size() as u64,
+                    Media::Document(d) => d.size().unwrap_or(0) as u64,
                     Media::Photo(_) => 1024 * 1024,
                     _ => 0,
                 };

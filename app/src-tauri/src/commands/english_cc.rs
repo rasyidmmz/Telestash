@@ -77,7 +77,7 @@ async fn get_video_duration(
     let media = msg.media()?;
     
     let size = match &media {
-        Media::Document(d) => d.size() as u64,
+        Media::Document(d) => d.size().unwrap_or(0) as u64,
         _ => return None,
     };
     
@@ -458,7 +458,7 @@ pub async fn cmd_generate_english_cc(
                     if let Ok(messages) = client.get_messages_by_id(peer, &[message_id]).await {
                         if let Some(msg) = messages.into_iter().flatten().next() {
                             let video_name = match msg.media() {
-                                Some(Media::Document(d)) => d.name().to_string(),
+                                Some(Media::Document(d)) => d.name().unwrap_or_default().to_string(),
                                 _ => format!("{}_{}.mkv", folder_id.unwrap_or(0), message_id),
                             };
                             let stem = std::path::Path::new(&video_name)

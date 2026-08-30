@@ -35,7 +35,7 @@ pub async fn cmd_get_video_metadata(
     let media = msg.media().ok_or_else(|| "No media".to_string())?;
 
     let size = match &media {
-        Media::Document(d) => d.size() as u64,
+        Media::Document(d) => d.size().unwrap_or(0) as u64,
         _ => return Err("Not a document".to_string()),
     };
     let file_name = match &media {
