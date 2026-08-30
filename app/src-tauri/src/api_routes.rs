@@ -701,10 +701,10 @@ async fn api_bulk_files(
                     }
                 }
 
-                if let Err(e) = client.forward_messages(&target_peer, &ids, &source_peer).await {
+                if let Err(e) = client.forward_messages(target_peer, &ids, source_peer).await {
                     return json_error("MOVE_FORWARD_FAILED", &format!("Forward failed: {}", e), 500);
                 }
-                if let Err(e) = delete_message_ids(&client, &source_peer, &ids, "API bulk move source cleanup").await {
+                if let Err(e) = delete_message_ids(&client, source_peer, &ids, "API bulk move source cleanup").await {
                     return json_error("MOVE_DELETE_FAILED", &format!("Delete original failed: {}", e), 500);
                 }
 
@@ -1036,7 +1036,7 @@ async fn api_copy_file(
         }
     }
 
-    match client.forward_messages(&target_peer, &[message_id], &source_peer).await {
+    match client.forward_messages(target_peer, &[message_id], source_peer).await {
         Ok(_) => HttpResponse::Ok().json(serde_json::json!({ "success": true })),
         Err(e) => json_error("COPY_FAILED", &e.to_string(), 500),
     }
@@ -1139,7 +1139,7 @@ async fn api_update_file(
                 }
             }
 
-            if let Err(e) = client.forward_messages(&target_peer, &[message_id], &source_peer).await {
+            if let Err(e) = client.forward_messages(target_peer, &[message_id], source_peer).await {
                 return json_error("MOVE_FORWARD_FAILED", &e.to_string(), 500);
             }
             if let Err(e) = client.delete_messages(source_peer, &[message_id]).await {

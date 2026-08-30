@@ -441,7 +441,7 @@ pub(crate) async fn split_manifest_from_media(
 
 pub(crate) async fn validate_split_parts_present(
     client: &grammers_client::Client,
-    peer: &Peer,
+    peer: PeerRef,
     manifest: &SplitManifest,
     source: &str,
 ) -> Result<(), String> {
@@ -507,7 +507,7 @@ fn media_size(media: &Media) -> Option<u64> {
 
 async fn upload_path_and_send(
     client: &grammers_client::Client,
-    peer: &Peer,
+    peer: PeerRef,
     path: &str,
     upload_name: String,
     caption: String,
@@ -701,7 +701,7 @@ async fn upload_path_and_send(
 
 pub(crate) async fn delete_message_ids(
     client: &grammers_client::Client,
-    peer: &Peer,
+    peer: PeerRef,
     ids: &[i32],
     source: &str,
 ) -> Result<(), String> {
@@ -718,7 +718,7 @@ pub(crate) async fn delete_message_ids(
     Ok(())
 }
 
-async fn cleanup_split_messages(client: &grammers_client::Client, peer: &Peer, ids: &[i32]) {
+async fn cleanup_split_messages(client: &grammers_client::Client, peer: PeerRef, ids: &[i32]) {
     if !ids.is_empty() {
         let _ = delete_message_ids(client, peer, ids, "Split cleanup").await;
     }
@@ -726,8 +726,8 @@ async fn cleanup_split_messages(client: &grammers_client::Client, peer: &Peer, i
 
 pub(crate) async fn forward_message_ids_checked(
     client: &grammers_client::Client,
-    source_peer: &Peer,
-    target_peer: &Peer,
+    source_peer: PeerRef,
+    target_peer: PeerRef,
     ids: &[i32],
     source: &str,
 ) -> Result<Vec<i32>, String> {
@@ -762,8 +762,8 @@ pub(crate) async fn forward_message_ids_checked(
 
 async fn move_split_file(
     client: &grammers_client::Client,
-    source_peer: &Peer,
-    target_peer: &Peer,
+    source_peer: PeerRef,
+    target_peer: PeerRef,
     manifest_message_id: i32,
     manifest: SplitManifest,
     app_handle: &tauri::AppHandle,
@@ -838,7 +838,7 @@ async fn move_split_file(
 
 async fn split_error<T>(
     client: &grammers_client::Client,
-    peer: &Peer,
+    peer: PeerRef,
     uploaded_ids: &[i32],
     err: String,
 ) -> Result<T, String> {
@@ -1118,7 +1118,7 @@ async fn upload_large_file_split(
 
 async fn download_split_file(
     client: &grammers_client::Client,
-    peer: &Peer,
+    peer: PeerRef,
     manifest: SplitManifest,
     save_path: &str,
     tid: &str,
@@ -1794,7 +1794,7 @@ pub async fn cmd_rename_file(
     if let Some(media) = target_msg.media() {
         let input_msg = InputMessage::new().text(new_name).copy_media(&media);
         if client.send_message(peer, input_msg).await.is_ok() {
-            let _ = delete_message_ids(&client, &peer, &[message_id], "Rename forwarded message fallback").await;
+            let _ = delete_message_ids(&client, peer, &[message_id], "Rename forwarded message fallback").await;
             return Ok(true);
         }
     }
@@ -1839,7 +1839,7 @@ pub async fn cmd_delete_file(
         }
     }
 
-    delete_message_ids(&client, &peer, &ids, "Delete").await?;
+    delete_message_ids(&client, peer, &ids, "Delete").await?;
 
     if let Ok(app_dir) = app_handle.path().app_data_dir() {
         let srt_path = app_dir.join("streaming").join("captions").join(format!("{}_{}.en.srt", folder_id.unwrap_or(0), message_id));
@@ -2098,7 +2098,7 @@ pub async fn cmd_move_files(
         let msg = msg.ok_or_else(|| format!("Message {} not found in source folder. Please refresh and try again.", message_id))?;
         if let Some(media) = msg.media() {
             if let Some(manifest) = split_manifest_from_media(&client, &media, msg.text()).await {
-                validate_split_parts_present(&client, &source_peer, &manifest, "Split move preflight").await?;
+                validate_split_parts_present(&client, source_peer, &manifest, "Split move preflight").await?;
                 split_moves.push((*message_id, manifest));
                 continue;
             }
@@ -2109,8 +2109,8 @@ pub async fn cmd_move_files(
     for (manifest_message_id, manifest) in split_moves {
         move_split_file(
             &client,
-            &source_peer,
-            &target_peer,
+            source_peer,
+            target_peer,
             manifest_message_id,
             manifest,
             &app_handle,
@@ -2123,13 +2123,13 @@ pub async fn cmd_move_files(
     if !normal_ids.is_empty() {
         let forwarded_ids = forward_message_ids_checked(
             &client,
-            &source_peer,
-            &target_peer,
+            source_peer,
+            target_peer,
             &normal_ids,
             "Move",
         )
         .await?;
-        if let Err(e) = delete_message_ids(&client, &source_peer, &normal_ids, "Move source cleanup").await {
+        if let Err(e) = delete_message_ids(&client, source_peer, &normal_ids, "Move source cleanup").await {
             record_transfer_log(
                 "Move",
                 "Moved files were forwarded but source delete failed".to_string(),
@@ -2158,7 +2158,7 @@ pub async fn cmd_get_files(
     
     let peer = resolve_peer(&client, folder_id, &state.peer_cache).await?;
 
-    let mut msgs = client.iter_messages(&peer);
+    let mut msgs = client.iter_messages(peer);
     while let Some(msg) = msgs.next().await.map_err(|e| e.to_string())? {
         if let Some(doc) = msg.media() {
             let caption = msg.text();
@@ -2508,17 +2508,16 @@ pub async fn cmd_toggle_folder_visibility(
             access_hash,
         });
 
-        // Extract channel name from the resolved peer for the return value
-        let channel_name = match &peer {
-            Peer::Channel(c) => {
-                c.raw.title
-                    .replace(" [TD]", "")
-                    .replace(" [td]", "")
-                    .trim()
-                    .to_string()
-            }
-            _ => "Folder".to_string(),
-        };
+        // Extract channel name via the session-resolved peer
+        let channel_name = match client.invoke(&tl::functions::channels::GetChannels {
+            id: vec![input_channel.clone()],
+        }).await.map_err(|e| e.to_string())? {
+            tl::enums::messages::Chats::Chats(ch) => ch.chats.first().and_then(|c| match c {
+                tl::enums::Chat::Channel(ch) => Some(ch.title.replace(" [TD]", "").replace(" [td]", "").trim().to_string()),
+                _ => None,
+            }),
+            _ => None,
+        }.unwrap_or_else(|| "Folder".to_string());
 
         if make_public {
             // Generate a username from the desired_username or channel title.
@@ -2693,9 +2692,14 @@ pub async fn cmd_export_folder_invite(
         _ => return Err("Only channels (folders) can have invite links.".to_string()),
     };
 
-    // Check if channel already has a public username (use the resolved peer directly)
-    let username: Option<String> = match &peer {
-        Peer::Channel(c) => c.raw.username.clone(),
+    // Check if channel already has a public username (fetched via the session-resolved peer)
+    let username: Option<String> = match client.invoke(&tl::functions::channels::GetChannels {
+        id: vec![input_channel.clone()],
+    }).await.map_err(|e| e.to_string())? {
+        tl::enums::messages::Chats::Chats(ch) => ch.chats.first().and_then(|c| match c {
+            tl::enums::Chat::Channel(ch) => ch.username,
+            _ => None,
+        }),
         _ => None,
     };
 

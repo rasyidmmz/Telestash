@@ -109,7 +109,7 @@ async fn prepare_archive_operation(
         .map_err(|e| format!("Failed to resolve peer: {}", e))?;
 
     let messages = client
-        .get_messages_by_id(&peer, &[message_id])
+        .get_messages_by_id(peer, &[message_id])
         .await
         .map_err(|e| format!("Failed to fetch message: {}", e))?;
 
