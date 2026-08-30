@@ -41,16 +41,16 @@ export function applyTheme(theme: CustomTheme): void {
   // Build CSS variable overrides
   const p = theme.palette;
   const css = `:root {
-  --color-telegram-bg: ${p.bg};
-  --color-telegram-surface: ${p.surface};
-  --color-telegram-primary: ${p.primary};
-  --color-telegram-secondary: ${p.secondary};
-  --color-telegram-text: ${p.text};
-  --color-telegram-subtext: ${p.subtext};
-  --color-telegram-border: ${p.border};
-  --color-telegram-hover: ${p.hover};
-  --color-telegram-glass-bg: ${theme.isDark ? p.surface : '#ffffff'};
-  --color-telegram-glass-border: ${theme.isDark ? '#ffffff' : '#000000'};
+  --color-stash-bg: ${p.bg};
+  --color-stash-surface: ${p.surface};
+  --color-stash-primary: ${p.primary};
+  --color-stash-secondary: ${p.secondary};
+  --color-stash-text: ${p.text};
+  --color-stash-subtext: ${p.subtext};
+  --color-stash-border: ${p.border};
+  --color-stash-hover: ${p.hover};
+  --color-stash-glass-bg: ${theme.isDark ? p.surface : '#ffffff'};
+  --color-stash-glass-border: ${theme.isDark ? '#ffffff' : '#000000'};
 }`;
 
   // Replace or create the style element

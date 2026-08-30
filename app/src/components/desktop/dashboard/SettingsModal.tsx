@@ -265,7 +265,7 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                         animate={{ opacity: 1, scale: 1, y: 0 }}
                         exit={{ opacity: 0, scale: 0.95, y: 10 }}
                         transition={{ type: 'spring', damping: 25, stiffness: 220 }}
-                        className="bg-telegram-surface border border-telegram-border rounded-xl w-[440px] shadow-2xl overflow-hidden flex flex-col"
+                        className="bg-stash-surface border border-stash-border rounded-xl w-[440px] shadow-2xl overflow-hidden flex flex-col"
                         onClick={e => e.stopPropagation()}
                         role="dialog"
                         aria-modal="true"
@@ -273,12 +273,12 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                         tabIndex={-1}
                     >
                         {/* Header */}
-                        <div className="px-5 py-4 border-b border-telegram-border flex justify-between items-center">
-                            <h2 id="settings-modal-title" className="text-telegram-text font-semibold text-base">{t('settings.title')}</h2>
+                        <div className="px-5 py-4 border-b border-stash-border flex justify-between items-center">
+                            <h2 id="settings-modal-title" className="text-stash-text font-semibold text-base">{t('settings.title')}</h2>
                             <button
                                 ref={closeButtonRef}
                                 onClick={onClose}
-                                className="p-1.5 hover:bg-telegram-hover rounded-lg text-telegram-subtext hover:text-telegram-text transition"
+                                className="p-1.5 hover:bg-stash-hover rounded-lg text-stash-subtext hover:text-stash-text transition"
                                 aria-label="Close settings"
                             >
                                 <X className="w-4 h-4" />
@@ -286,15 +286,15 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                         </div>
 
                         {/* Tab Bar */}
-                        <div className="px-5 pt-3 pb-0 flex gap-1 justify-start overflow-x-auto border-b border-telegram-border scrollbar-none">
+                        <div className="px-5 pt-3 pb-0 flex gap-1 justify-start overflow-x-auto border-b border-stash-border scrollbar-none">
                             {([['general', Globe], ['themes', Palette], ['sharing', Link], ['about', Info]] as const).map(([key, Icon]) => (
                                 <button
                                     key={key}
                                     onClick={() => setActiveTab(key as SettingsTab)}
                                     className={`flex items-center gap-1.5 px-3 py-2 text-xs font-medium rounded-t-lg transition-colors shrink-0 ${
                                         activeTab === key
-                                            ? 'text-telegram-primary border-b-2 border-telegram-primary bg-telegram-primary/5'
-                                            : 'text-telegram-subtext hover:text-telegram-text hover:bg-telegram-hover/50'
+                                            ? 'text-stash-primary border-b-2 border-stash-primary bg-stash-primary/5'
+                                            : 'text-stash-subtext hover:text-stash-text hover:bg-stash-hover/50'
                                     }`}
                                 >
                                     <Icon className="w-3.5 h-3.5" />
@@ -319,33 +319,33 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
 
                             {/* Transfers Section */}
                             <section className="space-y-3">
-                                <h3 className="text-xs font-semibold text-telegram-subtext uppercase tracking-wider flex items-center gap-2">
+                                <h3 className="text-xs font-semibold text-stash-subtext uppercase tracking-wider flex items-center gap-2">
                                     <Upload className="w-3.5 h-3.5" />
                                     {t('settings.transfers')}
                                 </h3>
 
                                 {/* Max Concurrent Uploads */}
-                                <div className="flex items-center justify-between p-3 rounded-lg bg-telegram-hover/50">
+                                <div className="flex items-center justify-between p-3 rounded-lg bg-stash-hover/50">
                                     <div className="flex items-center gap-2">
-                                        <Upload className="w-4 h-4 text-telegram-subtext" />
+                                        <Upload className="w-4 h-4 text-stash-subtext" />
                                         <div>
-                                            <p className="text-sm text-telegram-text font-medium">{t('settings.concurrent_uploads')}</p>
-                                            <p className="text-xs text-telegram-subtext">{t('settings.max_uploads_desc')}</p>
+                                            <p className="text-sm text-stash-text font-medium">{t('settings.concurrent_uploads')}</p>
+                                            <p className="text-xs text-stash-subtext">{t('settings.max_uploads_desc')}</p>
                                         </div>
                                     </div>
                                     <div className="flex items-center gap-2">
                                         <button
                                             onClick={() => updateSetting('maxConcurrentUploads', Math.max(1, settings.maxConcurrentUploads - 1))}
-                                            className="w-7 h-7 flex items-center justify-center rounded-md bg-telegram-bg text-telegram-subtext hover:text-telegram-text hover:bg-telegram-border transition text-sm font-medium"
+                                            className="w-7 h-7 flex items-center justify-center rounded-md bg-stash-bg text-stash-subtext hover:text-stash-text hover:bg-stash-border transition text-sm font-medium"
                                         >
                                             -
                                         </button>
-                                        <span className="text-sm text-telegram-text font-medium w-5 text-center">
+                                        <span className="text-sm text-stash-text font-medium w-5 text-center">
                                             {settings.maxConcurrentUploads}
                                         </span>
                                         <button
                                             onClick={() => updateSetting('maxConcurrentUploads', Math.min(10, settings.maxConcurrentUploads + 1))}
-                                            className="w-7 h-7 flex items-center justify-center rounded-md bg-telegram-bg text-telegram-subtext hover:text-telegram-text hover:bg-telegram-border transition text-sm font-medium"
+                                            className="w-7 h-7 flex items-center justify-center rounded-md bg-stash-bg text-stash-subtext hover:text-stash-text hover:bg-stash-border transition text-sm font-medium"
                                         >
                                             +
                                         </button>
@@ -353,27 +353,27 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                                 </div>
 
                                 {/* Max Concurrent Downloads */}
-                                <div className="flex items-center justify-between p-3 rounded-lg bg-telegram-hover/50">
+                                <div className="flex items-center justify-between p-3 rounded-lg bg-stash-hover/50">
                                     <div className="flex items-center gap-2">
-                                        <Download className="w-4 h-4 text-telegram-subtext" />
+                                        <Download className="w-4 h-4 text-stash-subtext" />
                                         <div>
-                                            <p className="text-sm text-telegram-text font-medium">{t('settings.concurrent_downloads')}</p>
-                                            <p className="text-xs text-telegram-subtext">{t('settings.max_downloads_desc')}</p>
+                                            <p className="text-sm text-stash-text font-medium">{t('settings.concurrent_downloads')}</p>
+                                            <p className="text-xs text-stash-subtext">{t('settings.max_downloads_desc')}</p>
                                         </div>
                                     </div>
                                     <div className="flex items-center gap-2">
                                         <button
                                             onClick={() => updateSetting('maxConcurrentDownloads', Math.max(1, settings.maxConcurrentDownloads - 1))}
-                                            className="w-7 h-7 flex items-center justify-center rounded-md bg-telegram-bg text-telegram-subtext hover:text-telegram-text hover:bg-telegram-border transition text-sm font-medium"
+                                            className="w-7 h-7 flex items-center justify-center rounded-md bg-stash-bg text-stash-subtext hover:text-stash-text hover:bg-stash-border transition text-sm font-medium"
                                         >
                                             -
                                         </button>
-                                        <span className="text-sm text-telegram-text font-medium w-5 text-center">
+                                        <span className="text-sm text-stash-text font-medium w-5 text-center">
                                             {settings.maxConcurrentDownloads}
                                         </span>
                                         <button
                                             onClick={() => updateSetting('maxConcurrentDownloads', Math.min(10, settings.maxConcurrentDownloads + 1))}
-                                            className="w-7 h-7 flex items-center justify-center rounded-md bg-telegram-bg text-telegram-subtext hover:text-telegram-text hover:bg-telegram-border transition text-sm font-medium"
+                                            className="w-7 h-7 flex items-center justify-center rounded-md bg-stash-bg text-stash-subtext hover:text-stash-text hover:bg-stash-border transition text-sm font-medium"
                                         >
                                             +
                                         </button>
@@ -381,29 +381,29 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                                 </div>
 
                                 {/* Hide Folder Groups */}
-                                <div className="flex items-center justify-between p-3 rounded-lg bg-telegram-hover/50">
+                                <div className="flex items-center justify-between p-3 rounded-lg bg-stash-hover/50">
                                     <div className="flex items-center gap-2">
-                                        <Tag className="w-4 h-4 text-telegram-subtext" />
+                                        <Tag className="w-4 h-4 text-stash-subtext" />
                                         <div>
-                                            <p className="text-sm text-telegram-text font-medium">{t('common.hide_groups')}</p>
-                                            <p className="text-xs text-telegram-subtext">{t('common.hide_groups_desc')}</p>
+                                            <p className="text-sm text-stash-text font-medium">{t('common.hide_groups')}</p>
+                                            <p className="text-xs text-stash-subtext">{t('common.hide_groups_desc')}</p>
                                         </div>
                                     </div>
                                     <button
                                         onClick={() => updateSetting('hideGroups', !settings.hideGroups)}
-                                        className={`relative w-11 h-6 rounded-full transition-colors duration-200 ${settings.hideGroups ? 'bg-telegram-primary' : 'bg-telegram-border'}`}
+                                        className={`relative w-11 h-6 rounded-full transition-colors duration-200 ${settings.hideGroups ? 'bg-stash-primary' : 'bg-stash-border'}`}
                                     >
                                         <span className={`absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white shadow transition-transform duration-200 ${settings.hideGroups ? 'translate-x-5' : 'translate-x-0'}`} />
                                     </button>
                                 </div>
 
                                 {/* Windows Autostart */}
-                                <div className="flex items-center justify-between p-3 rounded-lg bg-telegram-hover/50">
+                                <div className="flex items-center justify-between p-3 rounded-lg bg-stash-hover/50">
                                     <div className="flex items-center gap-2">
-                                        <Monitor className="w-4 h-4 text-telegram-subtext" />
+                                        <Monitor className="w-4 h-4 text-stash-subtext" />
                                         <div>
-                                            <p className="text-sm text-telegram-text font-medium">{t('settings.windows_autostart')}</p>
-                                            <p className="text-xs text-telegram-subtext">{t('settings.windows_autostart_desc')}</p>
+                                            <p className="text-sm text-stash-text font-medium">{t('settings.windows_autostart')}</p>
+                                            <p className="text-xs text-stash-subtext">{t('settings.windows_autostart_desc')}</p>
                                         </div>
                                     </div>
                                     <button
@@ -417,7 +417,7 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                                                 toast.error(e.toString());
                                             }
                                         }}
-                                        className={`relative w-11 h-6 rounded-full transition-colors duration-200 ${settings.windowsAutostart ? 'bg-telegram-primary' : 'bg-telegram-border'}`}
+                                        className={`relative w-11 h-6 rounded-full transition-colors duration-200 ${settings.windowsAutostart ? 'bg-stash-primary' : 'bg-stash-border'}`}
                                     >
                                         <span className={`absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white shadow transition-transform duration-200 ${settings.windowsAutostart ? 'translate-x-5' : 'translate-x-0'}`} />
                                     </button>
@@ -426,24 +426,24 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
 
                             {/* Language & Region Section */}
                             <section className="space-y-3">
-                                <h3 className="text-xs font-semibold text-telegram-subtext uppercase tracking-wider flex items-center gap-2">
+                                <h3 className="text-xs font-semibold text-stash-subtext uppercase tracking-wider flex items-center gap-2">
                                     <Languages className="w-3.5 h-3.5" />
                                     {t('settings.language_region')}
                                 </h3>
 
-                                <div className="flex items-center justify-between p-3 rounded-lg bg-telegram-hover/50">
+                                <div className="flex items-center justify-between p-3 rounded-lg bg-stash-hover/50">
                                     <div className="flex items-center gap-2">
-                                        <Globe className="w-4 h-4 text-telegram-subtext" />
+                                        <Globe className="w-4 h-4 text-stash-subtext" />
                                         <div>
-                                            <p className="text-sm text-telegram-text font-medium">{t('settings.app_language')}</p>
-                                            <p className="text-xs text-telegram-subtext">{t('settings.choose_language')}</p>
+                                            <p className="text-sm text-stash-text font-medium">{t('settings.app_language')}</p>
+                                            <p className="text-xs text-stash-subtext">{t('settings.choose_language')}</p>
                                         </div>
                                     </div>
                                     <div className="relative">
                                         <select
                                             value={settings.language}
                                             onChange={e => updateSetting('language', e.target.value as any)}
-                                            className="appearance-none bg-telegram-bg border border-telegram-border rounded-md pl-3 pr-8 py-1.5 text-sm text-telegram-text focus:outline-none focus:border-telegram-primary/50 transition cursor-pointer"
+                                            className="appearance-none bg-stash-bg border border-stash-border rounded-md pl-3 pr-8 py-1.5 text-sm text-stash-text focus:outline-none focus:border-stash-primary/50 transition cursor-pointer"
                                         >
                                             {LANGUAGES.map(lang => (
                                                 <option key={lang.code} value={lang.code}>
@@ -451,25 +451,25 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                                                 </option>
                                             ))}
                                         </select>
-                                        <ChevronDown className="w-4 h-4 text-telegram-subtext absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+                                        <ChevronDown className="w-4 h-4 text-stash-subtext absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
                                     </div>
                                 </div>
                             </section>
 
                             {/* REST API Section */}
                             <section className="space-y-3">
-                                <h3 className="text-xs font-semibold text-telegram-subtext uppercase tracking-wider flex items-center gap-2">
+                                <h3 className="text-xs font-semibold text-stash-subtext uppercase tracking-wider flex items-center gap-2">
                                     <Globe className="w-3.5 h-3.5" />
                                     {t('settings.rest_api')}
                                 </h3>
 
                                 {/* Enable Toggle */}
-                                <div className="flex items-center justify-between p-3 rounded-lg bg-telegram-hover/50">
+                                <div className="flex items-center justify-between p-3 rounded-lg bg-stash-hover/50">
                                     <div className="flex items-center gap-2">
                                         <div className={`w-2 h-2 rounded-full ${apiSettings.running ? 'bg-green-400 shadow-[0_0_6px_rgba(74,222,128,0.5)]' : 'bg-gray-500'}`} />
                                         <div>
-                                            <p className="text-sm text-telegram-text font-medium">{t('settings.enable_api_server')}</p>
-                                            <p className="text-xs text-telegram-subtext">
+                                            <p className="text-sm text-stash-text font-medium">{t('settings.enable_api_server')}</p>
+                                            <p className="text-xs text-stash-subtext">
                                                 {apiSettings.running ? t('settings.api_running', { port: apiSettings.port }) : t('settings.api_stopped')}
                                             </p>
                                         </div>
@@ -477,17 +477,17 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                                     <button
                                         onClick={handleApiToggle}
                                         disabled={apiLoading}
-                                        className={`relative w-11 h-6 rounded-full transition-colors duration-200 ${apiSettings.enabled ? 'bg-telegram-primary' : 'bg-telegram-border'} disabled:opacity-50`}
+                                        className={`relative w-11 h-6 rounded-full transition-colors duration-200 ${apiSettings.enabled ? 'bg-stash-primary' : 'bg-stash-border'} disabled:opacity-50`}
                                     >
                                         <span className={`absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white shadow transition-transform duration-200 ${apiSettings.enabled ? 'translate-x-5' : 'translate-x-0'}`} />
                                     </button>
                                 </div>
 
                                 {/* Port */}
-                                <div className="flex items-center justify-between p-3 rounded-lg bg-telegram-hover/50">
+                                <div className="flex items-center justify-between p-3 rounded-lg bg-stash-hover/50">
                                     <div>
-                                        <p className="text-sm text-telegram-text font-medium">{t('common.port')}</p>
-                                        <p className="text-xs text-telegram-subtext">1024 - 65535</p>
+                                        <p className="text-sm text-stash-text font-medium">{t('common.port')}</p>
+                                        <p className="text-xs text-stash-subtext">1024 - 65535</p>
                                     </div>
                                     <div className="flex items-center gap-2">
                                         <input
@@ -498,26 +498,26 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                                             onChange={e => setApiPort(e.target.value)}
                                             onBlur={handlePortApply}
                                             onKeyDown={e => { if (e.key === 'Enter') handlePortApply(); }}
-                                            className="w-20 bg-telegram-bg border border-telegram-border rounded-md px-2 py-1 text-sm text-telegram-text text-center focus:outline-none focus:border-telegram-primary/50 transition"
+                                            className="w-20 bg-stash-bg border border-stash-border rounded-md px-2 py-1 text-sm text-stash-text text-center focus:outline-none focus:border-stash-primary/50 transition"
                                         />
                                     </div>
                                 </div>
 
                                 {/* API Key */}
-                                <div className="p-3 rounded-lg bg-telegram-hover/50 space-y-2.5">
+                                <div className="p-3 rounded-lg bg-stash-hover/50 space-y-2.5">
                                     <div className="flex items-center justify-between">
                                         <div className="flex items-center gap-2">
-                                            <Key className="w-4 h-4 text-telegram-subtext" />
+                                            <Key className="w-4 h-4 text-stash-subtext" />
                                             <div>
-                                                <p className="text-sm text-telegram-text font-medium">{t('settings.api_key')}</p>
-                                                <p className="text-xs text-telegram-subtext">
+                                                <p className="text-sm text-stash-text font-medium">{t('settings.api_key')}</p>
+                                                <p className="text-xs text-stash-subtext">
                                                     {apiSettings.key_set ? t('settings.api_key_configured') : t('settings.api_key_unset')}
                                                 </p>
                                             </div>
                                         </div>
                                         <button
                                             onClick={handleGenerateKey}
-                                            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-telegram-primary/10 text-telegram-primary hover:bg-telegram-primary/20 transition"
+                                            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-stash-primary/10 text-stash-primary hover:bg-stash-primary/20 transition"
                                         >
                                             <RefreshCw className="w-3 h-3" />
                                             {apiSettings.key_set ? t('settings.regenerate') : t('settings.generate')}
@@ -526,17 +526,17 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
 
                                     {/* One-time key reveal */}
                                     {generatedKey && (
-                                        <div className="mt-2 p-2.5 bg-telegram-bg rounded-lg border border-yellow-500/20">
+                                        <div className="mt-2 p-2.5 bg-stash-bg rounded-lg border border-yellow-500/20">
                                             <p className="text-[10px] text-yellow-400/80 uppercase tracking-wider font-semibold mb-1.5">
                                                 {t('settings.api_copy_alert')}
                                             </p>
                                             <div className="flex items-center gap-2">
-                                                <code className="flex-1 text-xs text-telegram-text font-mono bg-telegram-hover rounded px-2 py-1.5 overflow-x-auto select-all">
+                                                <code className="flex-1 text-xs text-stash-text font-mono bg-stash-hover rounded px-2 py-1.5 overflow-x-auto select-all">
                                                     {generatedKey}
                                                 </code>
                                                 <button
                                                     onClick={handleCopyKey}
-                                                    className="p-1.5 rounded-md hover:bg-telegram-hover text-telegram-subtext hover:text-telegram-text transition flex-shrink-0"
+                                                    className="p-1.5 rounded-md hover:bg-stash-hover text-stash-subtext hover:text-stash-text transition flex-shrink-0"
                                                     title="Copy to clipboard"
                                                 >
                                                     {keyCopied ? <Check className="w-4 h-4 text-green-400" /> : <Copy className="w-4 h-4" />}
@@ -549,17 +549,17 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
 
                             {/* Storage Section */}
                             <section className="space-y-3">
-                                <h3 className="text-xs font-semibold text-telegram-subtext uppercase tracking-wider flex items-center gap-2">
+                                <h3 className="text-xs font-semibold text-stash-subtext uppercase tracking-wider flex items-center gap-2">
                                     <HardDrive className="w-3.5 h-3.5" />
                                     {t('settings.storage')}
                                 </h3>
 
-                                <div className="flex items-center justify-between p-3 rounded-lg bg-telegram-hover/50">
+                                <div className="flex items-center justify-between p-3 rounded-lg bg-stash-hover/50">
                                     <div className="flex items-center gap-2">
-                                        <Trash2 className="w-4 h-4 text-telegram-subtext" />
+                                        <Trash2 className="w-4 h-4 text-stash-subtext" />
                                         <div>
-                                            <p className="text-sm text-telegram-text font-medium">{t('settings.clear_local_cache')}</p>
-                                            <p className="text-xs text-telegram-subtext">{t('settings.clear_local_cache_desc')}</p>
+                                            <p className="text-sm text-stash-text font-medium">{t('settings.clear_local_cache')}</p>
+                                            <p className="text-xs text-stash-subtext">{t('settings.clear_local_cache_desc')}</p>
                                         </div>
                                     </div>
                                     <button
@@ -592,18 +592,18 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
 
                             {/* Updates Section */}
                             <section className="space-y-3">
-                                <h3 className="text-xs font-semibold text-telegram-subtext uppercase tracking-wider flex items-center gap-2">
+                                <h3 className="text-xs font-semibold text-stash-subtext uppercase tracking-wider flex items-center gap-2">
                                     <Sparkles className="w-3.5 h-3.5" />
                                     {t('settings.updates')}
                                 </h3>
 
-                                <div className="p-3 rounded-lg bg-telegram-hover/50 space-y-3">
+                                <div className="p-3 rounded-lg bg-stash-hover/50 space-y-3">
                                     <div className="flex items-center justify-between">
                                         <div className="flex items-center gap-2">
-                                            <Download className="w-4 h-4 text-telegram-subtext" />
+                                            <Download className="w-4 h-4 text-stash-subtext" />
                                             <div>
-                                                <p className="text-sm text-telegram-text font-medium">{t('settings.check_for_updates')}</p>
-                                                <p className="text-xs text-telegram-subtext">
+                                                <p className="text-sm text-stash-text font-medium">{t('settings.check_for_updates')}</p>
+                                                <p className="text-xs text-stash-subtext">
                                                     {updateVersion ? t('settings.update_available', { version: updateVersion }) : t('settings.check_updates_desc')}
                                                 </p>
                                             </div>
@@ -611,15 +611,15 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                                         {updateAvailable && !updateDownloading && !updateInstalling && !updateRestarting ? (
                                             <button
                                                 onClick={handleInstallUpdate}
-                                                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-telegram-primary text-white hover:bg-telegram-primary/90 transition"
+                                                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-stash-primary text-white hover:bg-stash-primary/90 transition"
                                             >
                                                 <Download className="w-3 h-3" />
                                                 {t('settings.update_restart')}
                                             </button>
                                         ) : updateDownloading || updateInstalling || updateRestarting ? (
                                             <div className="flex items-center gap-2">
-                                                <RefreshCw className="w-3.5 h-3.5 text-telegram-primary animate-spin" />
-                                                <span className="text-xs text-telegram-primary font-mono">
+                                                <RefreshCw className="w-3.5 h-3.5 text-stash-primary animate-spin" />
+                                                <span className="text-xs text-stash-primary font-mono">
                                                     {updateRestarting ? 'restart' : updateInstalling ? 'install' : `${updateProgress}%`}
                                                 </span>
                                             </div>
@@ -627,7 +627,7 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                                             <button
                                                 onClick={handleCheckForUpdates}
                                                 disabled={updateChecking}
-                                                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-telegram-primary/10 text-telegram-primary hover:bg-telegram-primary/20 transition disabled:opacity-50"
+                                                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-stash-primary/10 text-stash-primary hover:bg-stash-primary/20 transition disabled:opacity-50"
                                             >
                                                 <RefreshCw className={`w-3 h-3 ${updateChecking ? 'animate-spin' : ''}`} />
                                                 {updateChecking ? t('settings.checking') : t('settings.check_now')}
@@ -635,9 +635,9 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                                         )}
                                     </div>
                                     {(updateDownloading || updateInstalling || updateRestarting) && (
-                                        <div className="w-full h-1.5 bg-telegram-border rounded-full overflow-hidden">
+                                        <div className="w-full h-1.5 bg-stash-border rounded-full overflow-hidden">
                                             <div
-                                                className="h-full bg-telegram-primary rounded-full transition-all duration-300"
+                                                className="h-full bg-stash-primary rounded-full transition-all duration-300"
                                                 style={{ width: `${updateProgress}%` }}
                                             />
                                         </div>
@@ -661,55 +661,55 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                                         className="space-y-4 w-full"
                                     >
                                         <div className="flex items-center justify-between">
-                                            <h3 className="text-xs font-semibold text-telegram-subtext uppercase tracking-wider flex items-center gap-2">
-                                                <Link className="w-3.5 h-3.5 text-telegram-primary" />
+                                            <h3 className="text-xs font-semibold text-stash-subtext uppercase tracking-wider flex items-center gap-2">
+                                                <Link className="w-3.5 h-3.5 text-stash-primary" />
                                                 {t('settings.shared_links', { count: shares.length })}
                                             </h3>
                                             <button 
                                                 onClick={fetchShares} 
-                                                className="text-telegram-subtext hover:text-telegram-text p-1 rounded hover:bg-telegram-hover transition"
+                                                className="text-stash-subtext hover:text-stash-text p-1 rounded hover:bg-stash-hover transition"
                                                 title={t('settings.refresh_links')}
                                             >
                                                 <RefreshCw className={`w-3.5 h-3.5 ${refreshing ? 'animate-spin' : ''}`} />
                                             </button>
                                         </div>
 
-                                        <div className="bg-telegram-hover/30 border border-telegram-border/50 rounded-lg p-3 space-y-2">
-                                            <div className="text-[11px] font-semibold text-telegram-text flex items-center gap-1">🌐 {t('settings.ip_override')}</div>
+                                        <div className="bg-stash-hover/30 border border-stash-border/50 rounded-lg p-3 space-y-2">
+                                            <div className="text-[11px] font-semibold text-stash-text flex items-center gap-1">🌐 {t('settings.ip_override')}</div>
                                             <input
                                                 type="text"
                                                 placeholder="e.g. 100.115.22.45 or my-pc:14201"
                                                 value={globalDomain}
                                                 onChange={(e) => setGlobalDomain(e.target.value)}
-                                                className="w-full bg-telegram-surface border border-telegram-border rounded-md px-2.5 py-1.5 text-xs text-telegram-text focus:outline-none focus:border-telegram-primary/50 placeholder:text-telegram-subtext/40"
+                                                className="w-full bg-stash-surface border border-stash-border rounded-md px-2.5 py-1.5 text-xs text-stash-text focus:outline-none focus:border-stash-primary/50 placeholder:text-stash-subtext/40"
                                             />
-                                            <p className="text-[10px] text-telegram-subtext">
+                                            <p className="text-[10px] text-stash-subtext">
                                                 {t('settings.ip_override_desc')}
                                             </p>
                                         </div>
 
                                         {shares.length === 0 ? (
                                             <div className="py-8 text-center space-y-2">
-                                                <Link className="w-8 h-8 text-telegram-subtext/40 mx-auto" />
-                                                <p className="text-sm font-medium text-telegram-text">{t('settings.no_active_links')}</p>
-                                                <p className="text-xs text-telegram-subtext">{t('settings.no_active_links_desc')}</p>
+                                                <Link className="w-8 h-8 text-stash-subtext/40 mx-auto" />
+                                                <p className="text-sm font-medium text-stash-text">{t('settings.no_active_links')}</p>
+                                                <p className="text-xs text-stash-subtext">{t('settings.no_active_links_desc')}</p>
                                             </div>
                                         ) : (
                                             <div className="space-y-2 max-h-[300px] overflow-y-auto pr-1 custom-scrollbar">
                                                 {shares.map((share) => {
                                                     const isExpired = share.expires_at ? (share.expires_at < Math.floor(Date.now() / 1000)) : false;
                                                     return (
-                                                        <div key={share.id} className="p-3 rounded-lg bg-telegram-hover/40 border border-telegram-border/50 flex flex-col gap-2 relative">
+                                                        <div key={share.id} className="p-3 rounded-lg bg-stash-hover/40 border border-stash-border/50 flex flex-col gap-2 relative">
                                                               <div className="flex justify-between items-start gap-4">
                                                                 <div className="min-w-0 flex-1">
-                                                                    <div className="text-xs font-semibold text-telegram-text truncate" title={share.file_name}>
+                                                                    <div className="text-xs font-semibold text-stash-text truncate" title={share.file_name}>
                                                                         {share.file_name}
                                                                     </div>
                                                                     <div className="flex gap-2 items-center mt-1 flex-wrap text-[10px]">
-                                                                        <span className="text-telegram-subtext">
+                                                                        <span className="text-stash-subtext">
                                                                             {new Date(share.created_at * 1000).toLocaleDateString()}
                                                                         </span>
-                                                                        <span className="w-1 h-1 rounded-full bg-telegram-border" />
+                                                                        <span className="w-1 h-1 rounded-full bg-stash-border" />
                                                                         {share.has_password ? (
                                                                             <span className="text-emerald-400 bg-emerald-500/10 px-1.5 py-0.5 rounded flex items-center gap-0.5 font-medium">
                                                                                 <Key className="w-2.5 h-2.5" /> {t('settings.protected')}
@@ -717,7 +717,7 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                                                                         ) : (
                                                                             <span className="text-blue-400 bg-blue-500/10 px-1.5 py-0.5 rounded font-medium">{t('settings.public')}</span>
                                                                         )}
-                                                                        <span className="w-1 h-1 rounded-full bg-telegram-border" />
+                                                                        <span className="w-1 h-1 rounded-full bg-stash-border" />
                                                                         {share.expires_at ? (
                                                                             isExpired ? (
                                                                                 <span className="text-red-400 bg-red-500/10 px-1.5 py-0.5 rounded font-medium">{t('settings.expired')}</span>
@@ -735,7 +735,7 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                                                                 <div className="flex gap-1">
                                                                     <button
                                                                         onClick={() => handleCopyShare(share.id)}
-                                                                        className={`p-1.5 rounded bg-telegram-surface border border-telegram-border text-telegram-text hover:bg-telegram-hover transition ${
+                                                                        className={`p-1.5 rounded bg-stash-surface border border-stash-border text-stash-text hover:bg-stash-hover transition ${
                                                                             copiedId === share.id ? 'text-emerald-400 border-emerald-500/30 bg-emerald-500/5' : ''
                                                                         }`}
                                                                         title={t('settings.copy_share_link')}
@@ -744,7 +744,7 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                                                                     </button>
                                                                     <button
                                                                         onClick={() => handleRevokeShare(share.id)}
-                                                                        className="p-1.5 rounded bg-telegram-surface border border-telegram-border text-red-400 hover:bg-red-500/10 hover:border-red-500/30 transition"
+                                                                        className="p-1.5 rounded bg-stash-surface border border-stash-border text-red-400 hover:bg-red-500/10 hover:border-red-500/30 transition"
                                                                         title={t('settings.revoke_link')}
                                                                     >
                                                                         <Trash2 className="w-3.5 h-3.5" />
@@ -776,13 +776,13 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                                             
                                             {/* App Name & Version */}
                                             <div className="text-center">
-                                                <h3 className="text-base font-bold text-telegram-text">TeleStash</h3>
-                                                <p className="text-xs text-telegram-primary font-medium mt-0.5">Personal Cinema Cloud & High-Speed Media Vault</p>
-                                                <p className="text-xs text-telegram-subtext mt-0.5">v{appVersion}</p>
+                                                <h3 className="text-base font-bold text-stash-text">TeleStash</h3>
+                                                <p className="text-xs text-stash-primary font-medium mt-0.5">Personal Cinema Cloud & High-Speed Media Vault</p>
+                                                <p className="text-xs text-stash-subtext mt-0.5">v{appVersion}</p>
                                             </div>
 
                                             {/* Divider */}
-                                            <div className="w-12 h-px bg-telegram-border" />
+                                            <div className="w-12 h-px bg-stash-border" />
 
                                             {/* Diagnostics */}
                                             <button
@@ -799,7 +799,7 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                                                     }
                                                 }}
                                                 disabled={diagLoading}
-                                                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-telegram-hover border border-telegram-border text-telegram-subtext hover:text-telegram-text hover:bg-telegram-border/30 transition disabled:opacity-50"
+                                                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-stash-hover border border-stash-border text-stash-subtext hover:text-stash-text hover:bg-stash-border/30 transition disabled:opacity-50"
                                             >
                                                 {diagLoading ? (
                                                     <Loader2 className="w-3 h-3 animate-spin" />
@@ -812,13 +812,13 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                                             {/* Creator Info */}
                                             <div className="text-center space-y-3">
                                                 <div>
-                                                    <p className="text-sm font-semibold text-telegram-text">Cameron Amer</p>
+                                                    <p className="text-sm font-semibold text-stash-text">Cameron Amer</p>
                                                 </div>
 
                                                 {/* Website Link */}
                                                 <button
                                                     onClick={(e) => { e.preventDefault(); open('https://www.cameronamer.com'); }}
-                                                    className="flex items-center justify-center gap-1.5 text-xs text-telegram-primary hover:text-telegram-primary/80 transition-colors cursor-pointer"
+                                                    className="flex items-center justify-center gap-1.5 text-xs text-stash-primary hover:text-stash-primary/80 transition-colors cursor-pointer"
                                                 >
                                                     <Globe className="w-3.5 h-3.5" />
                                                     www.cameronamer.com
@@ -827,7 +827,7 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                                                 {/* GitHub Link */}
                                                 <button
                                                     onClick={(e) => { e.preventDefault(); open('https://github.com/rasyidmmz/Telestash'); }}
-                                                    className="flex items-center justify-center gap-1.5 text-xs text-telegram-primary hover:text-telegram-primary/80 transition-colors cursor-pointer"
+                                                    className="flex items-center justify-center gap-1.5 text-xs text-stash-primary hover:text-stash-primary/80 transition-colors cursor-pointer"
                                                 >
                                                     <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="currentColor">
                                                         <path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/>
@@ -837,7 +837,7 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                                             </div>
 
                                             {/* Tagline */}
-                                            <p className="text-[11px] text-telegram-subtext/60 leading-relaxed max-w-[280px] text-center">
+                                            <p className="text-[11px] text-stash-subtext/60 leading-relaxed max-w-[280px] text-center">
                                                 {t('settings.tagline')}
                                             </p>
                                         </div>
@@ -847,17 +847,17 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                         </motion.div>
 
                         {/* Footer */}
-                        <div className="px-5 py-3 border-t border-telegram-border flex items-center justify-between">
+                        <div className="px-5 py-3 border-t border-stash-border flex items-center justify-between">
                             <button
                                 onClick={resetSettings}
-                                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs text-telegram-subtext hover:text-red-400 hover:bg-red-500/10 transition font-medium"
+                                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs text-stash-subtext hover:text-red-400 hover:bg-red-500/10 transition font-medium"
                             >
                                 <RotateCcw className="w-3.5 h-3.5" />
                                 {t('settings.reset_defaults')}
                             </button>
                             <button
                                 onClick={onClose}
-                                className="px-4 py-1.5 rounded-lg text-xs font-medium bg-telegram-primary text-white hover:bg-telegram-primary/90 transition"
+                                className="px-4 py-1.5 rounded-lg text-xs font-medium bg-stash-primary text-white hover:bg-stash-primary/90 transition"
                             >
                                 {t('settings.done')}
                             </button>
@@ -966,7 +966,7 @@ function ThemesTab() {
         >
             {/* Presets */}
             <div className="space-y-2">
-                <h3 className="text-xs font-semibold text-telegram-subtext uppercase tracking-wider flex items-center gap-2">
+                <h3 className="text-xs font-semibold text-stash-subtext uppercase tracking-wider flex items-center gap-2">
                     <Palette className="w-3.5 h-3.5" />
                     {t('settings.presets')}
                 </h3>
@@ -977,8 +977,8 @@ function ThemesTab() {
                             onClick={() => handleSelectTheme(theme)}
                             className={`relative rounded-lg p-0.5 transition-all duration-200 ${
                                 activeCustomThemeId === theme.id
-                                    ? 'ring-2 ring-telegram-primary ring-offset-1 ring-offset-telegram-surface'
-                                    : 'hover:ring-1 hover:ring-telegram-subtext/30'
+                                    ? 'ring-2 ring-stash-primary ring-offset-1 ring-offset-stash-surface'
+                                    : 'hover:ring-1 hover:ring-stash-subtext/30'
                             }`}
                             title={theme.name}
                         >
@@ -988,11 +988,11 @@ function ThemesTab() {
                                 <div className="flex-1" style={{ background: theme.palette.surface }} />
                                 <div className="flex-1" style={{ background: theme.palette.primary }} />
                             </div>
-                            <p className="text-[10px] text-telegram-subtext mt-1 truncate text-center">
+                            <p className="text-[10px] text-stash-subtext mt-1 truncate text-center">
                                 {theme.name}
                             </p>
                             {activeCustomThemeId === theme.id && (
-                                <div className="absolute -top-1 -right-1 w-4 h-4 bg-telegram-primary rounded-full flex items-center justify-center">
+                                <div className="absolute -top-1 -right-1 w-4 h-4 bg-stash-primary rounded-full flex items-center justify-center">
                                     <Check className="w-2.5 h-2.5 text-white" />
                                 </div>
                             )}
@@ -1003,7 +1003,7 @@ function ThemesTab() {
 
             {/* Custom Themes */}
             <div className="space-y-2">
-                <h3 className="text-xs font-semibold text-telegram-subtext uppercase tracking-wider flex items-center gap-2">
+                <h3 className="text-xs font-semibold text-stash-subtext uppercase tracking-wider flex items-center gap-2">
                     <Sparkles className="w-3.5 h-3.5" />
                     {t('settings.custom_themes')}
                 </h3>
@@ -1016,8 +1016,8 @@ function ThemesTab() {
                                 onClick={() => handleSelectTheme(theme)}
                                 className={`relative rounded-lg p-0.5 transition-all duration-200 ${
                                     activeCustomThemeId === theme.id
-                                        ? 'ring-2 ring-telegram-primary ring-offset-1 ring-offset-telegram-surface'
-                                        : 'hover:ring-1 hover:ring-telegram-subtext/30'
+                                        ? 'ring-2 ring-stash-primary ring-offset-1 ring-offset-stash-surface'
+                                        : 'hover:ring-1 hover:ring-stash-subtext/30'
                                 }`}
                                 title={theme.name}
                             >
@@ -1026,11 +1026,11 @@ function ThemesTab() {
                                     <div className="flex-1" style={{ background: theme.palette.surface }} />
                                     <div className="flex-1" style={{ background: theme.palette.primary }} />
                                 </div>
-                                <p className="text-[10px] text-telegram-subtext mt-1 truncate text-center">
+                                <p className="text-[10px] text-stash-subtext mt-1 truncate text-center">
                                     {theme.name}
                                 </p>
                                 {activeCustomThemeId === theme.id && (
-                                    <div className="absolute -top-1 -right-1 w-4 h-4 bg-telegram-primary rounded-full flex items-center justify-center">
+                                    <div className="absolute -top-1 -right-1 w-4 h-4 bg-stash-primary rounded-full flex items-center justify-center">
                                         <Check className="w-2.5 h-2.5 text-white" />
                                     </div>
                                 )}
@@ -1041,7 +1041,7 @@ function ThemesTab() {
 
                 <button
                     onClick={handleCreateTheme}
-                    className="w-full flex items-center justify-center gap-2 px-3 py-2.5 rounded-lg border border-dashed border-telegram-border text-telegram-subtext hover:text-telegram-primary hover:border-telegram-primary/50 transition-colors text-xs"
+                    className="w-full flex items-center justify-center gap-2 px-3 py-2.5 rounded-lg border border-dashed border-stash-border text-stash-subtext hover:text-stash-primary hover:border-stash-primary/50 transition-colors text-xs"
                 >
                     <Plus className="w-3.5 h-3.5" />
                     {t('settings.create_theme')}
@@ -1050,33 +1050,33 @@ function ThemesTab() {
 
             {/* Editor (shown when a custom theme is selected) */}
             {editingTheme && !editingTheme.isBuiltin && (
-                <div className="space-y-3 p-3 rounded-lg bg-telegram-hover/30 border border-telegram-border/50">
-                    <h3 className="text-xs font-semibold text-telegram-subtext uppercase tracking-wider">
+                <div className="space-y-3 p-3 rounded-lg bg-stash-hover/30 border border-stash-border/50">
+                    <h3 className="text-xs font-semibold text-stash-subtext uppercase tracking-wider">
                         {t('settings.edit_theme')}
                     </h3>
 
                     {/* Theme Name */}
                     <div className="flex items-center gap-2">
-                        <label className="text-xs text-telegram-subtext w-16 shrink-0">{t('settings.theme_name')}</label>
+                        <label className="text-xs text-stash-subtext w-16 shrink-0">{t('settings.theme_name')}</label>
                         <input
                             type="text"
                             value={editingTheme.name}
                             onChange={e => handleNameChange(e.target.value)}
-                            className="flex-1 px-2 py-1.5 rounded-md text-xs bg-telegram-surface border border-telegram-border text-telegram-text focus:border-telegram-primary outline-none transition"
+                            className="flex-1 px-2 py-1.5 rounded-md text-xs bg-stash-surface border border-stash-border text-stash-text focus:border-stash-primary outline-none transition"
                             maxLength={32}
                         />
                     </div>
 
                     {/* Base Mode Toggle */}
                     <div className="flex items-center gap-2">
-                        <label className="text-xs text-telegram-subtext w-16 shrink-0">{t('settings.base_mode')}</label>
+                        <label className="text-xs text-stash-subtext w-16 shrink-0">{t('settings.base_mode')}</label>
                         <div className="flex gap-1">
                             <button
                                 onClick={() => handleBaseToggle(true)}
                                 className={`px-3 py-1 rounded-md text-xs font-medium transition ${
                                     editingTheme.isDark
-                                        ? 'bg-telegram-primary text-white'
-                                        : 'bg-telegram-hover text-telegram-subtext hover:text-telegram-text'
+                                        ? 'bg-stash-primary text-white'
+                                        : 'bg-stash-hover text-stash-subtext hover:text-stash-text'
                                 }`}
                             >
                                 Dark
@@ -1085,8 +1085,8 @@ function ThemesTab() {
                                 onClick={() => handleBaseToggle(false)}
                                 className={`px-3 py-1 rounded-md text-xs font-medium transition ${
                                     !editingTheme.isDark
-                                        ? 'bg-telegram-primary text-white'
-                                        : 'bg-telegram-hover text-telegram-subtext hover:text-telegram-text'
+                                        ? 'bg-stash-primary text-white'
+                                        : 'bg-stash-hover text-stash-subtext hover:text-stash-text'
                                 }`}
                             >
                                 Light
@@ -1098,19 +1098,19 @@ function ThemesTab() {
                     <div className="space-y-2">
                         {PALETTE_KEYS.map(({ key, labelKey }) => (
                             <div key={key} className="flex items-center gap-2">
-                                <label className="text-xs text-telegram-subtext w-16 shrink-0">{t(labelKey)}</label>
+                                <label className="text-xs text-stash-subtext w-16 shrink-0">{t(labelKey)}</label>
                                 <div className="flex items-center gap-1.5 flex-1">
                                     <input
                                         type="color"
                                         value={editingTheme.palette[key].startsWith('rgba') ? '#888888' : editingTheme.palette[key]}
                                         onChange={e => handlePaletteChange(key, e.target.value)}
-                                        className="w-7 h-7 rounded-md border border-telegram-border cursor-pointer p-0.5 bg-transparent"
+                                        className="w-7 h-7 rounded-md border border-stash-border cursor-pointer p-0.5 bg-transparent"
                                     />
                                     <input
                                         type="text"
                                         value={editingTheme.palette[key]}
                                         onChange={e => handlePaletteChange(key, e.target.value)}
-                                        className="flex-1 px-2 py-1 rounded-md text-xs bg-telegram-surface border border-telegram-border text-telegram-text focus:border-telegram-primary outline-none transition font-mono"
+                                        className="flex-1 px-2 py-1 rounded-md text-xs bg-stash-surface border border-stash-border text-stash-text focus:border-stash-primary outline-none transition font-mono"
                                         maxLength={30}
                                     />
                                 </div>
@@ -1136,7 +1136,7 @@ function ThemesTab() {
                         setActiveCustomTheme(null);
                         setEditingId(null);
                     }}
-                    className="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-lg text-xs font-medium text-telegram-subtext hover:text-telegram-text bg-telegram-hover/50 hover:bg-telegram-hover transition"
+                    className="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-lg text-xs font-medium text-stash-subtext hover:text-stash-text bg-stash-hover/50 hover:bg-stash-hover transition"
                 >
                     <RotateCcw className="w-3.5 h-3.5" />
                     {t('settings.reset_default')}

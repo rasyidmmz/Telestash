@@ -72,7 +72,7 @@ export function WatchLogsModal({ onClose }: WatchLogsModalProps) {
                             <Film className="w-5 h-5" />
                         </div>
                         <div>
-                            <h2 className="text-base font-mono font-bold text-telegram-text flex items-center gap-2">
+                            <h2 className="text-base font-mono font-bold text-stash-text flex items-center gap-2">
                                 Watch History Logs
                                 <span className="text-[10px] px-2 py-0.5 rounded bg-cyan-950 border border-cyan-500/30 text-cyan-400">
                                     {filteredLogs.length} Events

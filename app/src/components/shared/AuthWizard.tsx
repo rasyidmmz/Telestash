@@ -302,7 +302,7 @@ export function AuthWizard({ onLogin }: { onLogin: () => void }) {
                                 <p className="text-sm text-gray-400">Please wait before trying again.</p>
                             </div>
 
-                            <div className="text-5xl font-mono items-center justify-center flex text-blue-400 font-bold">
+                            <div className="text-5xl font-mono items-center justify-center flex text-amber-300 font-bold">
                                 {Math.floor(floodWait / 60)}:{(floodWait % 60).toString().padStart(2, '0')}
                             </div>
 
@@ -333,7 +333,7 @@ export function AuthWizard({ onLogin }: { onLogin: () => void }) {
                                                     value={apiId}
                                                     onChange={(e) => setApiId(e.target.value)}
                                                     placeholder="12345678"
-                                                    className="w-full glass-input rounded-xl pl-12 pr-4 py-3.5 text-white placeholder-gray-600 focus:outline-none focus:border-blue-500 transition-all font-mono text-sm"
+                                                    className="w-full glass-input rounded-xl pl-12 pr-4 py-3.5 text-white placeholder-gray-600 focus:outline-none focus:border-amber-500/70 transition-all font-mono text-sm"
                                                 />
                                             </div>
                                         </div>
@@ -346,7 +346,7 @@ export function AuthWizard({ onLogin }: { onLogin: () => void }) {
                                                     value={apiHash}
                                                     onChange={(e) => setApiHash(e.target.value)}
                                                     placeholder="abcdef123456..."
-                                                    className="w-full glass-input rounded-xl pl-12 pr-4 py-3.5 text-white placeholder-gray-600 focus:outline-none focus:border-blue-500 transition-all font-mono text-sm"
+                                                    className="w-full glass-input rounded-xl pl-12 pr-4 py-3.5 text-white placeholder-gray-600 focus:outline-none focus:border-amber-500/70 transition-all font-mono text-sm"
                                                 />
                                             </div>
                                         </div>
@@ -354,7 +354,7 @@ export function AuthWizard({ onLogin }: { onLogin: () => void }) {
 
                                     <button
                                         type="submit"
-                                        className="w-full bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-500 hover:to-blue-400 text-white font-bold py-4 rounded-xl flex items-center justify-center gap-2 transition-all shadow-lg shadow-blue-900/20 active:scale-[0.98]"
+                                        className="w-full bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-300 hover:to-amber-400 text-[#171204] font-bold py-4 rounded-xl flex items-center justify-center gap-2 transition-all shadow-lg shadow-amber-950/30 active:scale-[0.98]"
                                     >
                                         Configure <Settings className="w-4 h-4" />
                                     </button>
@@ -362,7 +362,7 @@ export function AuthWizard({ onLogin }: { onLogin: () => void }) {
                                     <button
                                         type="button"
                                         onClick={() => setShowHelp(true)}
-                                        className="w-full text-xs text-blue-300 hover:text-white transition-colors flex items-center justify-center gap-1.5 py-1"
+                                        className="w-full text-xs text-amber-200/80 hover:text-white transition-colors flex items-center justify-center gap-1.5 py-1"
                                     >
                                         <HelpCircle className="w-3 h-3" />
                                         How do I get my API credentials?
@@ -425,7 +425,7 @@ export function AuthWizard({ onLogin }: { onLogin: () => void }) {
                                                         value={phone}
                                                         onChange={(e) => setPhone(e.target.value)}
                                                         placeholder="+1 234 567 8900"
-                                                        className="w-full glass-input rounded-xl pl-12 pr-4 py-4 text-white placeholder-gray-600 focus:outline-none focus:border-blue-500 transition-all text-lg tracking-wide"
+                                                        className="w-full glass-input rounded-xl pl-12 pr-4 py-4 text-white placeholder-gray-600 focus:outline-none focus:border-amber-500/70 transition-all text-lg tracking-wide"
                                                     />
                                                 </div>
                                             </div>
@@ -447,7 +447,7 @@ export function AuthWizard({ onLogin }: { onLogin: () => void }) {
                                         <div className="flex flex-col items-center gap-5">
                                             {loading && !qrUrl && (
                                                 <div className="w-52 h-52 rounded-2xl bg-white/5 flex items-center justify-center">
-                                                    <div className="w-8 h-8 border-2 border-blue-400 border-t-transparent rounded-full animate-spin" />
+                                                    <div className="w-8 h-8 border-2 border-amber-300 border-t-transparent rounded-full animate-spin" />
                                                 </div>
                                             )}
                                             {qrUrl && (
@@ -467,7 +467,7 @@ export function AuthWizard({ onLogin }: { onLogin: () => void }) {
                                                     </div>
                                                     {qrPolling && (
                                                         <div className="flex items-center gap-2 text-xs text-blue-300">
-                                                            <div className="w-3 h-3 border-2 border-blue-400 border-t-transparent rounded-full animate-spin" />
+                                                            <div className="w-3 h-3 border-2 border-amber-300 border-t-transparent rounded-full animate-spin" />
                                                             Waiting for scan...
                                                         </div>
                                                     )}
@@ -507,7 +507,7 @@ export function AuthWizard({ onLogin }: { onLogin: () => void }) {
                                                 value={code}
                                                 onChange={(e) => setCode(e.target.value)}
                                                 placeholder="1 2 3 4 5"
-                                                className="w-full glass-input rounded-xl pl-12 pr-4 py-4 text-white placeholder-gray-600 focus:outline-none focus:border-blue-500 transition-all text-2xl tracking-[0.5em] font-mono text-center"
+                                                className="w-full glass-input rounded-xl pl-12 pr-4 py-4 text-white placeholder-gray-600 focus:outline-none focus:border-amber-500/70 transition-all text-2xl tracking-[0.5em] font-mono text-center"
                                             />
                                         </div>
                                     </div>
@@ -552,7 +552,7 @@ export function AuthWizard({ onLogin }: { onLogin: () => void }) {
                                                 value={password}
                                                 onChange={(e) => setPassword(e.target.value)}
                                                 placeholder="Enter your password"
-                                                className="w-full glass-input rounded-xl pl-12 pr-4 py-4 text-white placeholder-gray-600 focus:outline-none focus:border-blue-500 transition-all text-lg"
+                                                className="w-full glass-input rounded-xl pl-12 pr-4 py-4 text-white placeholder-gray-600 focus:outline-none focus:border-amber-500/70 transition-all text-lg"
                                                 autoFocus
                                             />
                                         </div>
@@ -590,7 +590,7 @@ export function AuthWizard({ onLogin }: { onLogin: () => void }) {
                 <div className="mt-8 pt-4 border-t border-white/5 text-center">
                     <button
                         onClick={() => setShowDonate(true)}
-                        className="text-xs text-telegram-subtext hover:text-telegram-text transition-colors flex items-center justify-center gap-1.5 mx-auto"
+                        className="text-xs text-stash-subtext hover:text-stash-text transition-colors flex items-center justify-center gap-1.5 mx-auto"
                     >
                         <Heart className="w-3.5 h-3.5 text-red-500/80" />
                         Donate
@@ -612,55 +612,55 @@ export function AuthWizard({ onLogin }: { onLogin: () => void }) {
                             initial={{ scale: 0.95, opacity: 0 }}
                             animate={{ scale: 1, opacity: 1 }}
                             exit={{ scale: 0.95, opacity: 0 }}
-                            className="glass bg-telegram-surface border border-telegram-border rounded-2xl p-6 max-w-lg w-full max-h-[80vh] overflow-y-auto shadow-2xl"
+                            className="glass bg-stash-surface border border-stash-border rounded-2xl p-6 max-w-lg w-full max-h-[80vh] overflow-y-auto shadow-2xl"
                             onClick={(e) => e.stopPropagation()}
                         >
                             <div className="flex items-center justify-between mb-6">
-                                <h2 className="text-xl font-bold text-telegram-text">Getting Started</h2>
-                                <button onClick={() => setShowHelp(false)} className="p-2 hover:bg-telegram-hover rounded-lg transition-colors">
-                                    <X className="w-5 h-5 text-telegram-subtext" />
+                                <h2 className="text-xl font-bold text-stash-text">Getting Started</h2>
+                                <button onClick={() => setShowHelp(false)} className="p-2 hover:bg-stash-hover rounded-lg transition-colors">
+                                    <X className="w-5 h-5 text-stash-subtext" />
                                 </button>
                             </div>
 
-                            <div className="space-y-6 text-telegram-text">
-                                <div className="p-4 bg-telegram-primary/10 border border-telegram-primary/20 rounded-xl">
-                                    <p className="text-sm text-telegram-subtext">
-                                        <strong className="text-telegram-primary">TeleStash</strong> uses your Telegram account as secure cloud storage. You'll need a Telegram account and API credentials to get started.
+                            <div className="space-y-6 text-stash-text">
+                                <div className="p-4 bg-stash-primary/10 border border-stash-primary/20 rounded-xl">
+                                    <p className="text-sm text-stash-subtext">
+                                        <strong className="text-stash-primary">TeleStash</strong> uses your Telegram account as secure cloud storage. You'll need a Telegram account and API credentials to get started.
                                     </p>
                                 </div>
 
                                 <div className="space-y-4">
                                     <h3 className="font-semibold flex items-center gap-2">
-                                        <span className="w-6 h-6 bg-telegram-primary text-white text-xs font-bold rounded-full flex items-center justify-center">1</span>
+                                        <span className="w-6 h-6 bg-stash-primary text-white text-xs font-bold rounded-full flex items-center justify-center">1</span>
                                         Go to Telegram's Developer Portal
                                     </h3>
-                                    <p className="text-sm text-telegram-subtext ml-8">
-                                        Visit <button type="button" onClick={(e) => { e.preventDefault(); open('https://my.telegram.org'); }} className="text-telegram-primary underline hover:text-telegram-text cursor-pointer">my.telegram.org</button> and log in with your phone number.
+                                    <p className="text-sm text-stash-subtext ml-8">
+                                        Visit <button type="button" onClick={(e) => { e.preventDefault(); open('https://my.telegram.org'); }} className="text-stash-primary underline hover:text-stash-text cursor-pointer">my.telegram.org</button> and log in with your phone number.
                                     </p>
                                 </div>
 
                                 <div className="space-y-4">
                                     <h3 className="font-semibold flex items-center gap-2">
-                                        <span className="w-6 h-6 bg-telegram-primary text-white text-xs font-bold rounded-full flex items-center justify-center">2</span>
+                                        <span className="w-6 h-6 bg-stash-primary text-white text-xs font-bold rounded-full flex items-center justify-center">2</span>
                                         Create a New Application
                                     </h3>
-                                    <p className="text-sm text-telegram-subtext ml-8">
+                                    <p className="text-sm text-stash-subtext ml-8">
                                         Click on <strong>"API development tools"</strong> and create a new application. Use any name and description you like.
                                     </p>
                                 </div>
 
                                 <div className="space-y-4">
                                     <h3 className="font-semibold flex items-center gap-2">
-                                        <span className="w-6 h-6 bg-telegram-primary text-white text-xs font-bold rounded-full flex items-center justify-center">3</span>
+                                        <span className="w-6 h-6 bg-stash-primary text-white text-xs font-bold rounded-full flex items-center justify-center">3</span>
                                         Copy Your Credentials
                                     </h3>
-                                    <p className="text-sm text-telegram-subtext ml-8">
+                                    <p className="text-sm text-stash-subtext ml-8">
                                         After creating the app, you'll see your <strong>API ID</strong> (a number) and <strong>API Hash</strong> (a string). Copy both and paste them into the fields on the previous screen.
                                     </p>
                                 </div>
 
-                                <div className="p-4 bg-telegram-hover rounded-xl border border-telegram-border">
-                                    <p className="text-xs text-telegram-subtext">
+                                <div className="p-4 bg-stash-hover rounded-xl border border-stash-border">
+                                    <p className="text-xs text-stash-subtext">
                                         <strong>🔒 Privacy:</strong> Your credentials are stored locally on your device and are never sent to any third-party servers. All data goes directly between you and Telegram.
                                     </p>
                                 </div>
@@ -668,7 +668,7 @@ export function AuthWizard({ onLogin }: { onLogin: () => void }) {
                                 <button
                                     type="button"
                                     onClick={(e) => { e.preventDefault(); open('https://my.telegram.org'); }}
-                                    className="w-full bg-telegram-primary text-white font-semibold py-3 rounded-xl flex items-center justify-center gap-2 hover:bg-telegram-primary/90 transition-colors"
+                                    className="w-full bg-stash-primary text-white font-semibold py-3 rounded-xl flex items-center justify-center gap-2 hover:bg-stash-primary/90 transition-colors"
                                 >
                                     <ExternalLink className="w-4 h-4" />
                                     Open my.telegram.org
@@ -692,20 +692,20 @@ export function AuthWizard({ onLogin }: { onLogin: () => void }) {
                             initial={{ scale: 0.95, opacity: 0 }}
                             animate={{ scale: 1, opacity: 1 }}
                             exit={{ scale: 0.95, opacity: 0 }}
-                            className="glass bg-telegram-surface border border-telegram-border rounded-2xl p-6 max-w-sm w-full shadow-2xl"
+                            className="glass bg-stash-surface border border-stash-border rounded-2xl p-6 max-w-sm w-full shadow-2xl"
                             onClick={(e) => e.stopPropagation()}
                         >
                             <div className="relative flex items-center justify-center mb-6">
-                                <h2 className="text-xl font-bold text-telegram-text text-center">
+                                <h2 className="text-xl font-bold text-stash-text text-center">
                                     Support the Project
                                 </h2>
-                                <button onClick={() => setShowDonate(false)} className="absolute right-0 p-2 hover:bg-telegram-hover rounded-lg transition-colors">
-                                    <X className="w-5 h-5 text-telegram-subtext" />
+                                <button onClick={() => setShowDonate(false)} className="absolute right-0 p-2 hover:bg-stash-hover rounded-lg transition-colors">
+                                    <X className="w-5 h-5 text-stash-subtext" />
                                 </button>
                             </div>
 
                             <div className="space-y-4 text-center">
-                                <p className="text-sm text-telegram-subtext mb-6">
+                                <p className="text-sm text-stash-subtext mb-6">
                                     If you find TeleStash useful, consider supporting its development!
                                 </p>
 

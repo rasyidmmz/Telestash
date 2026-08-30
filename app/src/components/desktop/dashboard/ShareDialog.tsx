@@ -83,22 +83,22 @@ export function ShareDialog({ file, onClose }: ShareDialogProps) {
 
     return (
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm" onClick={onClose}>
-            <div className="bg-telegram-surface border border-telegram-border rounded-xl w-[420px] shadow-2xl overflow-hidden flex flex-col animate-in fade-in zoom-in-95 duration-150" onClick={e => e.stopPropagation()}>
-                <div className="p-4 border-b border-telegram-border flex justify-between items-center">
-                    <h3 className="text-telegram-text font-medium flex items-center gap-2">
-                        <Link className="w-5 h-5 text-telegram-primary" />
+            <div className="bg-stash-surface border border-stash-border rounded-xl w-[420px] shadow-2xl overflow-hidden flex flex-col animate-in fade-in zoom-in-95 duration-150" onClick={e => e.stopPropagation()}>
+                <div className="p-4 border-b border-stash-border flex justify-between items-center">
+                    <h3 className="text-stash-text font-medium flex items-center gap-2">
+                        <Link className="w-5 h-5 text-stash-primary" />
                         {t('share.title')}
                     </h3>
-                    <button onClick={onClose} className="text-telegram-subtext hover:text-telegram-text">
+                    <button onClick={onClose} className="text-stash-subtext hover:text-stash-text">
                         <Plus className="w-5 h-5 rotate-45" />
                     </button>
                 </div>
 
                 <div className="p-5 flex-1 overflow-y-auto space-y-4 max-h-[75vh]">
-                    <div className="bg-telegram-hover/40 border border-telegram-border/50 rounded-lg p-3">
-                        <div className="text-xs text-telegram-subtext uppercase font-semibold tracking-wider mb-1">{t('share.sharing_file')}</div>
-                        <div className="text-sm font-medium text-telegram-text truncate">{file.name}</div>
-                        <div className="text-xs text-telegram-subtext mt-0.5">{file.sizeStr}</div>
+                    <div className="bg-stash-hover/40 border border-stash-border/50 rounded-lg p-3">
+                        <div className="text-xs text-stash-subtext uppercase font-semibold tracking-wider mb-1">{t('share.sharing_file')}</div>
+                        <div className="text-sm font-medium text-stash-text truncate">{file.name}</div>
+                        <div className="text-xs text-stash-subtext mt-0.5">{file.sizeStr}</div>
                     </div>
 
                     {!shareInfo ? (
@@ -106,7 +106,7 @@ export function ShareDialog({ file, onClose }: ShareDialogProps) {
                             {/* Security Option */}
                             <div className="space-y-2">
                                 <div className="flex items-center justify-between py-1">
-                                    <span className="text-sm font-medium text-telegram-text flex items-center gap-2 select-none">
+                                    <span className="text-sm font-medium text-stash-text flex items-center gap-2 select-none">
                                         <Shield className="w-4 h-4 text-emerald-400" />
                                         {t('share.password_protection')}
                                     </span>
@@ -114,7 +114,7 @@ export function ShareDialog({ file, onClose }: ShareDialogProps) {
                                         type="button"
                                         onClick={() => setRequirePassword(!requirePassword)}
                                         className={`relative w-10 h-5.5 rounded-full transition-colors duration-200 shrink-0 ${
-                                            requirePassword ? 'bg-telegram-primary' : 'bg-telegram-border'
+                                            requirePassword ? 'bg-stash-primary' : 'bg-stash-border'
                                         }`}
                                     >
                                         <span
@@ -139,7 +139,7 @@ export function ShareDialog({ file, onClose }: ShareDialogProps) {
                                                 placeholder={t('share.enter_password')}
                                                 value={password}
                                                 onChange={(e) => setPassword(e.target.value)}
-                                                className="w-full bg-telegram-surface/50 border border-telegram-border rounded-lg px-3 py-2 text-sm text-telegram-text focus:outline-none focus:border-telegram-primary placeholder:text-telegram-subtext/60"
+                                                className="w-full bg-stash-surface/50 border border-stash-border rounded-lg px-3 py-2 text-sm text-stash-text focus:outline-none focus:border-stash-primary placeholder:text-stash-subtext/60"
                                                 autoFocus
                                             />
                                         </motion.div>
@@ -149,7 +149,7 @@ export function ShareDialog({ file, onClose }: ShareDialogProps) {
 
                             {/* Expiry Option */}
                             <div className="space-y-2">
-                                <span className="text-sm font-medium text-telegram-text flex items-center gap-2">
+                                <span className="text-sm font-medium text-stash-text flex items-center gap-2">
                                     <Clock className="w-4 h-4 text-amber-400" />
                                     {t('share.expiration')}
                                 </span>
@@ -161,8 +161,8 @@ export function ShareDialog({ file, onClose }: ShareDialogProps) {
                                             onClick={() => setExpiryType(type)}
                                             className={`px-3 py-1.5 rounded-lg text-xs font-medium border transition-colors ${
                                                 expiryType === type 
-                                                    ? 'bg-telegram-primary border-telegram-primary text-white' 
-                                                    : 'bg-telegram-surface border-telegram-border text-telegram-text hover:bg-telegram-hover'
+                                                    ? 'bg-stash-primary border-stash-primary text-white' 
+                                                    : 'bg-stash-surface border-stash-border text-stash-text hover:bg-stash-hover'
                                             }`}
                                         >
                                             {type === '1h' ? t('share.one_hour') : type === '1d' ? t('share.one_day') : t('share.seven_days')}
@@ -173,8 +173,8 @@ export function ShareDialog({ file, onClose }: ShareDialogProps) {
                                         onClick={() => setExpiryType('never')}
                                         className={`px-3 py-1.5 rounded-lg text-xs font-medium border transition-colors ${
                                             expiryType === 'never' 
-                                                ? 'bg-telegram-primary border-telegram-primary text-white' 
-                                                : 'bg-telegram-surface border-telegram-border text-telegram-text hover:bg-telegram-hover'
+                                                ? 'bg-stash-primary border-stash-primary text-white' 
+                                                : 'bg-stash-surface border-stash-border text-stash-text hover:bg-stash-hover'
                                         }`}
                                     >
                                         {t('share.never')}
@@ -184,8 +184,8 @@ export function ShareDialog({ file, onClose }: ShareDialogProps) {
                                         onClick={() => setExpiryType('custom')}
                                         className={`col-span-2 px-3 py-1.5 rounded-lg text-xs font-medium border transition-colors ${
                                             expiryType === 'custom' 
-                                                ? 'bg-telegram-primary border-telegram-primary text-white' 
-                                                : 'bg-telegram-surface border-telegram-border text-telegram-text hover:bg-telegram-hover'
+                                                ? 'bg-stash-primary border-stash-primary text-white' 
+                                                : 'bg-stash-surface border-stash-border text-stash-text hover:bg-stash-hover'
                                         }`}
                                     >
                                         {t('share.custom_hours')}
@@ -199,9 +199,9 @@ export function ShareDialog({ file, onClose }: ShareDialogProps) {
                                             min="1"
                                             value={customHours}
                                             onChange={(e) => setCustomHours(e.target.value)}
-                                            className="w-24 bg-telegram-surface/50 border border-telegram-border rounded-lg px-3 py-2 text-sm text-telegram-text focus:outline-none focus:border-telegram-primary"
+                                            className="w-24 bg-stash-surface/50 border border-stash-border rounded-lg px-3 py-2 text-sm text-stash-text focus:outline-none focus:border-stash-primary"
                                         />
-                                        <span className="text-xs text-telegram-subtext">{t('share.hours_from_now')}</span>
+                                        <span className="text-xs text-stash-subtext">{t('share.hours_from_now')}</span>
                                     </div>
                                 )}
                             </div>
@@ -216,7 +216,7 @@ export function ShareDialog({ file, onClose }: ShareDialogProps) {
                             <button
                                 onClick={handleGenerate}
                                 disabled={loading}
-                                className="w-full bg-telegram-primary hover:bg-telegram-primary-hover text-white text-sm font-medium py-2.5 rounded-lg shadow-lg hover:shadow-telegram-primary/20 transition-all flex items-center justify-center gap-2 mt-4"
+                                className="w-full bg-stash-primary hover:bg-stash-primary-hover text-white text-sm font-medium py-2.5 rounded-lg shadow-lg hover:shadow-stash-primary/20 transition-all flex items-center justify-center gap-2 mt-4"
                             >
                                 {loading ? (
                                     <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
@@ -232,20 +232,20 @@ export function ShareDialog({ file, onClose }: ShareDialogProps) {
 
                             {/* Shareable Link Display */}
                             <div className="space-y-1.5">
-                                <label className="text-xs font-semibold text-telegram-subtext">{t('files.share_link')}</label>
+                                <label className="text-xs font-semibold text-stash-subtext">{t('files.share_link')}</label>
                                 <div className="flex gap-2">
                                     <input
                                         type="text"
                                         readOnly
                                         value={getDisplayLink()}
-                                        className="flex-1 bg-telegram-surface/50 border border-telegram-border rounded-lg px-3 py-2 text-sm text-telegram-text focus:outline-none select-all"
+                                        className="flex-1 bg-stash-surface/50 border border-stash-border rounded-lg px-3 py-2 text-sm text-stash-text focus:outline-none select-all"
                                     />
                                     <button
                                         onClick={handleCopy}
                                         className={`px-3 py-2 rounded-lg border flex items-center justify-center transition-all ${
                                             copied 
                                                 ? 'bg-emerald-500 border-emerald-500 text-white' 
-                                                : 'bg-telegram-hover border-telegram-border text-telegram-text hover:bg-white/10'
+                                                : 'bg-stash-hover border-stash-border text-stash-text hover:bg-white/10'
                                         }`}
                                     >
                                         {copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
@@ -254,11 +254,11 @@ export function ShareDialog({ file, onClose }: ShareDialogProps) {
                             </div>
 
                             {/* Tailscale / Network Share Customizer */}
-                            <div className="bg-telegram-hover/30 border border-telegram-border/50 rounded-lg p-3 space-y-2">
-                                <div className="text-xs font-semibold text-telegram-text flex items-center gap-1.5">
+                            <div className="bg-stash-hover/30 border border-stash-border/50 rounded-lg p-3 space-y-2">
+                                <div className="text-xs font-semibold text-stash-text flex items-center gap-1.5">
                                     <span>🌐</span> {t('share.share_externally')}
                                 </div>
-                                <p className="text-xs text-telegram-subtext leading-relaxed">
+                                <p className="text-xs text-stash-subtext leading-relaxed">
                                     {t('share.tailscale_help')}
                                 </p>
                                 <div className="flex gap-2 items-center">
@@ -267,14 +267,14 @@ export function ShareDialog({ file, onClose }: ShareDialogProps) {
                                         placeholder="e.g. 100.115.22.45 or tailscale-pc:14201"
                                         value={customDomain}
                                         onChange={(e) => setCustomDomain(e.target.value)}
-                                        className="flex-1 bg-telegram-surface/50 border border-telegram-border rounded-lg px-3 py-1.5 text-xs text-telegram-text focus:outline-none focus:border-telegram-primary placeholder:text-telegram-subtext/40"
+                                        className="flex-1 bg-stash-surface/50 border border-stash-border rounded-lg px-3 py-1.5 text-xs text-stash-text focus:outline-none focus:border-stash-primary placeholder:text-stash-subtext/40"
                                     />
                                 </div>
                             </div>
 
                             <button
                                 onClick={onClose}
-                                className="w-full bg-telegram-hover hover:bg-white/10 text-telegram-text text-sm font-medium py-2 rounded-lg transition-colors border border-telegram-border"
+                                className="w-full bg-stash-hover hover:bg-white/10 text-stash-text text-sm font-medium py-2 rounded-lg transition-colors border border-stash-border"
                             >
                                 {t('share.done')}
                             </button>

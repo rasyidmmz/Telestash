@@ -153,16 +153,16 @@ export function SidebarItem({
             }}
             onContextMenu={openContextMenu}
             className={`group w-full flex items-center transition-all duration-150 cursor-pointer select-none ${collapsed ? 'justify-center p-2.5' : 'gap-3 px-3 py-2'} ${active
-                ? 'bg-telegram-primary/10 text-telegram-primary'
+                ? 'bg-stash-primary/10 text-stash-primary'
                 : isOver
-                    ? 'bg-telegram-primary/30 text-telegram-text ring-2 ring-telegram-primary scale-[1.02] shadow-lg'
-                    : 'text-telegram-subtext hover:bg-telegram-hover hover:text-telegram-text'
+                    ? 'bg-stash-primary/30 text-stash-text ring-2 ring-stash-primary scale-[1.02] shadow-lg'
+                    : 'text-stash-subtext hover:bg-stash-hover hover:text-stash-text'
                 }`}
         >
-            <Icon className={`w-4 h-4 flex-shrink-0 ${isOver ? 'text-telegram-primary' : ''}`} />
+            <Icon className={`w-4 h-4 flex-shrink-0 ${isOver ? 'text-stash-primary' : ''}`} />
             {!collapsed && <span className="flex-1 text-left truncate">{label}</span>}
             {isOver && dragCount > 1 && (
-                <span className="flex-shrink-0 px-1.5 py-0.5 bg-telegram-primary text-white text-[10px] font-bold rounded-full leading-none min-w-[18px] text-center">
+                <span className="flex-shrink-0 px-1.5 py-0.5 bg-stash-primary text-white text-[10px] font-bold rounded-full leading-none min-w-[18px] text-center">
                     {dragCount}
                 </span>
             )}
@@ -173,10 +173,10 @@ export function SidebarItem({
                 <div
                     ref={settingsBtnRef}
                     onClick={openSettingsPopover}
-                    className="opacity-0 group-hover:opacity-100 p-1 rounded hover:bg-telegram-hover transition-all"
+                    className="opacity-0 group-hover:opacity-100 p-1 rounded hover:bg-stash-hover transition-all"
                     title={t('files.folder_settings')}
                 >
-                    <MoreVertical className="w-3.5 h-3.5 text-telegram-subtext hover:text-telegram-text" />
+                    <MoreVertical className="w-3.5 h-3.5 text-stash-subtext hover:text-stash-text" />
                 </div>
             )}
 
@@ -184,19 +184,19 @@ export function SidebarItem({
             {contextMenu && (
                 <div
                     ref={menuRef}
-                    className="fixed z-[300] min-w-[200px] bg-telegram-surface/95 backdrop-blur-xl border border-telegram-border rounded-lg shadow-2xl p-1.5 flex flex-col gap-0.5 animate-in fade-in zoom-in-95 duration-100"
+                    className="fixed z-[300] min-w-[200px] bg-stash-surface/95 backdrop-blur-xl border border-stash-border rounded-lg shadow-2xl p-1.5 flex flex-col gap-0.5 animate-in fade-in zoom-in-95 duration-100"
                     style={{ left: contextMenu.x, top: contextMenu.y }}
                     onClick={(e) => e.stopPropagation()}
                     onContextMenu={(e) => e.preventDefault()}
                 >
-                    <div className="px-2 py-1.5 text-xs text-telegram-subtext font-medium truncate max-w-[180px] border-b border-telegram-border mb-1">
+                    <div className="px-2 py-1.5 text-xs text-stash-subtext font-medium truncate max-w-[180px] border-b border-stash-border mb-1">
                         {label}
                     </div>
 
                     {onRename && (
                         <button
                             onClick={() => { setContextMenu(null); onRename(); }}
-                            className="flex items-center gap-2 px-2 py-1.5 text-sm text-telegram-text hover:bg-telegram-hover rounded transition-colors text-left w-full"
+                            className="flex items-center gap-2 px-2 py-1.5 text-sm text-stash-text hover:bg-stash-hover rounded transition-colors text-left w-full"
                         >
                             <Pencil className="w-4 h-4 text-blue-400" />
                             {t('files.rename')}
@@ -206,7 +206,7 @@ export function SidebarItem({
                     {onToggleVisibility && (
                         <button
                             onClick={() => { setContextMenu(null); onToggleVisibility(); }}
-                            className="flex items-center gap-2 px-2 py-1.5 text-sm text-telegram-text hover:bg-telegram-hover rounded transition-colors text-left w-full"
+                            className="flex items-center gap-2 px-2 py-1.5 text-sm text-stash-text hover:bg-stash-hover rounded transition-colors text-left w-full"
                         >
                             {isPublic ? (
                                 <>
@@ -225,31 +225,31 @@ export function SidebarItem({
                     {onExportInvite && (
                         <button
                             onClick={() => { setContextMenu(null); onExportInvite(); }}
-                            className="flex items-center gap-2 px-2 py-1.5 text-sm text-telegram-text hover:bg-telegram-hover rounded transition-colors text-left w-full"
+                            className="flex items-center gap-2 px-2 py-1.5 text-sm text-stash-text hover:bg-stash-hover rounded transition-colors text-left w-full"
                         >
-                            <Link className="w-4 h-4 text-telegram-primary" />
+                            <Link className="w-4 h-4 text-stash-primary" />
                             {t('files.copy_link')}
                         </button>
                     )}
 
                     {onAssignFolderToGroup && folderId !== null && groups && groups.length > 0 && (
                         <>
-                            <div className="h-px bg-telegram-border my-1" />
-                            <div className="px-2 py-1 text-[10px] font-semibold text-telegram-subtext uppercase tracking-wider">
+                            <div className="h-px bg-stash-border my-1" />
+                            <div className="px-2 py-1 text-[10px] font-semibold text-stash-subtext uppercase tracking-wider">
                                 {t('files.move_to_group') || "Move to Group"}
                             </div>
                             <button
                                 onClick={() => { setContextMenu(null); onAssignFolderToGroup(folderId, null); }}
-                                className="flex items-center gap-2 px-3 py-1.5 text-xs text-telegram-text hover:bg-telegram-hover rounded transition-colors text-left w-full"
+                                className="flex items-center gap-2 px-3 py-1.5 text-xs text-stash-text hover:bg-stash-hover rounded transition-colors text-left w-full"
                             >
-                                <span className="w-1.5 h-1.5 rounded-full bg-telegram-subtext" />
+                                <span className="w-1.5 h-1.5 rounded-full bg-stash-subtext" />
                                 {t('common.unassigned') || "None (Unassigned)"}
                             </button>
                             {groups.map(group => (
                                 <button
                                     key={group.id}
                                     onClick={() => { setContextMenu(null); onAssignFolderToGroup(folderId, group.id); }}
-                                    className="flex items-center gap-2 px-3 py-1.5 text-xs text-telegram-text hover:bg-telegram-hover rounded transition-colors text-left w-full"
+                                    className="flex items-center gap-2 px-3 py-1.5 text-xs text-stash-text hover:bg-stash-hover rounded transition-colors text-left w-full"
                                 >
                                     <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: group.color_hex }} />
                                     {group.name}
@@ -258,7 +258,7 @@ export function SidebarItem({
                         </>
                     )}
 
-                    <div className="h-px bg-telegram-border my-1" />
+                    <div className="h-px bg-stash-border my-1" />
 
                     <button
                         onClick={() => { setContextMenu(null); onDelete?.(); }}

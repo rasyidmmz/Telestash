@@ -189,7 +189,7 @@ export function PdfViewer({ file, onClose, onNext, onPrev, currentIndex, totalIt
                     <button
                         onClick={handleOpenExternally}
                         disabled={openingExternal}
-                        className="text-[9px] uppercase font-extrabold tracking-wider bg-telegram-primary text-black px-2 py-1 rounded-lg hover:bg-telegram-primary/90 transition-all active:scale-95 disabled:opacity-50"
+                        className="text-[9px] uppercase font-extrabold tracking-wider bg-stash-primary text-black px-2 py-1 rounded-lg hover:bg-stash-primary/90 transition-all active:scale-95 disabled:opacity-50"
                         title="Open document in a native external app"
                     >
                         {openingExternal ? 'Opening...' : 'Open Natively'}
@@ -246,7 +246,7 @@ export function PdfViewer({ file, onClose, onNext, onPrev, currentIndex, totalIt
             >
                 {loading && (
                     <div className="flex flex-col items-center justify-center flex-1 text-white absolute inset-0">
-                        <div className="w-10 h-10 border-4 border-telegram-primary border-t-transparent rounded-full animate-spin mb-4"></div>
+                        <div className="w-10 h-10 border-4 border-stash-primary border-t-transparent rounded-full animate-spin mb-4"></div>
                         <p>Loading document...</p>
                         <p className="text-xs text-white/50 mt-1">Downloading from Telegram...</p>
                     </div>
@@ -259,7 +259,7 @@ export function PdfViewer({ file, onClose, onNext, onPrev, currentIndex, totalIt
                         <button
                             onClick={handleOpenExternally}
                             disabled={openingExternal}
-                            className="px-5 py-2.5 bg-telegram-primary text-black font-semibold rounded-xl active:scale-95 transition-all duration-200 shadow-lg text-sm disabled:opacity-50 pointer-events-auto"
+                            className="px-5 py-2.5 bg-stash-primary text-black font-semibold rounded-xl active:scale-95 transition-all duration-200 shadow-lg text-sm disabled:opacity-50 pointer-events-auto"
                         >
                             {openingExternal ? 'Opening...' : 'Open with External App'}
                         </button>

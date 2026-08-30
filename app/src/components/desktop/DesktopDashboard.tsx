@@ -668,7 +668,7 @@ export function Dashboard({ onLogout }: { onLogout: () => void }) {
 
     return (
         <div
-            className="flex h-screen w-full overflow-hidden bg-telegram-bg relative"
+            className="flex h-screen w-full overflow-hidden bg-stash-bg relative"
             onDragOver={handleRootDragOver}
             onDragEnter={handleRootDragEnter}
         >
@@ -803,8 +803,8 @@ export function Dashboard({ onLogout }: { onLogout: () => void }) {
                 />
                 {searchTerm.length > 2 && (
                     <div className="px-6 pt-4 pb-0">
-                        <h2 className="text-sm font-medium text-telegram-subtext">
-                            Search Results for <span className="text-telegram-primary">"{searchTerm}"</span>
+                        <h2 className="text-sm font-medium text-stash-subtext">
+                            Search Results for <span className="text-stash-primary">"{searchTerm}"</span>
                         </h2>
                     </div>
                 )}
@@ -976,23 +976,23 @@ export function Dashboard({ onLogout }: { onLogout: () => void }) {
                     onClick={() => setBulkShareLinks(null)}
                 >
                     <div
-                        className="bg-telegram-surface border border-telegram-border rounded-xl w-[500px] max-h-[70vh] shadow-2xl overflow-hidden flex flex-col animate-in fade-in zoom-in-95 duration-150"
+                        className="bg-stash-surface border border-stash-border rounded-xl w-[500px] max-h-[70vh] shadow-2xl overflow-hidden flex flex-col animate-in fade-in zoom-in-95 duration-150"
                         onClick={e => e.stopPropagation()}
                     >
-                        <div className="p-4 border-b border-telegram-border flex items-center justify-between">
-                            <h3 className="text-telegram-text font-medium flex items-center gap-2">
-                                <Link className="w-5 h-5 text-telegram-primary" />
+                        <div className="p-4 border-b border-stash-border flex items-center justify-between">
+                            <h3 className="text-stash-text font-medium flex items-center gap-2">
+                                <Link className="w-5 h-5 text-stash-primary" />
                                 {bulkShareLinks.length} Share Link{bulkShareLinks.length !== 1 ? 's' : ''}
                             </h3>
-                            <button onClick={() => setBulkShareLinks(null)} className="text-telegram-subtext hover:text-telegram-text">
+                            <button onClick={() => setBulkShareLinks(null)} className="text-stash-subtext hover:text-stash-text">
                                 <X className="w-5 h-5" />
                             </button>
                         </div>
 
                         {bulkShareLoading ? (
                             <div className="flex flex-col items-center justify-center py-16 space-y-3">
-                                <Loader2 className="w-8 h-8 text-telegram-primary animate-spin" />
-                                <p className="text-sm text-telegram-subtext">Generating share links...</p>
+                                <Loader2 className="w-8 h-8 text-stash-primary animate-spin" />
+                                <p className="text-sm text-stash-subtext">Generating share links...</p>
                             </div>
                         ) : (
                             <div className="flex-1 overflow-y-auto p-4 space-y-2 min-h-0">
@@ -1001,22 +1001,22 @@ export function Dashboard({ onLogout }: { onLogout: () => void }) {
                                     return (
                                         <div
                                             key={file.id}
-                                            className="p-3 rounded-lg bg-telegram-hover/30 border border-telegram-border/30 space-y-2"
+                                            className="p-3 rounded-lg bg-stash-hover/30 border border-stash-border/30 space-y-2"
                                         >
-                                            <p className="text-xs font-semibold text-telegram-text truncate">{file.name}</p>
+                                            <p className="text-xs font-semibold text-stash-text truncate">{file.name}</p>
                                             <div className="flex gap-2">
                                                 <input
                                                     type="text"
                                                     readOnly
                                                     value={link}
-                                                    className="flex-1 bg-telegram-bg border border-telegram-border rounded-lg px-2.5 py-1.5 text-xs text-telegram-text focus:outline-none select-all truncate"
+                                                    className="flex-1 bg-stash-bg border border-stash-border rounded-lg px-2.5 py-1.5 text-xs text-stash-text focus:outline-none select-all truncate"
                                                 />
                                                 <button
                                                     onClick={() => handleCopyBulkLink(link)}
                                                     className={`px-2.5 py-1.5 rounded-lg border flex items-center justify-center transition-all flex-shrink-0 ${
                                                         isCopied
                                                             ? 'bg-emerald-500 border-emerald-500 text-white'
-                                                            : 'bg-telegram-hover border-telegram-border text-telegram-text hover:bg-white/10'
+                                                            : 'bg-stash-hover border-stash-border text-stash-text hover:bg-white/10'
                                                     }`}
                                                 >
                                                     {isCopied ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
@@ -1030,7 +1030,7 @@ export function Dashboard({ onLogout }: { onLogout: () => void }) {
 
                         <button
                             onClick={() => setBulkShareLinks(null)}
-                            className="w-full px-4 py-2.5 border-t border-telegram-border bg-telegram-hover/20 hover:bg-telegram-hover/40 text-telegram-text text-sm font-medium transition-colors"
+                            className="w-full px-4 py-2.5 border-t border-stash-border bg-stash-hover/20 hover:bg-stash-hover/40 text-stash-text text-sm font-medium transition-colors"
                         >
                             Done
                         </button>

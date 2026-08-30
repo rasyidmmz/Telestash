@@ -333,14 +333,14 @@ export function FileExplorer({
     const SortIcon = ({ field }: { field: SortField }) => {
         if (sortField !== field) return <ArrowUpDown className="w-3 h-3 opacity-30" />;
         return sortDirection === 'asc'
-            ? <ArrowUp className="w-3 h-3 text-telegram-primary" />
-            : <ArrowDown className="w-3 h-3 text-telegram-primary" />;
+            ? <ArrowUp className="w-3 h-3 text-stash-primary" />
+            : <ArrowDown className="w-3 h-3 text-stash-primary" />;
     };
 
     if (loading) {
         return (
-            <div className="flex-1 p-6 flex justify-center items-center text-telegram-subtext flex-col gap-4">
-                <div className="w-8 h-8 border-4 border-telegram-primary border-t-transparent rounded-full animate-spin"></div>
+            <div className="flex-1 p-6 flex justify-center items-center text-stash-subtext flex-col gap-4">
+                <div className="w-8 h-8 border-4 border-stash-primary border-t-transparent rounded-full animate-spin"></div>
                 Loading your files...
             </div>
         )
@@ -350,8 +350,8 @@ export function FileExplorer({
         return (
             <div className="flex-1 p-6 flex flex-col justify-center items-center gap-3 text-center">
                 <p className="text-red-400 font-medium">{t('files.load_failed')}</p>
-                <p className="max-w-md text-sm text-telegram-subtext break-words">{error.message}</p>
-                <button onClick={onRetry} className="px-3 py-1.5 rounded-md bg-telegram-primary text-black text-sm font-medium hover:bg-telegram-primary/90 transition-colors">
+                <p className="max-w-md text-sm text-stash-subtext break-words">{error.message}</p>
+                <button onClick={onRetry} className="px-3 py-1.5 rounded-md bg-stash-primary text-black text-sm font-medium hover:bg-stash-primary/90 transition-colors">
                     {t('files.retry')}
                 </button>
             </div>
@@ -486,23 +486,23 @@ export function FileExplorer({
             {viewMode === 'grid' ? (
                 <>
 
-                    <div className="flex items-center gap-2 mb-4 text-xs text-telegram-subtext">
+                    <div className="flex items-center gap-2 mb-4 text-xs text-stash-subtext">
                         <span>Sort by:</span>
                         <button
                             onClick={() => handleSort('name')}
-                            className={`px-2 py-1 rounded flex items-center gap-1 hover:bg-white/5 ${sortField === 'name' ? 'text-telegram-primary' : ''}`}
+                            className={`px-2 py-1 rounded flex items-center gap-1 hover:bg-white/5 ${sortField === 'name' ? 'text-stash-primary' : ''}`}
                         >
                             Name <SortIcon field="name" />
                         </button>
                         <button
                             onClick={() => handleSort('size')}
-                            className={`px-2 py-1 rounded flex items-center gap-1 hover:bg-white/5 ${sortField === 'size' ? 'text-telegram-primary' : ''}`}
+                            className={`px-2 py-1 rounded flex items-center gap-1 hover:bg-white/5 ${sortField === 'size' ? 'text-stash-primary' : ''}`}
                         >
                             Size <SortIcon field="size" />
                         </button>
                         <button
                             onClick={() => handleSort('date')}
-                            className={`px-2 py-1 rounded flex items-center gap-1 hover:bg-white/5 ${sortField === 'date' ? 'text-telegram-primary' : ''}`}
+                            className={`px-2 py-1 rounded flex items-center gap-1 hover:bg-white/5 ${sortField === 'date' ? 'text-stash-primary' : ''}`}
                         >
                             Date <SortIcon field="date" />
                         </button>
@@ -511,7 +511,7 @@ export function FileExplorer({
                         <div className="ml-auto flex items-center gap-1.5">
                             <button
                                 onClick={() => onCardScaleChange(Math.max(0.5, cardScale - 0.25))}
-                                className="p-1 rounded hover:bg-white/10 text-telegram-subtext hover:text-telegram-text transition-colors"
+                                className="p-1 rounded hover:bg-white/10 text-stash-subtext hover:text-stash-text transition-colors"
                                 title="Smaller thumbnails"
                                 disabled={cardScale <= 0.5}
                             >
@@ -524,18 +524,18 @@ export function FileExplorer({
                                 step="0.25"
                                 value={cardScale}
                                 onChange={(e) => onCardScaleChange(parseFloat(e.target.value))}
-                                className="w-20 h-1 bg-telegram-border rounded-full appearance-none cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-3 [&::-webkit-slider-thumb]:h-3 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-telegram-primary [&::-webkit-slider-thumb]:cursor-pointer [&::-webkit-slider-thumb]:transition-transform [&::-webkit-slider-thumb]:hover:scale-125"
+                                className="w-20 h-1 bg-stash-border rounded-full appearance-none cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-3 [&::-webkit-slider-thumb]:h-3 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-stash-primary [&::-webkit-slider-thumb]:cursor-pointer [&::-webkit-slider-thumb]:transition-transform [&::-webkit-slider-thumb]:hover:scale-125"
                                 title={`Thumbnail zoom: ${Math.round(cardScale * 100)}%`}
                             />
                             <button
                                 onClick={() => onCardScaleChange(Math.min(2, cardScale + 0.25))}
-                                className="p-1 rounded hover:bg-white/10 text-telegram-subtext hover:text-telegram-text transition-colors"
+                                className="p-1 rounded hover:bg-white/10 text-stash-subtext hover:text-stash-text transition-colors"
                                 title="Larger thumbnails"
                                 disabled={cardScale >= 2}
                             >
                                 <ZoomIn className="w-3.5 h-3.5" />
                             </button>
-                            <span className="text-[10px] text-telegram-subtext/60 w-10 text-right tabular-nums">{Math.round(cardScale * 100)}%</span>
+                            <span className="text-[10px] text-stash-subtext/60 w-10 text-right tabular-nums">{Math.round(cardScale * 100)}%</span>
                         </div>
                     </div>
 
@@ -563,7 +563,7 @@ export function FileExplorer({
                                                 <button
                                                     key="upload"
                                                     onClick={(e) => { e.stopPropagation(); onManualUpload(); }}
-                                                    className="border-2 border-dashed border-telegram-border rounded-xl flex flex-col items-center justify-center text-telegram-subtext hover:border-telegram-primary hover:text-telegram-primary transition-all group overflow-hidden"
+                                                    className="border-2 border-dashed border-stash-border rounded-xl flex flex-col items-center justify-center text-stash-subtext hover:border-stash-primary hover:text-stash-primary transition-all group overflow-hidden"
                                                     style={{ height: `${cardHeight}px` }}
                                                 >
                                                     <Plus className="w-8 h-8 mb-2 group-hover:scale-110 transition-transform" />
@@ -576,7 +576,7 @@ export function FileExplorer({
                                                 <button
                                                     key="upload-folder"
                                                     onClick={(e) => { e.stopPropagation(); onFolderUpload(); }}
-                                                    className="border-2 border-dashed border-telegram-border rounded-xl flex flex-col items-center justify-center text-telegram-subtext hover:border-telegram-primary hover:text-telegram-primary transition-all group overflow-hidden"
+                                                    className="border-2 border-dashed border-stash-border rounded-xl flex flex-col items-center justify-center text-stash-subtext hover:border-stash-primary hover:text-stash-primary transition-all group overflow-hidden"
                                                     style={{ height: `${cardHeight}px` }}
                                                 >
                                                     <FolderUp className="w-8 h-8 mb-2 group-hover:scale-110 transition-transform" />
@@ -614,15 +614,15 @@ export function FileExplorer({
             ) : (
                 <div className="flex flex-col w-full">
                     {/* List Header */}
-                    <div className="grid grid-cols-[2rem_2fr_6rem_8rem] gap-4 px-4 py-2 text-xs font-semibold text-telegram-subtext border-b border-telegram-border mb-2 select-none items-center">
+                    <div className="grid grid-cols-[2rem_2fr_6rem_8rem] gap-4 px-4 py-2 text-xs font-semibold text-stash-subtext border-b border-stash-border mb-2 select-none items-center">
                         <div className="text-center">#</div>
-                        <button onClick={() => handleSort('name')} className="flex items-center gap-1 hover:text-telegram-text transition-colors">
+                        <button onClick={() => handleSort('name')} className="flex items-center gap-1 hover:text-stash-text transition-colors">
                             {t('common.name')} <SortIcon field="name" />
                         </button>
-                        <button onClick={() => handleSort('size')} className="flex items-center gap-1 justify-end hover:text-telegram-text transition-colors">
+                        <button onClick={() => handleSort('size')} className="flex items-center gap-1 justify-end hover:text-stash-text transition-colors">
                             {t('common.size')} <SortIcon field="size" />
                         </button>
-                        <button onClick={() => handleSort('date')} className="flex items-center gap-1 justify-end hover:text-telegram-text transition-colors">
+                        <button onClick={() => handleSort('date')} className="flex items-center gap-1 justify-end hover:text-stash-text transition-colors">
                             {t('common.date')} <SortIcon field="date" />
                         </button>
                     </div>
@@ -642,7 +642,7 @@ export function FileExplorer({
                                     >
                                         <button
                                             onClick={(e) => { e.stopPropagation(); onManualUpload(); }}
-                                            className="flex items-center gap-4 px-4 py-3 rounded-lg cursor-pointer border border-dashed border-telegram-border text-telegram-subtext hover:text-telegram-text hover:bg-telegram-hover w-full"
+                                            className="flex items-center gap-4 px-4 py-3 rounded-lg cursor-pointer border border-dashed border-stash-border text-stash-subtext hover:text-stash-text hover:bg-stash-hover w-full"
                                         >
                                             <div className="w-5 h-5 flex items-center justify-center"><Plus className="w-4 h-4" /></div>
                                             <span className="text-sm font-medium">{t('common.upload_file')}...</span>
@@ -659,7 +659,7 @@ export function FileExplorer({
                                     >
                                         <button
                                             onClick={(e) => { e.stopPropagation(); onFolderUpload(); }}
-                                            className="flex items-center gap-4 px-4 py-3 rounded-lg cursor-pointer border border-dashed border-telegram-border text-telegram-subtext hover:text-telegram-text hover:bg-telegram-hover w-full"
+                                            className="flex items-center gap-4 px-4 py-3 rounded-lg cursor-pointer border border-dashed border-stash-border text-stash-subtext hover:text-stash-text hover:bg-stash-hover w-full"
                                         >
                                             <div className="w-5 h-5 flex items-center justify-center"><FolderUp className="w-4 h-4" /></div>
                                             <span className="text-sm font-medium">{t('common.upload_folder')}...</span>

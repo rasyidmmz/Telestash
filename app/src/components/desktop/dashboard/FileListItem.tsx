@@ -88,15 +88,15 @@ export function FileListItem({
                     onDrop(e, file.id);
                 }
             }}
-            className={`group grid grid-cols-[2rem_minmax(0,1fr)_2.5rem] sm:grid-cols-[2rem_minmax(0,2fr)_6rem_8rem_2.5rem] gap-4 items-center px-4 py-3 rounded-lg cursor-pointer border border-transparent transition-all hover:bg-telegram-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-telegram-primary
-                ${selectedIds.includes(file.id) ? 'bg-telegram-primary/10 border-telegram-primary/20' : ''}
-                ${isDragOver ? 'ring-2 ring-telegram-primary bg-telegram-primary/20' : ''}
+            className={`group grid grid-cols-[2rem_minmax(0,1fr)_2.5rem] sm:grid-cols-[2rem_minmax(0,2fr)_6rem_8rem_2.5rem] gap-4 items-center px-4 py-3 rounded-lg cursor-pointer border border-transparent transition-all hover:bg-stash-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-stash-primary
+                ${selectedIds.includes(file.id) ? 'bg-stash-primary/10 border-stash-primary/20' : ''}
+                ${isDragOver ? 'ring-2 ring-stash-primary bg-stash-primary/20' : ''}
             `}
         >
             <div className="flex justify-center">
-                {isFolder ? <Folder className="w-5 h-5 text-telegram-primary" /> : <FileTypeIcon filename={file.name} className="w-5 h-5" />}
+                {isFolder ? <Folder className="w-5 h-5 text-stash-primary" /> : <FileTypeIcon filename={file.name} className="w-5 h-5" />}
             </div>
-            <div className="min-w-0 flex items-center gap-2 text-sm text-telegram-text font-medium flex-wrap">
+            <div className="min-w-0 flex items-center gap-2 text-sm text-stash-text font-medium flex-wrap">
                 <span className="truncate">{file.name}</span>
                 <MediaBadgesList filename={file.name} maxBadges={3} />
                 <VideoMetaBadge metadata={videoMeta} isLoading={videoMetaLoading} filename={file.name} />
@@ -106,8 +106,8 @@ export function FileListItem({
                     </span>
                 )}
             </div>
-            <div className="hidden sm:block text-right text-xs text-telegram-subtext truncate">{file.sizeStr}</div>
-            <div className="hidden sm:block text-right text-xs text-telegram-subtext font-mono opacity-50 truncate">{file.created_at || '-'}</div>
+            <div className="hidden sm:block text-right text-xs text-stash-subtext truncate">{file.sizeStr}</div>
+            <div className="hidden sm:block text-right text-xs text-stash-subtext font-mono opacity-50 truncate">{file.created_at || '-'}</div>
 
             {/* 3-dot Menu Button — in grid flow, not absolutely positioned */}
             <div className="flex justify-end">
@@ -116,7 +116,7 @@ export function FileListItem({
                         e.stopPropagation();
                         handleContextMenu(e, file);
                     }}
-                    className="opacity-0 group-hover:opacity-100 focus-visible:opacity-100 p-1 bg-telegram-surface hover:bg-telegram-hover border border-telegram-border shadow-md rounded text-telegram-subtext hover:text-telegram-text transition-all"
+                    className="opacity-0 group-hover:opacity-100 focus-visible:opacity-100 p-1 bg-stash-surface hover:bg-stash-hover border border-stash-border shadow-md rounded text-stash-subtext hover:text-stash-text transition-all"
                     aria-label="File actions"
                 >
                     <MoreVertical className="w-4 h-4" />

@@ -313,27 +313,27 @@ export function ArchiveViewerModal({
             )}
 
             <div
-                className="bg-telegram-surface border border-telegram-border rounded-xl w-[520px] max-h-[70vh] shadow-2xl overflow-hidden flex flex-col animate-in fade-in zoom-in-95 duration-150"
+                className="bg-stash-surface border border-stash-border rounded-xl w-[520px] max-h-[70vh] shadow-2xl overflow-hidden flex flex-col animate-in fade-in zoom-in-95 duration-150"
                 onClick={e => e.stopPropagation()}
             >
                 {/* Header */}
-                <div className="p-4 border-b border-telegram-border flex items-center justify-between shrink-0">
+                <div className="p-4 border-b border-stash-border flex items-center justify-between shrink-0">
                     <div className="flex items-center gap-3 min-w-0">
-                        <FileArchive className="w-6 h-6 text-telegram-primary shrink-0" />
+                        <FileArchive className="w-6 h-6 text-stash-primary shrink-0" />
                         <div className="min-w-0">
-                            <h3 className="text-telegram-text font-medium truncate">{file.name}</h3>
-                            <p className="text-xs text-telegram-subtext">{file.sizeStr}</p>
+                            <h3 className="text-stash-text font-medium truncate">{file.name}</h3>
+                            <p className="text-xs text-stash-subtext">{file.sizeStr}</p>
                         </div>
                     </div>
                     <div className="flex items-center gap-2 shrink-0">
                         {totalItems > 1 && (
-                            <span className="text-xs text-telegram-subtext mr-2">
+                            <span className="text-xs text-stash-subtext mr-2">
                                 {currentIndex + 1} / {totalItems}
                             </span>
                         )}
                         <button
                             onClick={onClose}
-                            className="p-1.5 rounded-lg hover:bg-telegram-hover text-telegram-subtext hover:text-telegram-text transition-colors"
+                            className="p-1.5 rounded-lg hover:bg-stash-hover text-stash-subtext hover:text-stash-text transition-colors"
                         >
                             <X className="w-5 h-5" />
                         </button>
@@ -342,9 +342,9 @@ export function ArchiveViewerModal({
 
                 {/* Stats bar */}
                 {entries && !loading && !error && (
-                    <div className="px-4 py-2 border-b border-telegram-border/50 bg-telegram-hover/20 shrink-0">
+                    <div className="px-4 py-2 border-b border-stash-border/50 bg-stash-hover/20 shrink-0">
                         <div className="flex items-center justify-between gap-2">
-                            <div className="flex items-center gap-4 text-xs text-telegram-subtext">
+                            <div className="flex items-center gap-4 text-xs text-stash-subtext">
                                 <span className="flex items-center gap-1">
                                     <File className="w-3 h-3" />
                                     {fileCount} file{fileCount !== 1 ? 's' : ''}
@@ -362,7 +362,7 @@ export function ArchiveViewerModal({
                             {fileCount > 0 && (
                                 <div className="flex items-center gap-0.5 relative" ref={extractAllMenuRef}>
                                     {extractAllBusy && !extractAllCancelled && (
-                                        <span className="text-[10px] text-telegram-primary mr-1 tabular-nums">
+                                        <span className="text-[10px] text-stash-primary mr-1 tabular-nums">
                                             {extractAllDone}/{fileCount}
                                         </span>
                                     )}
@@ -402,16 +402,16 @@ export function ArchiveViewerModal({
                                     {/* Bulk folder dropdown */}
                                     {extractAllFolderMenuOpen && (
                                         <div
-                                            className="absolute right-0 top-full mt-1 z-[220] w-48 bg-telegram-surface border border-telegram-border rounded-lg shadow-xl overflow-hidden animate-in fade-in slide-in-from-top-1 duration-100"
+                                            className="absolute right-0 top-full mt-1 z-[220] w-48 bg-stash-surface border border-stash-border rounded-lg shadow-xl overflow-hidden animate-in fade-in slide-in-from-top-1 duration-100"
                                             onClick={e => e.stopPropagation()}
                                         >
-                                            <div className="px-3 py-2 border-b border-telegram-border/50">
-                                                <p className="text-[10px] uppercase tracking-wider text-telegram-subtext">{t('archive.extract_all_to')}</p>
+                                            <div className="px-3 py-2 border-b border-stash-border/50">
+                                                <p className="text-[10px] uppercase tracking-wider text-stash-subtext">{t('archive.extract_all_to')}</p>
                                             </div>
                                             <div className="max-h-48 overflow-y-auto py-1">
                                                 <button
                                                     onClick={() => { setExtractAllTargetFolderId(null); setExtractAllFolderMenuOpen(false); }}
-                                                    className={`w-full flex items-center gap-2 px-3 py-2 text-xs text-left hover:bg-telegram-hover transition-colors ${extractAllTargetFolderId === null ? 'bg-emerald-500/10 text-emerald-600' : 'text-telegram-text'}`}
+                                                    className={`w-full flex items-center gap-2 px-3 py-2 text-xs text-left hover:bg-stash-hover transition-colors ${extractAllTargetFolderId === null ? 'bg-emerald-500/10 text-emerald-600' : 'text-stash-text'}`}
                                                 >
                                                     <HardDrive className="w-3.5 h-3.5 shrink-0" />
                                                     <span className="truncate">{t('common.saved_messages')}</span>
@@ -423,7 +423,7 @@ export function ArchiveViewerModal({
                                                     <button
                                                         key={f.id}
                                                         onClick={() => { setExtractAllTargetFolderId(f.id); setExtractAllFolderMenuOpen(false); }}
-                                                        className={`w-full flex items-center gap-2 px-3 py-2 text-xs text-left hover:bg-telegram-hover transition-colors ${extractAllTargetFolderId === f.id ? 'bg-emerald-500/10 text-emerald-600' : 'text-telegram-text'}`}
+                                                        className={`w-full flex items-center gap-2 px-3 py-2 text-xs text-left hover:bg-stash-hover transition-colors ${extractAllTargetFolderId === f.id ? 'bg-emerald-500/10 text-emerald-600' : 'text-stash-text'}`}
                                                     >
                                                         <Folder className="w-3.5 h-3.5 shrink-0" />
                                                         <span className="truncate">{f.name}</span>
@@ -446,8 +446,8 @@ export function ArchiveViewerModal({
                     {/* Loading */}
                     {loading && (
                         <div className="flex flex-col items-center justify-center py-16 space-y-3">
-                            <Loader2 className="w-8 h-8 text-telegram-primary animate-spin" />
-                            <p className="text-sm text-telegram-subtext">{t('common.loading')}</p>
+                            <Loader2 className="w-8 h-8 text-stash-primary animate-spin" />
+                            <p className="text-sm text-stash-subtext">{t('common.loading')}</p>
                         </div>
                     )}
 
@@ -455,10 +455,10 @@ export function ArchiveViewerModal({
                     {error && !loading && (
                         <div className="flex flex-col items-center justify-center py-16 space-y-3 px-6">
                             <AlertTriangle className="w-10 h-10 text-amber-500" />
-                            <p className="text-sm text-center text-telegram-text font-medium">
+                            <p className="text-sm text-center text-stash-text font-medium">
                                 {t('archive.failed_read')}
                             </p>
-                            <p className="text-xs text-center text-telegram-subtext max-w-sm break-words">
+                            <p className="text-xs text-center text-stash-subtext max-w-sm break-words">
                                 {error}
                             </p>
                         </div>
@@ -467,8 +467,8 @@ export function ArchiveViewerModal({
                     {/* Empty */}
                     {entries && entries.length === 0 && !loading && !error && (
                         <div className="flex flex-col items-center justify-center py-16 space-y-3">
-                            <Archive className="w-10 h-10 text-telegram-subtext/50" />
-                            <p className="text-sm text-telegram-subtext">{t('archive.empty_archive')}</p>
+                            <Archive className="w-10 h-10 text-stash-subtext/50" />
+                            <p className="text-sm text-stash-subtext">{t('archive.empty_archive')}</p>
                         </div>
                     )}
 
@@ -478,20 +478,20 @@ export function ArchiveViewerModal({
                             {entries.map((entry, i) => (
                                 <div
                                     key={`${entry.filename}-${i}`}
-                                    className="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-telegram-hover/50 transition-colors group"
+                                    className="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-stash-hover/50 transition-colors group"
                                 >
                                     {/* Icon */}
                                     <div className="shrink-0">
                                         {entry.is_dir ? (
-                                            <Folder className="w-5 h-5 text-telegram-primary" />
+                                            <Folder className="w-5 h-5 text-stash-primary" />
                                         ) : (
-                                            <File className="w-5 h-5 text-telegram-subtext/60" />
+                                            <File className="w-5 h-5 text-stash-subtext/60" />
                                         )}
                                     </div>
 
                                     {/* Name */}
                                     <div className="min-w-0 flex-1">
-                                        <p className="text-sm text-telegram-text truncate">
+                                        <p className="text-sm text-stash-text truncate">
                                             {entry.is_dir ? entry.filename.replace(/\/$/, '') : entry.filename}
                                         </p>
                                         {/* Per-file status during Extract All */}
@@ -499,7 +499,7 @@ export function ArchiveViewerModal({
                                             extractAllProgress ? (
                                                 /* Upload progress bar */
                                                 <div className="flex items-center gap-1.5 mt-1">
-                                                    <div className="flex-1 h-1 bg-telegram-hover rounded-full overflow-hidden max-w-[160px]">
+                                                    <div className="flex-1 h-1 bg-stash-hover rounded-full overflow-hidden max-w-[160px]">
                                                         <div
                                                             className="h-full bg-emerald-500 rounded-full transition-all duration-300 ease-out"
                                                             style={{ width: `${Math.min(extractAllProgress.percent, 99)}%` }}
@@ -512,8 +512,8 @@ export function ArchiveViewerModal({
                                             ) : (
                                                 /* Extracting spinner */
                                                 <div className="flex items-center gap-1.5 mt-1">
-                                                    <Loader2 className="w-2.5 h-2.5 text-telegram-subtext animate-spin" />
-                                                    <span className="text-[10px] text-telegram-subtext">{t('archive.extracting')}</span>
+                                                    <Loader2 className="w-2.5 h-2.5 text-stash-subtext animate-spin" />
+                                                    <span className="text-[10px] text-stash-subtext">{t('archive.extracting')}</span>
                                                 </div>
                                             )
                                         ) : extractAllEntryStatuses.current.get(i) === 'done' ? (
@@ -547,17 +547,17 @@ export function ArchiveViewerModal({
                                     <div className="shrink-0 text-right flex flex-col items-end">
                                         {!entry.is_dir ? (
                                             <>
-                                                <p className="text-xs text-telegram-text font-mono">
+                                                <p className="text-xs text-stash-text font-mono">
                                                     {formatBytes(entry.size)}
                                                 </p>
                                                 {entry.compressed_size !== entry.size && (
-                                                    <p className="text-[10px] text-telegram-subtext/60 font-mono">
+                                                    <p className="text-[10px] text-stash-subtext/60 font-mono">
                                                         {formatBytes(entry.compressed_size)} compressed
                                                     </p>
                                                 )}
                                             </>
                                         ) : (
-                                            <p className="text-[10px] text-telegram-subtext/60">folder</p>
+                                            <p className="text-[10px] text-stash-subtext/60">folder</p>
                                         )}
                                     </div>
                                 </div>
@@ -567,10 +567,10 @@ export function ArchiveViewerModal({
                 </div>
 
                 {/* Footer */}
-                <div className="p-3 border-t border-telegram-border bg-telegram-hover/10 shrink-0">
+                <div className="p-3 border-t border-stash-border bg-stash-hover/10 shrink-0">
                     <button
                         onClick={onClose}
-                        className="w-full px-4 py-2 rounded-lg bg-telegram-hover hover:bg-telegram-hover/70 text-telegram-text text-sm font-medium transition-colors"
+                        className="w-full px-4 py-2 rounded-lg bg-stash-hover hover:bg-stash-hover/70 text-stash-text text-sm font-medium transition-colors"
                     >
                         {t('common.close')}
                     </button>
@@ -715,7 +715,7 @@ function ExtractButton({ file, activeFolderId, folders, entryIndex, entryName, e
                 <button
                     onClick={handleExtract}
                     disabled={isBusy}
-                    className="px-2 py-1 rounded-l-md text-[11px] font-medium opacity-0 group-hover:opacity-100 transition-all bg-telegram-primary/10 hover:bg-telegram-primary/20 text-telegram-primary disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1"
+                    className="px-2 py-1 rounded-l-md text-[11px] font-medium opacity-0 group-hover:opacity-100 transition-all bg-stash-primary/10 hover:bg-stash-primary/20 text-stash-primary disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1"
                     title={`Extract "${entryName}" (${formatBytes(entrySize)}) to ${targetFolderName}`}
                 >
                     {isBusy ? (
@@ -730,7 +730,7 @@ function ExtractButton({ file, activeFolderId, folders, entryIndex, entryName, e
                 <button
                     onClick={(e) => { e.stopPropagation(); setFolderMenuOpen(o => !o); }}
                     disabled={isBusy}
-                    className="px-1 py-1 rounded-r-md text-[11px] opacity-0 group-hover:opacity-100 transition-all bg-telegram-primary/10 hover:bg-telegram-primary/20 text-telegram-primary disabled:opacity-50 disabled:cursor-not-allowed flex items-center border-l border-telegram-primary/20"
+                    className="px-1 py-1 rounded-r-md text-[11px] opacity-0 group-hover:opacity-100 transition-all bg-stash-primary/10 hover:bg-stash-primary/20 text-stash-primary disabled:opacity-50 disabled:cursor-not-allowed flex items-center border-l border-stash-primary/20"
                     title={`Target: ${targetFolderName}`}
                 >
                     <ChevronDown className={`w-2.5 h-2.5 transition-transform ${folderMenuOpen ? 'rotate-180' : ''}`} />
@@ -740,22 +740,22 @@ function ExtractButton({ file, activeFolderId, folders, entryIndex, entryName, e
             {/* Folder dropdown */}
             {folderMenuOpen && (
                 <div
-                    className="absolute right-2 mt-8 z-[220] w-48 bg-telegram-surface border border-telegram-border rounded-lg shadow-xl overflow-hidden animate-in fade-in slide-in-from-top-1 duration-100"
+                    className="absolute right-2 mt-8 z-[220] w-48 bg-stash-surface border border-stash-border rounded-lg shadow-xl overflow-hidden animate-in fade-in slide-in-from-top-1 duration-100"
                     onClick={e => e.stopPropagation()}
                 >
-                    <div className="px-3 py-2 border-b border-telegram-border/50">
-                        <p className="text-[10px] uppercase tracking-wider text-telegram-subtext">{t('archive.extract_to')}</p>
+                    <div className="px-3 py-2 border-b border-stash-border/50">
+                        <p className="text-[10px] uppercase tracking-wider text-stash-subtext">{t('archive.extract_to')}</p>
                     </div>
                     <div className="max-h-48 overflow-y-auto py-1">
                         {/* Saved Messages */}
                         <button
                             onClick={() => { setTargetFolderId(null); setFolderMenuOpen(false); }}
-                            className={`w-full flex items-center gap-2 px-3 py-2 text-xs text-left hover:bg-telegram-hover transition-colors ${targetFolderId === null ? 'bg-telegram-primary/10 text-telegram-primary' : 'text-telegram-text'}`}
+                            className={`w-full flex items-center gap-2 px-3 py-2 text-xs text-left hover:bg-stash-hover transition-colors ${targetFolderId === null ? 'bg-stash-primary/10 text-stash-primary' : 'text-stash-text'}`}
                         >
                             <HardDrive className="w-3.5 h-3.5 shrink-0" />
                             <span className="truncate">{t('common.saved_messages')}</span>
                             {targetFolderId === null && (
-                                <span className="ml-auto shrink-0 w-1.5 h-1.5 rounded-full bg-telegram-primary" />
+                                <span className="ml-auto shrink-0 w-1.5 h-1.5 rounded-full bg-stash-primary" />
                             )}
                         </button>
                         {/* Folders */}
@@ -763,12 +763,12 @@ function ExtractButton({ file, activeFolderId, folders, entryIndex, entryName, e
                             <button
                                 key={f.id}
                                 onClick={() => { setTargetFolderId(f.id); setFolderMenuOpen(false); }}
-                                className={`w-full flex items-center gap-2 px-3 py-2 text-xs text-left hover:bg-telegram-hover transition-colors ${targetFolderId === f.id ? 'bg-telegram-primary/10 text-telegram-primary' : 'text-telegram-text'}`}
+                                className={`w-full flex items-center gap-2 px-3 py-2 text-xs text-left hover:bg-stash-hover transition-colors ${targetFolderId === f.id ? 'bg-stash-primary/10 text-stash-primary' : 'text-stash-text'}`}
                             >
                                 <Folder className="w-3.5 h-3.5 shrink-0" />
                                 <span className="truncate">{f.name}</span>
                                 {targetFolderId === f.id && (
-                                    <span className="ml-auto shrink-0 w-1.5 h-1.5 rounded-full bg-telegram-primary" />
+                                    <span className="ml-auto shrink-0 w-1.5 h-1.5 rounded-full bg-stash-primary" />
                                 )}
                             </button>
                         ))}
@@ -779,13 +779,13 @@ function ExtractButton({ file, activeFolderId, folders, entryIndex, entryName, e
             {/* Inline progress bar — always visible during active upload */}
             {showProgress && (
                 <div className={`w-full flex items-center gap-1.5 transition-all ${uploading ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`}>
-                    <div className="flex-1 h-1 bg-telegram-hover rounded-full overflow-hidden">
+                    <div className="flex-1 h-1 bg-stash-hover rounded-full overflow-hidden">
                         <div
-                            className="h-full bg-telegram-primary rounded-full transition-all duration-300 ease-out"
+                            className="h-full bg-stash-primary rounded-full transition-all duration-300 ease-out"
                             style={{ width: `${progressPct}%` }}
                         />
                     </div>
-                    <span className="text-[10px] text-telegram-subtext font-mono tabular-nums shrink-0">
+                    <span className="text-[10px] text-stash-subtext font-mono tabular-nums shrink-0">
                         {progressPct}%
                     </span>
                 </div>

@@ -66,7 +66,7 @@ export function RecentWatchBar({ entries, currentFiles, onPlay, onPlayFile, onRe
             <div className="flex items-center justify-between mb-3">
                 <div className="flex items-center gap-2">
                     <History className="w-4 h-4 text-cyan-400" />
-                    <span className="text-xs font-mono font-bold text-telegram-text uppercase tracking-wider">
+                    <span className="text-xs font-mono font-bold text-stash-text uppercase tracking-wider">
                         Continue Watching / Recent Watch
                     </span>
                     <span className="text-[10px] font-mono px-1.5 py-0.2 rounded bg-slate-900 border border-gray-800 text-cyan-400">
