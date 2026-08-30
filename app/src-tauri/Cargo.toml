@@ -50,7 +50,7 @@ bcrypt = "0.16"
 constant_time_eq = "0.5"
 zip = { version = "2", default-features = false, features = ["deflate"] }
 rar = "0.4"
-sevenz-rust2 = "0.7"
+sevenz-rust2 = "0.22"
 walkdir = "2"
 sqlite = { version = "0.37.0", features = ["bundled"] }
 mp4parse = "0.17"
