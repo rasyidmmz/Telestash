@@ -168,14 +168,11 @@ pub async fn delete_folder_inner(
 
     let peer = resolve_peer(client, Some(folder_id), peer_cache).await?;
     
-    let input_channel = match peer {
-        Peer::Channel(c) => {
-             let chan = &c.raw;
-             tl::enums::InputChannel::Channel(tl::types::InputChannel {
-                 channel_id: chan.id,
-                 access_hash: chan.access_hash.ok_or("No access hash for channel")?,
-              })
-        },
+    let input_channel = match tl::enums::InputPeer::from(peer) {
+        tl::enums::InputPeer::Channel(ic) => tl::enums::InputChannel::Channel(tl::types::InputChannel {
+                 channel_id: ic.channel_id,
+                 access_hash: ic.access_hash,
+              }),
         _ => return Err("Only channels (folders) can be deleted.".to_string()),
     };
     
@@ -222,14 +219,11 @@ pub async fn rename_folder_inner(
 
     let peer = resolve_peer(client, Some(folder_id), peer_cache).await?;
     
-    let input_channel = match peer {
-        Peer::Channel(c) => {
-             let chan = &c.raw;
-             tl::enums::InputChannel::Channel(tl::types::InputChannel {
-                 channel_id: chan.id,
-                 access_hash: chan.access_hash.ok_or("No access hash for channel")?,
-              })
-        },
+    let input_channel = match tl::enums::InputPeer::from(peer) {
+        tl::enums::InputPeer::Channel(ic) => tl::enums::InputChannel::Channel(tl::types::InputChannel {
+                 channel_id: ic.channel_id,
+                 access_hash: ic.access_hash,
+              }),
         _ => return Err("Only channels (folders) can be renamed.".to_string()),
     };
     
@@ -1772,29 +1766,7 @@ pub async fn cmd_rename_file(
         }
     };
 
-    let input_peer = match &peer {
-        Peer::User(u) => {
-            if folder_id.is_none() {
-                tl::enums::InputPeer::PeerSelf
-            } else {
-                let (id, access_hash) = match &u.raw {
-                    tl::enums::User::User(usr) => (usr.id, usr.access_hash.unwrap_or(0)),
-                    tl::enums::User::Empty(usr) => (usr.id, 0),
-                };
-                tl::enums::InputPeer::User(tl::types::InputPeerUser {
-                    user_id: id,
-                    access_hash,
-                })
-            }
-        }
-        Peer::Channel(c) => {
-            tl::enums::InputPeer::Channel(tl::types::InputPeerChannel {
-                channel_id: c.raw.id,
-                access_hash: c.raw.access_hash.ok_or("No access hash for channel")?,
-            })
-        }
-        _ => return Err("Unsupported peer type".to_string()),
-    };
+    let input_peer = tl::enums::InputPeer::from(peer);
 
     // 1. First attempt: Direct in-place EditMessage
     let edit_res = client.invoke(&tl::functions::messages::EditMessage {
@@ -2345,7 +2317,7 @@ pub async fn cmd_scan_folders(
         match &dialog.peer {
             Peer::Channel(c) => {
                 let id = c.raw.id;
-                discovered.insert(id, dialog.peer.clone());
+                if let Ok(Some(pr)) = dialog.peer.to_ref().await { discovered.insert(id, pr); }
 
                 let name = c.raw.title.clone();
                 let access_hash = c.raw.access_hash.unwrap_or(0);
@@ -2387,7 +2359,7 @@ pub async fn cmd_scan_folders(
                 }
             },
             Peer::User(u) => {
-                discovered.insert(u.raw.id(), dialog.peer.clone());
+                if let Ok(Some(pr)) = dialog.peer.to_ref().await { discovered.insert(u.raw.id(), pr); }
                 log::debug!("[SCAN] Cached User Peer: {}", u.raw.id());
             },
             peer => {
@@ -2526,8 +2498,8 @@ pub async fn cmd_toggle_folder_visibility(
         let client = client_opt.ok_or_else(|| "Client not connected".to_string())?;
 
         let peer = resolve_peer(&client, Some(folder_id), &state.peer_cache).await?;
-        let (channel_id, access_hash) = match &peer {
-            Peer::Channel(c) => (c.raw.id, c.raw.access_hash.ok_or("No access hash for channel")?),
+        let (channel_id, access_hash) = match tl::enums::InputPeer::from(peer) {
+            tl::enums::InputPeer::Channel(ic) => (ic.channel_id, ic.access_hash),
             _ => return Err("Only channels (folders) can be toggled.".to_string()),
         };
 
@@ -2716,8 +2688,8 @@ pub async fn cmd_export_folder_invite(
     let client = client_opt.ok_or_else(|| "Client not connected".to_string())?;
 
     let peer = resolve_peer(&client, Some(folder_id), &state.peer_cache).await?;
-    let (channel_id, access_hash) = match &peer {
-        Peer::Channel(c) => (c.raw.id, c.raw.access_hash.ok_or("No access hash for channel")?),
+    let (channel_id, access_hash) = match tl::enums::InputPeer::from(peer) {
+        tl::enums::InputPeer::Channel(ic) => (ic.channel_id, ic.access_hash),
         _ => return Err("Only channels (folders) can have invite links.".to_string()),
     };
 

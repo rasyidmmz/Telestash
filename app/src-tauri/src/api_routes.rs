@@ -97,26 +97,8 @@ impl Drop for CleanupStream {
     }
 }
 
-fn peer_to_input_peer(peer: &Peer) -> Result<tl::enums::InputPeer, String> {
-    match peer {
-        Peer::User(u) => {
-            let (id, access_hash) = match &u.raw {
-                tl::enums::User::User(usr) => (usr.id, usr.access_hash.unwrap_or(0)),
-                tl::enums::User::Empty(usr) => (usr.id, 0),
-            };
-            Ok(tl::enums::InputPeer::User(tl::types::InputPeerUser {
-                user_id: id,
-                access_hash,
-            }))
-        }
-        Peer::Channel(c) => {
-            Ok(tl::enums::InputPeer::Channel(tl::types::InputPeerChannel {
-                channel_id: c.raw.id,
-                access_hash: c.raw.access_hash.ok_or("No access hash for channel")?,
-            }))
-        }
-        _ => Err("Unsupported peer type".to_string()),
-    }
+fn peer_to_input_peer(peer: grammers_session::types::PeerRef) -> Result<tl::enums::InputPeer, String> {
+    Ok(tl::enums::InputPeer::from(peer))
 }
 
 /// Spawn a blocking task to delete stale thumbnail and preview cache entries
@@ -1113,7 +1095,7 @@ async fn api_update_file(
             );
         }
 
-        let input_peer = match peer_to_input_peer(&rename_peer) {
+        let input_peer = match peer_to_input_peer(rename_peer) {
             Ok(ip) => ip,
             Err(e) => return json_error("PEER_CONVERT_ERROR", &e, 400),
         };

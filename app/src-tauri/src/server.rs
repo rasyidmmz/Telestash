@@ -236,7 +236,7 @@ pub fn build_media_response(
 
 fn build_split_media_response(
     client: &grammers_client::Client,
-    peer: Peer,
+    peer: grammers_session::types::PeerRef,
     manifest: SplitManifest,
     cache_scope: String,
     req: &actix_web::HttpRequest,
