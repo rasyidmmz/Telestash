@@ -223,6 +223,20 @@ fn cmd_get_system_diagnostics(
 pub fn run() {
     env_logger::init();
 
+    // libsql (grammers-session's storage) asserts in its global init that
+    // SQLITE_CONFIG_SERIALIZED can still be set; sqlite3_config returns
+    // SQLITE_MISUSE once any SQLite in this process has been initialized,
+    // and db.rs opens its databases during setup — so libsql must go first
+    // or the panic kills the session task and session restore hangs forever.
+    {
+        let warm_path = std::env::temp_dir().join("telestash-libsql-warmup.session");
+        let _ = tauri::async_runtime::block_on(async {
+            let _ = grammers_session::storages::SqliteSession::open(&warm_path).await;
+        });
+        let _ = std::fs::remove_file(&warm_path);
+        log::info!("libsql threading config warmed up before other SQLite users");
+    }
+
     let stream_token = generate_stream_token();
 
     // Shared handle for stopping the Actix streaming server during shutdown
