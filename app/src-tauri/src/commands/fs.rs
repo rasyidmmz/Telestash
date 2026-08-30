@@ -1,6 +1,7 @@
 use tauri::{Emitter, Manager, State};
 use std::sync::Arc;
 use grammers_client::media::Media;
+use grammers_session::types::PeerRef;
 use grammers_client::peer::Peer;
 use grammers_client::message::InputMessage;
 use grammers_tl_types as tl;
@@ -421,9 +422,9 @@ pub(crate) async fn split_manifest_from_media(
     match media {
         Media::Document(d)
             if is_split_manifest_candidate(
-                d.name(),
+                d.name().unwrap_or_default(),
                 d.mime_type(),
-                d.size() as u64,
+                d.size().unwrap_or(0) as u64,
                 caption,
             ) =>
         {
@@ -1772,6 +1773,7 @@ pub async fn cmd_rename_file(
     let edit_res = client.invoke(&tl::functions::messages::EditMessage {
         peer: input_peer,
         id: message_id,
+        rich_message: None,
         no_webpage: false,
         invert_media: false,
         message: Some(new_name.clone()),
@@ -2180,7 +2182,7 @@ pub async fn cmd_get_files(
             }
             let (name, size, mime, ext) = match doc {
                 Media::Document(d) => {
-                    let doc_name = d.name().to_string();
+                    let doc_name = d.name().unwrap_or_default().to_string();
                     // Prefer the message caption (set by rename via EditMessage) over the
                     // document's built-in filename attribute, so renames persist across refreshes.
                     let display_name = if caption.is_empty() { doc_name.clone() } else { caption.to_string() };
@@ -2693,6 +2695,10 @@ pub async fn cmd_export_folder_invite(
     };
 
     // Check if channel already has a public username (fetched via the session-resolved peer)
+    let input_channel = tl::enums::InputChannel::Channel(tl::types::InputChannel {
+        channel_id,
+        access_hash,
+    });
     let username: Option<String> = match client.invoke(&tl::functions::channels::GetChannels {
         id: vec![input_channel.clone()],
     }).await.map_err(|e| e.to_string())? {

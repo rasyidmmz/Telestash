@@ -307,10 +307,10 @@ async fn api_list_files(
                         // Prefer the message caption (set by rename via EditMessage)
                         let caption = msg.text();
                         let display_name = if caption.is_empty() { doc_name } else { caption.to_string() };
-                        (display_name, Some(d.size().unwrap_or(0)), d.mime_type().map(|s| s.to_string()))
+                        (display_name, d.size().unwrap_or(0), d.mime_type().map(|s| s.to_string()))
                     }
-                    Media::Photo(_) => ("Photo.jpg".to_string(), Some(0), Some("image/jpeg".into())),
-                    _ => ("Unknown".to_string(), Some(0), None),
+                    Media::Photo(_) => ("Photo.jpg".to_string(), 0, Some("image/jpeg".into())),
+                    _ => ("Unknown".to_string(), 0, None),
                 };
 
                 all_files.push(ApiFile {
@@ -489,10 +489,10 @@ async fn api_get_file(
                             let doc_name = d.name().unwrap_or_default().to_string();
                             let caption = msg.text();
                             let display_name = if caption.is_empty() { doc_name } else { caption.to_string() };
-                            (display_name, Some(d.size().unwrap_or(0)), d.mime_type().map(|s| s.to_string()))
+                            (display_name, d.size().unwrap_or(0), d.mime_type().map(|s| s.to_string()))
                         }
-                        Media::Photo(_) => ("Photo.jpg".to_string(), Some(0), Some("image/jpeg".into())),
-                        _ => ("Unknown".to_string(), Some(0), None),
+                        Media::Photo(_) => ("Photo.jpg".to_string(), 0, Some("image/jpeg".into())),
+                        _ => ("Unknown".to_string(), 0, None),
                     };
                     return HttpResponse::Ok().json(ApiFile {
                         id: msg.id() as i64,
@@ -907,7 +907,7 @@ async fn api_search_files(
 
     let mut matching_files = Vec::new();
     for (fid, peer) in &peers_to_scan {
-        let mut msgs = client.iter_messages(*peer).limit(200);
+        let mut msgs = client.iter_messages(peer).limit(200);
         while let Some(msg) = msgs.next().await.ok().flatten() {
             if let Some(doc) = msg.media() {
                 let (name, size, mime) = match doc {
@@ -915,10 +915,10 @@ async fn api_search_files(
                         let doc_name = d.name().unwrap_or_default().to_string();
                         let caption = msg.text();
                         let display_name = if caption.is_empty() { doc_name } else { caption.to_string() };
-                        (display_name, Some(d.size().unwrap_or(0)), d.mime_type().map(|s| s.to_string()))
+                        (display_name, d.size().unwrap_or(0), d.mime_type().map(|s| s.to_string()))
                     }
-                    Media::Photo(_) => ("Photo.jpg".to_string(), Some(0), Some("image/jpeg".into())),
-                    _ => ("Unknown".to_string(), Some(0), None),
+                    Media::Photo(_) => ("Photo.jpg".to_string(), 0, Some("image/jpeg".into())),
+                    _ => ("Unknown".to_string(), 0, None),
                 };
                 
                 if name.to_lowercase().contains(&search_q.to_lowercase()) {
@@ -1612,7 +1612,7 @@ async fn api_storage_stats(
     for (fid, folder_name, peer) in peers_to_scan {
         let mut file_count = 0;
         let mut size_bytes = 0;
-        let mut msgs = client.iter_messages(*peer).limit(200);
+        let mut msgs = client.iter_messages(peer).limit(200);
         while let Some(msg) = msgs.next().await.ok().flatten() {
             if let Some(doc) = msg.media() {
                 let (size, mime) = match doc {
@@ -1694,12 +1694,12 @@ async fn api_storage_duplicates(
     let mut file_groups: HashMap<(String, u64), Vec<ApiFile>> = HashMap::new();
 
     for (fid, peer) in peers_to_scan {
-        let mut msgs = client.iter_messages(*peer).limit(200);
+        let mut msgs = client.iter_messages(peer).limit(200);
         while let Some(msg) = msgs.next().await.ok().flatten() {
             if let Some(doc) = msg.media() {
                 let (name, size, mime) = match doc {
                     Media::Document(d) => (d.name().unwrap_or_default().to_string(), d.size().unwrap_or(0) as u64, d.mime_type().map(|s| s.to_string())),
-                    Media::Photo(_) => ("Photo.jpg".to_string(), Some(0), Some("image/jpeg".into())),
+                    Media::Photo(_) => ("Photo.jpg".to_string(), 0, Some("image/jpeg".into())),
                     _ => continue,
                 };
 
