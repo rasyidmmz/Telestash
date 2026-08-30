@@ -652,7 +652,7 @@ async fn api_bulk_files(
                 delete_ids.push(*message_id);
                 if let Some(media) = msg.media() {
                     if let Some(manifest) = split_manifest_from_media(&client, &media, msg.text()).await {
-                        if let Err(e) = validate_split_parts_present(&client, &peer, &manifest, "API bulk split delete").await {
+                        if let Err(e) = validate_split_parts_present(&client, peer, &manifest, "API bulk split delete").await {
                             return json_error("SPLIT_INVALID", &e, 409);
                         }
                         delete_ids.extend(manifest.parts.iter().map(|part| part.message_id));
@@ -660,7 +660,7 @@ async fn api_bulk_files(
                 }
             }
 
-            if let Err(e) = delete_message_ids(&client, &peer, &delete_ids, "API bulk delete").await {
+            if let Err(e) = delete_message_ids(&client, peer, &delete_ids, "API bulk delete").await {
                 return json_error("DELETE_FAILED", &e, 500);
             }
 
@@ -907,7 +907,7 @@ async fn api_search_files(
 
     let mut matching_files = Vec::new();
     for (fid, peer) in &peers_to_scan {
-        let mut msgs = client.iter_messages(peer).limit(200);
+        let mut msgs = client.iter_messages(*peer).limit(200);
         while let Some(msg) = msgs.next().await.ok().flatten() {
             if let Some(doc) = msg.media() {
                 let (name, size, mime) = match doc {
@@ -977,14 +977,14 @@ async fn api_delete_file(
     let mut ids = vec![message_id];
     if let Some(media) = msg.media() {
         if let Some(manifest) = split_manifest_from_media(&client, &media, msg.text()).await {
-            if let Err(e) = validate_split_parts_present(&client, &peer, &manifest, "API split delete").await {
+            if let Err(e) = validate_split_parts_present(&client, peer, &manifest, "API split delete").await {
                 return json_error("SPLIT_INVALID", &e, 409);
             }
             ids.extend(manifest.parts.iter().map(|part| part.message_id));
         }
     }
 
-    match delete_message_ids(&client, &peer, &ids, "API delete").await {
+    match delete_message_ids(&client, peer, &ids, "API delete").await {
         Ok(_) => HttpResponse::Ok().json(serde_json::json!({ "success": true })),
         Err(e) => json_error("DELETE_FAILED", &e, 500),
     }

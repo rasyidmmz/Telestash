@@ -916,7 +916,7 @@ async fn upload_large_file_split(
         if state.cancelled_transfers.read().await.contains(tid) {
             state.cancelled_transfers.write().await.remove(tid);
             clear_split_upload_state(&resume_path).await;
-            return split_error(client, &peer, &uploaded_ids, "Transfer cancelled".to_string()).await;
+            return split_error(client, peer, &uploaded_ids, "Transfer cancelled".to_string()).await;
         }
 
         if let Some(resumed) = resume_by_index.remove(&index) {
@@ -940,7 +940,7 @@ async fn upload_large_file_split(
             clear_split_upload_state(&resume_path).await;
             return split_error(
                 client,
-                &peer,
+                peer,
                 &uploaded_ids,
                 format!("Failed to seek split source: {}", e),
             )
@@ -952,12 +952,12 @@ async fn upload_large_file_split(
             Ok(_) => {
                 let _ = tokio::fs::remove_file(&part_path).await;
                 clear_split_upload_state(&resume_path).await;
-                return split_error(client, &peer, &uploaded_ids, "Split produced an empty part".to_string()).await;
+                return split_error(client, peer, &uploaded_ids, "Split produced an empty part".to_string()).await;
             }
             Err(e) => {
                 let _ = tokio::fs::remove_file(&part_path).await;
                 clear_split_upload_state(&resume_path).await;
-                return split_error(client, &peer, &uploaded_ids, e).await;
+                return split_error(client, peer, &uploaded_ids, e).await;
             }
         };
 
@@ -966,7 +966,7 @@ async fn upload_large_file_split(
         let part_path_str = part_path.to_string_lossy().to_string();
         let msg_id = match upload_path_and_send(
             client,
-            &peer,
+            peer,
             &part_path_str,
             upload_name,
             caption,
@@ -1020,7 +1020,7 @@ async fn upload_large_file_split(
         clear_split_upload_state(&resume_path).await;
         return split_error(
             client,
-            &peer,
+            peer,
             &uploaded_ids,
             format!("Split size mismatch: expected {} bytes, uploaded {}", size, uploaded_bytes),
         )
@@ -1042,11 +1042,11 @@ async fn upload_large_file_split(
     };
     if let Err(e) = validate_split_manifest(&manifest) {
         clear_split_upload_state(&resume_path).await;
-        return split_error(client, &peer, &uploaded_ids, e).await;
+        return split_error(client, peer, &uploaded_ids, e).await;
     }
-    if let Err(e) = validate_split_parts_present(client, &peer, &manifest, "Split upload validation").await {
+    if let Err(e) = validate_split_parts_present(client, peer, &manifest, "Split upload validation").await {
         clear_split_upload_state(&resume_path).await;
-        return split_error(client, &peer, &uploaded_ids, e).await;
+        return split_error(client, peer, &uploaded_ids, e).await;
     }
     let manifest_json = match serde_json::to_vec(&manifest) {
         Ok(json) => json,
@@ -1054,7 +1054,7 @@ async fn upload_large_file_split(
             clear_split_upload_state(&resume_path).await;
             return split_error(
                 client,
-                &peer,
+                peer,
                 &uploaded_ids,
                 format!("Failed to encode split manifest: {}", e),
             )
@@ -1064,13 +1064,13 @@ async fn upload_large_file_split(
     let manifest_path = split_temp_path(&file_name, &format!("{{name}}{}", SPLIT_MANIFEST_SUFFIX));
     if let Err(e) = tokio::fs::write(&manifest_path, manifest_json).await {
         clear_split_upload_state(&resume_path).await;
-        return split_error(client, &peer, &uploaded_ids, format!("Failed to write split manifest: {}", e)).await;
+        return split_error(client, peer, &uploaded_ids, format!("Failed to write split manifest: {}", e)).await;
     }
 
     let manifest_path_str = manifest_path.to_string_lossy().to_string();
     let manifest_id = match upload_path_and_send(
         client,
-        &peer,
+        peer,
         &manifest_path_str,
         SPLIT_MANIFEST_UPLOAD_NAME.to_string(),
         file_name.clone(),
@@ -1836,7 +1836,7 @@ pub async fn cmd_delete_file(
     let mut ids = vec![message_id];
     if let Some(media) = msg.media() {
         if let Some(manifest) = split_manifest_from_media(&client, &media, msg.text()).await {
-            validate_split_parts_present(&client, &peer, &manifest, "Split delete").await?;
+            validate_split_parts_present(&client, peer, &manifest, "Split delete").await?;
             ids.extend(manifest.parts.iter().map(|p| p.message_id));
         }
     }
@@ -1901,7 +1901,7 @@ pub async fn cmd_download_file(
     if let Some(manifest) = split_manifest_from_media(&client, &media, msg.text()).await {
         return download_split_file(
             &client,
-            &peer,
+            peer,
             manifest,
             &actual_save_path,
             &tid,
@@ -2186,7 +2186,7 @@ pub async fn cmd_get_files(
                     // Prefer the message caption (set by rename via EditMessage) over the
                     // document's built-in filename attribute, so renames persist across refreshes.
                     let display_name = if caption.is_empty() { doc_name.clone() } else { caption.to_string() };
-                    let s = d.size();
+                    let s = d.size().unwrap_or(0);
                     let m = d.mime_type().map(|s| s.to_string());
                     // Extension always from the original document name for correct file-type icon
                     let e = std::path::Path::new(&doc_name).extension().map(|os| os.to_str().unwrap_or("").to_string());
@@ -2703,7 +2703,7 @@ pub async fn cmd_export_folder_invite(
         id: vec![input_channel.clone()],
     }).await.map_err(|e| e.to_string())? {
         tl::enums::messages::Chats::Chats(ch) => ch.chats.first().and_then(|c| match c {
-            tl::enums::Chat::Channel(ch) => ch.username,
+            tl::enums::Chat::Channel(ch) => ch.username.clone(),
             _ => None,
         }),
         _ => None,
