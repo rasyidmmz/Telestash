@@ -248,7 +248,7 @@ async fn api_list_files(
             if let Peer::Channel(ref c) = dialog.peer {
                 let name = c.raw.title.clone();
                 if name.to_lowercase().contains("[td]") {
-                    peers_to_scan.push((Some(c.raw.id), dialog.peer.clone()));
+                    if let Ok(Some(pr)) = dialog.peer.to_ref().await { peers_to_scan.push((Some(c.raw.id), pr)); }
                 }
             }
         }
@@ -303,7 +303,7 @@ async fn api_list_files(
             if let Some(doc) = msg.media() {
                 let (name, size, mime) = match doc {
                     Media::Document(d) => {
-                        let doc_name = d.name().to_string();
+                        let doc_name = d.name().unwrap_or_default().to_string();
                         // Prefer the message caption (set by rename via EditMessage)
                         let caption = msg.text();
                         let display_name = if caption.is_empty() { doc_name } else { caption.to_string() };
@@ -486,7 +486,7 @@ async fn api_get_file(
                 if let Some(doc) = msg.media() {
                     let (name, size, mime) = match doc {
                         Media::Document(d) => {
-                            let doc_name = d.name().to_string();
+                            let doc_name = d.name().unwrap_or_default().to_string();
                             let caption = msg.text();
                             let display_name = if caption.is_empty() { doc_name } else { caption.to_string() };
                             (display_name, d.size(), d.mime_type().map(|s| s.to_string()))
@@ -543,7 +543,7 @@ async fn api_download_file(
                         _ => "application/octet-stream".to_string(),
                     };
                     let filename = match &media {
-                        Media::Document(d) => d.name().to_string(),
+                        Media::Document(d) => d.name().unwrap_or_default().to_string(),
                         Media::Photo(_) => "Photo.jpg".to_string(),
                         _ => "download".to_string(),
                     };
@@ -741,7 +741,7 @@ async fn api_bulk_files(
                 if let Some(m) = messages.into_iter().flatten().next() {
                     if let Some(media) = m.media() {
                         let filename = match &media {
-                            Media::Document(d) => d.name().to_string(),
+                            Media::Document(d) => d.name().unwrap_or_default().to_string(),
                             Media::Photo(_) => format!("photo_{}.jpg", mid),
                             _ => format!("file_{}.bin", mid),
                         };
@@ -877,7 +877,7 @@ async fn api_search_files(
             if let Peer::Channel(ref c) = dialog.peer {
                 let name = c.raw.title.clone();
                 if name.to_lowercase().contains("[td]") {
-                    peers_to_scan.push((Some(c.raw.id), dialog.peer.clone()));
+                    if let Ok(Some(pr)) = dialog.peer.to_ref().await { peers_to_scan.push((Some(c.raw.id), pr)); }
                 }
             }
         }
@@ -907,12 +907,12 @@ async fn api_search_files(
 
     let mut matching_files = Vec::new();
     for (fid, peer) in &peers_to_scan {
-        let mut msgs = client.iter_messages(peer).limit(200);
+        let mut msgs = client.iter_messages(*peer).limit(200);
         while let Some(msg) = msgs.next().await.ok().flatten() {
             if let Some(doc) = msg.media() {
                 let (name, size, mime) = match doc {
                     Media::Document(d) => {
-                        let doc_name = d.name().to_string();
+                        let doc_name = d.name().unwrap_or_default().to_string();
                         let caption = msg.text();
                         let display_name = if caption.is_empty() { doc_name } else { caption.to_string() };
                         (display_name, d.size(), d.mime_type().map(|s| s.to_string()))
@@ -1080,7 +1080,7 @@ async fn api_update_file(
         // Verify the message exists before attempting to edit it.
         // This avoids a cryptic MESSAGE_ID_INVALID RPC error when the message
         // was moved or deleted since the file list was loaded.
-        let messages = match client.get_messages_by_id(&rename_peer, &[message_id]).await {
+        let messages = match client.get_messages_by_id(rename_peer, &[message_id]).await {
             Ok(msgs) => msgs,
             Err(e) => return json_error("FETCH_ERROR", &format!("Failed to fetch message for rename: {}", e), 500),
         };
@@ -1103,6 +1103,7 @@ async fn api_update_file(
         if let Err(e) = client.invoke(&tl::functions::messages::EditMessage {
             peer: input_peer,
             id: message_id,
+            rich_message: None,
             no_webpage: false,
             invert_media: false,
             message: Some(new_name.clone()),
@@ -1440,7 +1441,7 @@ async fn api_list_folders(
     while let Some(dialog) = dialogs.next().await.ok().flatten() {
         if let Peer::Channel(ref c) = dialog.peer {
             let id = c.raw.id;
-            discovered.insert(id, dialog.peer.clone());
+            if let Ok(Some(pr)) = dialog.peer.to_ref().await { discovered.insert(id, pr); }
             let name = c.raw.title.clone();
             if name.to_lowercase().contains("[td]") {
                 let display_name = name.replace(" [TD]", "").replace(" [td]", "").replace("[TD]", "").replace("[td]", "").trim().to_string();
@@ -1598,7 +1599,7 @@ async fn api_storage_stats(
             let name = c.raw.title.clone();
             if name.to_lowercase().contains("[td]") {
                 let display_name = name.replace(" [TD]", "").replace(" [td]", "").replace("[TD]", "").replace("[td]", "").trim().to_string();
-                peers_to_scan.push((Some(c.raw.id), display_name, dialog.peer.clone()));
+                if let Ok(Some(pr)) = dialog.peer.to_ref().await { peers_to_scan.push((Some(c.raw.id), display_name, pr)); }
             }
         }
     }
@@ -1611,11 +1612,11 @@ async fn api_storage_stats(
     for (fid, folder_name, peer) in peers_to_scan {
         let mut file_count = 0;
         let mut size_bytes = 0;
-        let mut msgs = client.iter_messages(peer).limit(200);
+        let mut msgs = client.iter_messages(*peer).limit(200);
         while let Some(msg) = msgs.next().await.ok().flatten() {
             if let Some(doc) = msg.media() {
                 let (size, mime) = match doc {
-                    Media::Document(d) => (d.size() as u64, d.mime_type().unwrap_or("application/octet-stream").to_string()),
+                    Media::Document(d) => (d.size().unwrap_or(0) as u64, d.mime_type().unwrap_or("application/octet-stream").to_string()),
                     Media::Photo(_) => (0, "image/jpeg".to_string()),
                     _ => continue,
                 };
@@ -1685,7 +1686,7 @@ async fn api_storage_duplicates(
         if let Peer::Channel(ref c) = dialog.peer {
             let name = c.raw.title.clone();
             if name.to_lowercase().contains("[td]") {
-                peers_to_scan.push((Some(c.raw.id), dialog.peer.clone()));
+                if let Ok(Some(pr)) = dialog.peer.to_ref().await { peers_to_scan.push((Some(c.raw.id), pr)); }
             }
         }
     }
@@ -1693,11 +1694,11 @@ async fn api_storage_duplicates(
     let mut file_groups: HashMap<(String, u64), Vec<ApiFile>> = HashMap::new();
 
     for (fid, peer) in peers_to_scan {
-        let mut msgs = client.iter_messages(peer).limit(200);
+        let mut msgs = client.iter_messages(*peer).limit(200);
         while let Some(msg) = msgs.next().await.ok().flatten() {
             if let Some(doc) = msg.media() {
                 let (name, size, mime) = match doc {
-                    Media::Document(d) => (d.name().to_string(), d.size() as u64, d.mime_type().map(|s| s.to_string())),
+                    Media::Document(d) => (d.name().unwrap_or_default().to_string(), d.size().unwrap_or(0) as u64, d.mime_type().map(|s| s.to_string())),
                     Media::Photo(_) => ("Photo.jpg".to_string(), 0, Some("image/jpeg".into())),
                     _ => continue,
                 };

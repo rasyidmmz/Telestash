@@ -76,7 +76,7 @@ pub fn build_media_response(
     extras: StreamingExtras,
 ) -> HttpResponse {
     let size = match media {
-        Media::Document(d) => d.size() as u64,
+        Media::Document(d) => d.size().unwrap_or(0) as u64,
         Media::Photo(_) => 0,
         _ => 0,
     };
@@ -401,7 +401,7 @@ fn build_split_media_response(
 
 fn media_size(media: &Media) -> Option<u64> {
     match media {
-        Media::Document(d) => Some(d.size() as u64),
+        Media::Document(d) => Some(d.size().unwrap_or(0) as u64),
         _ => None,
     }
 }
