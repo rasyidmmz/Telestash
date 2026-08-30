@@ -47,7 +47,7 @@ pub async fn ensure_client_initialized(
     }
 
     let runner_num = state.runner_count.fetch_add(1, Ordering::SeqCst) + 1;
-    log::info!("Initializing Telegram Client #{} with API ID: {}", runner_num, api_id);
+    log::info!("AUTH[1] enter ensure_client_initialized runner={} api_id={}", runner_num, api_id);
     
     // Resolve session path safely
     let app_data_dir = app_handle.path().app_data_dir()
@@ -60,7 +60,7 @@ pub async fn ensure_client_initialized(
     
     let session_path = app_data_dir.join("telegram.session");
     let session_path_str = session_path.to_string_lossy().to_string();
-    log::info!("Opening session at: {}", session_path_str);
+    log::info!("AUTH[2] opening session at: {}", session_path_str);
     
     let mut session_open_result = SqliteSession::open(&session_path_str).await;
     
@@ -77,6 +77,7 @@ pub async fn ensure_client_initialized(
         }
     }
 
+    log::info!("AUTH[3] session open await returned");
     let session = match session_open_result.map_err(|e| e.to_string()) {
         Ok(s) => s,
         Err(e) => {
@@ -91,11 +92,13 @@ pub async fn ensure_client_initialized(
         }
     };
         
+    log::info!("AUTH[4] building SenderPool");
     let connection_params = grammers_mtsender::ConnectionParams::default();
 
     let session = Arc::new(session);
     let pool = SenderPool::with_configuration(session, api_id, connection_params);
     let SenderPool { runner, handle, .. } = pool;
+    log::info!("AUTH[5] constructing Client");
     let client = Client::new(handle);
 
     // Create shutdown channel for this runner
@@ -103,6 +106,7 @@ pub async fn ensure_client_initialized(
     *state.runner_shutdown.lock().unwrap() = Some(shutdown_tx);
 
     // Spawn the network runner with shutdown support
+    log::info!("AUTH[6] spawning runner");
     tauri::async_runtime::spawn(async move {
         tokio::select! {
             // Normal runner operation
@@ -116,6 +120,7 @@ pub async fn ensure_client_initialized(
         }
     });
     
+    log::info!("AUTH[7] ensure_client_initialized complete");
     *client_guard = Some(client.clone());
     Ok(client)
 }
@@ -145,7 +150,10 @@ pub async fn cmd_check_connection(
 
     if let Some(client) = client_msg_opt {
         // Ping (e.g., get_me)
-        if client.get_me().await.is_ok() {
+        log::info!("AUTH[8] calling get_me");
+        let ping = client.get_me().await;
+        log::info!("AUTH[9] get_me returned: {}", if ping.is_ok() {"ok"} else {"err"});
+        if ping.is_ok() {
             return Ok(true);
         }
         log::warn!("Connection check failed (get_me). Attempting reconnect...");
