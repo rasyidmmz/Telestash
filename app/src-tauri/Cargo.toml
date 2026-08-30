@@ -46,7 +46,7 @@ tauri-plugin-process = "2"
 tauri-plugin-clipboard-manager = "2"
 rand = "0.9"
 sha2 = "0.10"
-bcrypt = "0.16"
+bcrypt = "0.19"
 constant_time_eq = "0.5"
 zip = { version = "2", default-features = false, features = ["deflate"] }
 rar = "0.4"
