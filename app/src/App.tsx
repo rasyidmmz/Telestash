@@ -71,11 +71,18 @@ function AppContent() {
         }
       } catch (err) {
         console.warn("Session restore failed, showing login:", err);
+        toast.error(`Session restore failed: ${String(err).slice(0, 300)}`, { duration: 12000 });
         setAuthStatus("unauthenticated");
       }
     };
 
-    checkSession();
+    let settled = false;
+    setTimeout(() => {
+      if (!settled) {
+        toast.info("Session restore is taking unusually long — the Telegram connection may be hanging.", { duration: 15000 });
+      }
+    }, 30000);
+    checkSession().finally(() => { settled = true; });
   }, []);
 
   // Show thank-you toast when user enters the app after clicking the ad
