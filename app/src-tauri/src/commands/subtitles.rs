@@ -1,6 +1,6 @@
 use tauri::{Manager, State};
 use serde::{Deserialize, Serialize};
-use grammers_client::InputMessage;
+use grammers_client::message::InputMessage;
 use std::path::Path;
 use crate::TelegramState;
 use crate::db::DbConnection;
@@ -111,7 +111,7 @@ pub async fn cmd_attach_video_subtitles(
                 .map_err(|e| format!("Failed to upload paired subtitle: {}", e))?;
 
             let caption = format!("#telestash_sub:{}:{}:vobsub_sub", video_message_id, language);
-            let msg = client.send_message(&peer, InputMessage::new().file(uploaded).text(caption)).await
+            let msg = client.send_message(peer, InputMessage::new().file(uploaded).text(caption)).await
                 .map_err(|e| format!("Failed to send paired subtitle message: {}", e))?;
             paired_msg_id = Some(msg.id() as i64);
         }
@@ -125,7 +125,7 @@ pub async fn cmd_attach_video_subtitles(
         .map_err(|e| format!("Failed to upload subtitle file: {}", e))?;
 
     let caption = format!("#telestash_sub:{}:{}:{}", video_message_id, language, format);
-    let msg = client.send_message(&peer, InputMessage::new().file(uploaded).text(caption)).await
+    let msg = client.send_message(peer, InputMessage::new().file(uploaded).text(caption)).await
         .map_err(|e| format!("Failed to send subtitle message: {}", e))?;
     let primary_msg_id = msg.id() as i64;
 

@@ -5,7 +5,7 @@ use serde::{Serialize, Deserialize};
 use tauri::{State, Manager};
 use tauri_plugin_shell::process::CommandEvent;
 use tokio::io::AsyncBufReadExt;
-use grammers_client::types::Media;
+use grammers_client::media::Media;
 use crate::TelegramState;
 use crate::commands::streaming::StreamConfig;
 

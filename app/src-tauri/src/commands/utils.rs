@@ -1,12 +1,21 @@
 use grammers_client::Client;
-use grammers_client::types::Peer;
+use grammers_client::peer::Peer;
+use grammers_session::types::PeerRef;
 use tauri::State;
 use crate::bandwidth::BandwidthManager;
 use std::collections::HashMap;
 use std::sync::Arc;
 use tokio::sync::RwLock;
 
-/// Resolve a folder_id to a Telegram Peer, using the cache for O(1) lookups.
+/// Convert a resolved wrapper Peer into the PeerRef accepted by client methods.
+async fn peer_to_ref(peer: &Peer) -> Result<PeerRef, String> {
+    peer.to_ref()
+        .await
+        .map_err(|e| e.to_string())?
+        .ok_or_else(|| "Peer is not usable (no access hash / not in session cache)".to_string())
+}
+
+/// Resolve a folder_id to a Telegram PeerRef, using the cache for O(1) lookups.
 ///
 /// - `folder_id == None` → returns the user's own peer (Saved Messages)
 /// - Cache hit → returns immediately without any network call
@@ -14,20 +23,20 @@ use tokio::sync::RwLock;
 pub async fn resolve_peer(
     client: &Client,
     folder_id: Option<i64>,
-    peer_cache: &Arc<RwLock<HashMap<i64, Peer>>>,
-) -> Result<Peer, String> {
+    peer_cache: &Arc<RwLock<HashMap<i64, PeerRef>>>,
+) -> Result<PeerRef, String> {
     if let Some(fid) = folder_id {
         // Fast path: check cache
         {
             let cache = peer_cache.read().await;
             if let Some(peer) = cache.get(&fid) {
-                return Ok(peer.clone());
+                return Ok(*peer);
             }
         }
 
         // Slow path: scan dialogs and populate cache
         log::debug!("Peer cache miss for folder_id={}, scanning dialogs...", fid);
-        let mut found: Option<Peer> = None;
+        let mut found: Option<PeerRef> = None;
         let mut dialogs = client.iter_dialogs();
         let mut discovered = HashMap::new();
         while let Some(dialog) = dialogs.next().await.map_err(|e| e.to_string())? {
@@ -37,10 +46,14 @@ pub async fn resolve_peer(
                 _ => None,
             };
             if let Some(id) = peer_id {
-                discovered.insert(id, dialog.peer.clone());
-                if id == fid {
-                    found = Some(dialog.peer.clone());
-                    // Don't break — keep scanning to warm the cache
+                if let Ok(Some(pr)) = dialog.peer.to_ref().await {
+                    discovered.insert(id, pr);
+                    if id == fid {
+                        found = Some(pr);
+                        // Don't break — keep scanning to warm the cache
+                    }
+                } else {
+                    log::warn!("Dialog {} could not be converted to a PeerRef", id);
                 }
             }
         }
@@ -53,14 +66,14 @@ pub async fn resolve_peer(
         found.ok_or_else(|| format!("Folder/Chat {} not found", fid))
     } else {
         match client.get_me().await {
-            Ok(me) => Ok(Peer::User(me)),
+            Ok(me) => peer_to_ref(&Peer::User(me)).await,
             Err(e) => Err(e.to_string()),
         }
     }
 }
 
 /// Clear the peer cache (called on logout)
-pub async fn clear_peer_cache(peer_cache: &Arc<RwLock<HashMap<i64, Peer>>>) {
+pub async fn clear_peer_cache(peer_cache: &Arc<RwLock<HashMap<i64, PeerRef>>>) {
     peer_cache.write().await.clear();
 }
 

@@ -1,5 +1,5 @@
 use tauri::State;
-use grammers_client::types::Media;
+use grammers_client::media::Media;
 use crate::TelegramState;
 use crate::commands::utils::resolve_peer;
 use crate::mp4_utils;
@@ -27,7 +27,7 @@ pub async fn cmd_get_video_metadata(
     let peer = resolve_peer(&client, folder_id, &state.peer_cache).await?;
 
     let messages = client
-        .get_messages_by_id(&peer, &[message_id])
+        .get_messages_by_id(peer, &[message_id])
         .await
         .map_err(|e| e.to_string())?;
     let msg = messages.into_iter().flatten().next()
@@ -39,7 +39,7 @@ pub async fn cmd_get_video_metadata(
         _ => return Err("Not a document".to_string()),
     };
     let file_name = match &media {
-        Media::Document(d) => d.name().to_lowercase(),
+        Media::Document(d) => d.name().unwrap_or_default().to_lowercase(),
         _ => "file".to_string(),
     };
 

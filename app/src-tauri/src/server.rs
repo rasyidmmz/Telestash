@@ -4,8 +4,8 @@ use crate::commands::TelegramState;
 use crate::commands::fs::split_manifest_from_media;
 use crate::commands::streaming::stream_token_header_name;
 use crate::commands::utils::resolve_peer;
-use grammers_client::types::Media;
-use grammers_client::types::Peer;
+use grammers_client::media::Media;
+use grammers_client::peer::Peer;
 use crate::models::SplitManifest;
 use crate::transfer_log::record_transfer_log;
 
@@ -288,7 +288,7 @@ fn build_split_media_response(
             let (media, cached_size) = match get_cached_split_part(&cache_key) {
                 Some(cached) => cached,
                 None => {
-                    let messages = match client.get_messages_by_id(&peer, &[part.message_id]).await {
+                    let messages = match client.get_messages_by_id(peer, &[part.message_id]).await {
                         Ok(m) => m,
                         Err(e) => {
                             let err = format!("Split stream failed to fetch part {}: {}", part.message_id, e);
@@ -530,7 +530,7 @@ async fn handle_stream_media_request(
             Ok(peer) => {
                 log::debug!("Stream request: Peer resolved, fetching message {}...", message_id);
                 // Try to fetch message efficiently
-                 match client.get_messages_by_id(&peer, &[message_id]).await {
+                 match client.get_messages_by_id(peer, &[message_id]).await {
                     Ok(messages) => {
                         if let Some(Some(msg)) = messages.first() {
                             if let Some(media) = msg.media() {

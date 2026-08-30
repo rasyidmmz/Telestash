@@ -94,14 +94,14 @@ pub async fn ensure_client_initialized(
 
     let session = Arc::new(session);
     let pool = SenderPool::with_configuration(session, api_id, connection_params);
-    let client = Client::new(&pool);
-    
+    let SenderPool { runner, handle, .. } = pool;
+    let client = Client::new(handle);
+
     // Create shutdown channel for this runner
     let (shutdown_tx, shutdown_rx) = oneshot::channel::<()>();
     *state.runner_shutdown.lock().unwrap() = Some(shutdown_tx);
-    
+
     // Spawn the network runner with shutdown support
-    let SenderPool { runner, .. } = pool;
     tauri::async_runtime::spawn(async move {
         tokio::select! {
             // Normal runner operation

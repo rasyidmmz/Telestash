@@ -2,7 +2,7 @@ use actix_web::{get, post, web, HttpRequest, HttpResponse, Responder, cookie::Co
 use crate::commands::TelegramState;
 use crate::commands::utils::resolve_peer;
 use crate::db::DbConnection;
-use grammers_client::types::Media;
+use grammers_client::media::Media;
 use sha2::{Sha256, Digest};
 use std::sync::Arc;
 use serde::Deserialize;

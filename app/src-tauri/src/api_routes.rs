@@ -16,8 +16,9 @@ use crate::bandwidth::BandwidthManager;
 use crate::transfer_policy::TransferPolicy;
 use crate::transfer_retry::{flood_wait_retry_attempts, should_retry_upload_error, upload_error_kind, upload_stream_retry_attempts};
 use crate::transfer_log::record_transfer_log;
-use grammers_client::types::{Media, Peer};
-use grammers_client::InputMessage;
+use grammers_client::media::Media;
+use grammers_client::peer::Peer;
+use grammers_client::message::InputMessage;
 use grammers_tl_types as tl;
 use serde::Serialize;
 use std::sync::Arc;
@@ -655,7 +656,7 @@ async fn api_bulk_files(
                 Err(e) => return json_error("PEER_ERROR", &e, 400),
             };
 
-            let messages = match client.get_messages_by_id(&peer, &ids).await {
+            let messages = match client.get_messages_by_id(peer, &ids).await {
                 Ok(messages) => messages,
                 Err(e) => return json_error("FETCH_ERROR", &format!("Failed to inspect files before delete: {}", e), 500),
             };
@@ -702,7 +703,7 @@ async fn api_bulk_files(
                 Err(e) => return json_error("PEER_ERROR", &e, 400),
             };
             if source_folder != target_folder {
-                let messages = match client.get_messages_by_id(&source_peer, &ids).await {
+                let messages = match client.get_messages_by_id(source_peer, &ids).await {
                     Ok(messages) => messages,
                     Err(e) => return json_error("FETCH_ERROR", &format!("Failed to inspect files before move: {}", e), 500),
                 };
@@ -751,7 +752,7 @@ async fn api_bulk_files(
                         let max_bytes = net_config.archive_max_bytes();
 
                         for mid in &ids {
-                let messages = match client.get_messages_by_id(&peer, &[*mid]).await {
+                let messages = match client.get_messages_by_id(peer, &[*mid]).await {
                     Ok(m) => m,
                     Err(_) => continue,
                 };
@@ -982,7 +983,7 @@ async fn api_delete_file(
         Err(e) => return json_error("PEER_ERROR", &e, 400),
     };
 
-    let messages = match client.get_messages_by_id(&peer, &[message_id]).await {
+    let messages = match client.get_messages_by_id(peer, &[message_id]).await {
         Ok(messages) => messages,
         Err(e) => return json_error("DELETE_FAILED", &e.to_string(), 500),
     };
@@ -1043,7 +1044,7 @@ async fn api_copy_file(
         Err(e) => return json_error("TARGET_PEER_ERROR", &e, 400),
     };
 
-    if let Ok(messages) = client.get_messages_by_id(&source_peer, &[message_id]).await {
+    if let Ok(messages) = client.get_messages_by_id(source_peer, &[message_id]).await {
         if let Some(Some(msg)) = messages.first() {
             if let Some(media) = msg.media() {
                 if split_manifest_from_media(&client, &media, msg.text()).await.is_some() {
@@ -1146,7 +1147,7 @@ async fn api_update_file(
                 Err(e) => return json_error("TARGET_PEER_ERROR", &e, 400),
             };
 
-            if let Ok(messages) = client.get_messages_by_id(&source_peer, &[message_id]).await {
+            if let Ok(messages) = client.get_messages_by_id(source_peer, &[message_id]).await {
                 if let Some(Some(msg)) = messages.first() {
                     if let Some(media) = msg.media() {
                         if split_manifest_from_media(&client, &media, msg.text()).await.is_some() {
@@ -1159,7 +1160,7 @@ async fn api_update_file(
             if let Err(e) = client.forward_messages(&target_peer, &[message_id], &source_peer).await {
                 return json_error("MOVE_FORWARD_FAILED", &e.to_string(), 500);
             }
-            if let Err(e) = client.delete_messages(&source_peer, &[message_id]).await {
+            if let Err(e) = client.delete_messages(source_peer, &[message_id]).await {
                 return json_error("MOVE_DELETE_FAILED", &e.to_string(), 500);
             }
 
@@ -1379,7 +1380,7 @@ async fn api_upload_file(
     let mut sent_msg = None;
 
     for attempt in 0..=max_retries {
-        match client.send_message(&peer, message.clone()).await {
+        match client.send_message(peer, message.clone()).await {
             Ok(msg) => {
                 sent_msg = Some(msg);
                 break;
@@ -1819,7 +1820,7 @@ async fn api_get_file_thumbnail(
         Err(e) => return json_error("PEER_ERROR", &e, 400),
     };
 
-    let messages = match client.get_messages_by_id(&peer, &[message_id]).await {
+    let messages = match client.get_messages_by_id(peer, &[message_id]).await {
         Ok(msgs) => msgs,
         Err(e) => return json_error("GET_MESSAGE_ERROR", &e.to_string(), 500),
     };
@@ -1912,7 +1913,7 @@ async fn api_media_info(
         Err(e) => return json_error("PEER_ERROR", &e, 400),
     };
 
-    let messages = match client.get_messages_by_id(&peer, &[message_id]).await {
+    let messages = match client.get_messages_by_id(peer, &[message_id]).await {
         Ok(msgs) => msgs,
         Err(e) => return json_error("GET_MESSAGE_ERROR", &e.to_string(), 500),
     };

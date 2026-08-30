@@ -6,7 +6,7 @@ use tokio::io::AsyncWriteExt;
 use crate::commands::TelegramState;
 use crate::commands::utils::resolve_peer;
 use crate::transfer_policy::TransferPolicy;
-use grammers_client::types::Media;
+use grammers_client::media::Media;
 
 #[derive(Debug, Clone, Serialize)]
 pub struct ArchiveEntry {

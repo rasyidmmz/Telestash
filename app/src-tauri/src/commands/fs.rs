@@ -1,7 +1,8 @@
 use tauri::{Emitter, Manager, State};
 use std::sync::Arc;
-use grammers_client::types::{Media, Peer};
-use grammers_client::InputMessage;
+use grammers_client::media::Media;
+use grammers_client::peer::Peer;
+use grammers_client::message::InputMessage;
 use grammers_tl_types as tl;
 use crate::TelegramState;
 use crate::models::{
@@ -61,7 +62,7 @@ fn get_upload_cancellations() -> &'static Mutex<HashMap<String, oneshot::Sender<
 pub async fn create_folder_inner(
     name: &str,
     client: &grammers_client::Client,
-    peer_cache: &Arc<tokio::sync::RwLock<HashMap<i64, Peer>>>,
+    peer_cache: &Arc<tokio::sync::RwLock<HashMap<i64, PeerRef>>>,
 ) -> Result<FolderMetadata, String> {
     log::info!("Creating Telegram Channel: {}", name);
     
@@ -82,8 +83,8 @@ pub async fn create_folder_inner(
              let chat = u.chats.first().ok_or("No chat in updates")?;
              match chat {
                  tl::enums::Chat::Channel(c) => {
-                      let channel_obj = grammers_client::types::Channel { raw: c.clone() };
-                      peer_cache.write().await.insert(c.id, grammers_client::types::Peer::Channel(channel_obj));
+                      let peer_ref = grammers_session::types::PeerRef::from(tl::enums::Chat::Channel(c.clone()));
+                      peer_cache.write().await.insert(c.id, peer_ref);
                       (c.id, c.access_hash.unwrap_or(0))
                  }
                  _ => return Err("Created chat is not a channel".to_string()),
@@ -161,7 +162,7 @@ pub async fn cmd_create_folder(
 pub async fn delete_folder_inner(
     folder_id: i64,
     client: &grammers_client::Client,
-    peer_cache: &Arc<tokio::sync::RwLock<HashMap<i64, Peer>>>,
+    peer_cache: &Arc<tokio::sync::RwLock<HashMap<i64, PeerRef>>>,
 ) -> Result<bool, String> {
     log::info!("Deleting folder/channel: {}", folder_id);
 
@@ -215,7 +216,7 @@ pub async fn rename_folder_inner(
     folder_id: i64,
     new_name: &str,
     client: &grammers_client::Client,
-    peer_cache: &Arc<tokio::sync::RwLock<HashMap<i64, Peer>>>,
+    peer_cache: &Arc<tokio::sync::RwLock<HashMap<i64, PeerRef>>>,
 ) -> Result<bool, String> {
     log::info!("Renaming folder/channel: {} to {}", folder_id, new_name);
 
@@ -505,7 +506,7 @@ pub(crate) async fn validate_split_parts_present(
 
 fn media_size(media: &Media) -> Option<u64> {
     match media {
-        Media::Document(d) => Some(d.size() as u64),
+        Media::Document(d) => Some(d.size()? as u64),
         _ => None,
     }
 }
@@ -1674,7 +1675,7 @@ async fn cmd_upload_file_inner(
 
     for attempt in 0..=max_retries {
         send_attempts_made = attempt + 1;
-        match client.send_message(&peer, message.clone()).await {
+        match client.send_message(peer, message.clone()).await {
             Ok(_) => {
                 // Bandwidth was already reserved by try_reserve_up at start
         if !tid.is_empty() {
@@ -1758,7 +1759,7 @@ pub async fn cmd_rename_file(
     // Verify the message exists before attempting to edit it.
     // This avoids a cryptic MESSAGE_ID_INVALID RPC error when the message
     // was moved (forwarded → new ID) or deleted since the file list was loaded.
-    let messages = client.get_messages_by_id(&peer, &[message_id])
+    let messages = client.get_messages_by_id(peer, &[message_id])
         .await
         .map_err(|e| format!("Failed to fetch message for rename: {}", e))?;
     let target_msg = match messages.into_iter().flatten().next() {
@@ -1820,7 +1821,7 @@ pub async fn cmd_rename_file(
     // We seamlessly re-send the existing cloud media with the new name and delete the old message.
     if let Some(media) = target_msg.media() {
         let input_msg = InputMessage::new().text(new_name).copy_media(&media);
-        if client.send_message(&peer, input_msg).await.is_ok() {
+        if client.send_message(peer, input_msg).await.is_ok() {
             let _ = delete_message_ids(&client, &peer, &[message_id], "Rename forwarded message fallback").await;
             return Ok(true);
         }
@@ -1850,7 +1851,7 @@ pub async fn cmd_delete_file(
     // Verify the message exists before attempting to delete it.
     // This avoids a cryptic MESSAGE_ID_INVALID RPC error when the message
     // was already moved or deleted since the file list was loaded.
-    let messages = client.get_messages_by_id(&peer, &[message_id])
+    let messages = client.get_messages_by_id(peer, &[message_id])
         .await
         .map_err(|e| format!("Failed to fetch message for delete: {}", e))?;
     let msg = messages.iter().flatten().next().ok_or_else(|| format!(
@@ -1913,7 +1914,7 @@ pub async fn cmd_download_file(
     let peer = resolve_peer(&client, folder_id, &state.peer_cache).await?;
 
     // Use get_messages_by_id for efficient message lookup (same as server.rs)
-    let messages = client.get_messages_by_id(&peer, &[message_id]).await.map_err(|e| e.to_string())?;
+    let messages = client.get_messages_by_id(peer, &[message_id]).await.map_err(|e| e.to_string())?;
     
     let msg = messages.into_iter()
         .flatten()
@@ -1939,7 +1940,7 @@ pub async fn cmd_download_file(
     }
 
     let expected_file_size = match &media {
-        Media::Document(d) => Some(d.size() as u64),
+        Media::Document(d) => Some(d.size()? as u64),
         _ => None,
     };
     let total_size = expected_file_size.unwrap_or(match &media {
@@ -2115,7 +2116,7 @@ pub async fn cmd_move_files(
     let target_peer = resolve_peer(&client, target_folder_id, &state.peer_cache).await?;
 
     let source_messages = client
-        .get_messages_by_id(&source_peer, &message_ids)
+        .get_messages_by_id(source_peer, &message_ids)
         .await
         .map_err(|e| format!("Failed to inspect files before move: {}", e))?;
 
@@ -3330,7 +3331,7 @@ pub async fn cmd_upload_from_url(
 
     for attempt in 0..=max_retries {
         send_attempts_made = attempt + 1;
-        match client.send_message(&peer, message.clone()).await {
+        match client.send_message(peer, message.clone()).await {
             Ok(_) => {
                 send_success = true;
                 break;
