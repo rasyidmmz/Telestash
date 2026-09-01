@@ -1,5 +1,22 @@
 # Changelog
 
+## [1.3.0]
+
+### Added
+
+- **Vault identity & console layout**: self-hosted Outfit variable font (uniform typography everywhere), charcoal + gold Vault palette with refreshed theme presets, and a new console layout — icon navigation rail, folder drawer, and a compact command bar. Phosphor icons replace Lucide.
+- **CI workflow** (`.github/workflows/ci.yml`): every pull request and main push now runs the same validation as releases — `tsc --noEmit`, automated unit tests, and `cargo check --locked` on a Windows MSVC runner.
+
+### Changed
+
+- **Single ingestion path — file upload only**: uploads go through the file picker into the currently selected folder, with the upload entry as the first item in grid and list views. Folder upload (zip-and-upload), remote URL upload, and OS/Explorer drag-and-drop ingestion were removed along with their backend commands (`cmd_zip_folder`, `cmd_upload_from_url`), the unused `reqwest` dependency, and their UI/i18n surfaces. In-app drag-to-folder moves still work.
+- **Direct-only networking**: the `grammers-mtsender` `proxy` feature is no longer enabled; no proxy or VPN configuration remains in the app.
+- **Dependency updates**: framer-motion 12 → 13 (React 19 strict-mode compatible), bcrypt 0.16 → 0.19, sysinfo 0.30 → 0.39, actix-multipart 0.7 → 0.8, sevenz-rust2 0.7 → 0.22 (with archive API adaptation and upstream malicious-archive hardening), zip 2.4 → 4.6 (deflate-only feature set preserved).
+
+### Removed
+
+- Dead code: unused `DragDropOverlay` component and legacy planning documents; ~700 lines of unreachable backend upload machinery.
+
 ## [1.2.4]
 
 ### Changed
