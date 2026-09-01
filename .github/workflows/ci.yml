@@ -1,0 +1,93 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  validate:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Setup Node
+        uses: actions/setup-node@v7
+        with:
+          node-version: 26
+          cache: npm
+          cache-dependency-path: app/package-lock.json
+
+      - name: Install Rust MSVC toolchain
+        uses: dtolnay/rust-toolchain@2c7215f132e9ebf062739d9130488b56d53c060c
+        with:
+          toolchain: stable-x86_64-pc-windows-msvc
+
+      - name: Rust cache
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: './app/src-tauri -> target'
+
+      - name: Install frontend dependencies
+        working-directory: app
+        run: npm ci
+
+      - name: Validate frontend (tsc)
+        working-directory: app
+        shell: pwsh
+        run: |
+          $logPath = Join-Path $env:RUNNER_TEMP 'frontend-validation.log'
+          & npx tsc --noEmit --pretty false 2>&1 | Tee-Object -FilePath $logPath
+          if ($LASTEXITCODE -ne 0) {
+            $details = (Get-Content $logPath | Select-Object -Last 20) -join '%0A'
+            Write-Output "::error title=Frontend validation::$details"
+            exit $LASTEXITCODE
+          }
+
+      - name: Run automated unit tests
+        working-directory: app
+        shell: pwsh
+        run: |
+          $logPath = Join-Path $env:RUNNER_TEMP 'unit-tests-validation.log'
+          & npm test 2>&1 | Tee-Object -FilePath $logPath
+          if ($LASTEXITCODE -ne 0) {
+            $details = (Get-Content $logPath | Select-Object -Last 20) -join '%0A'
+            Write-Output "::error title=Unit tests validation::$details"
+            exit $LASTEXITCODE
+          }
+
+      - name: Provide MPV resource placeholder for Rust validation
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force app/src-tauri/bin | Out-Null
+          New-Item -ItemType File -Force app/src-tauri/bin/mpv-x86_64-pc-windows-msvc.exe | Out-Null
+          New-Item -ItemType Directory -Force app/src-tauri/resources/whisper | Out-Null
+          New-Item -ItemType File -Force app/src-tauri/resources/whisper/.gitkeep | Out-Null
+
+      - name: Validate Rust source (cargo check --locked)
+        working-directory: app/src-tauri
+        shell: pwsh
+        run: |
+          $logPath = Join-Path $env:RUNNER_TEMP 'rust-validation.log'
+          & cargo check --locked --message-format short 2>&1 | Tee-Object -FilePath $logPath
+          if ($LASTEXITCODE -ne 0) {
+            $details = (Get-Content $logPath | Select-Object -Last 20) -join '%0A'
+            Write-Output "::error title=Rust validation::$details"
+            exit $LASTEXITCODE
+          }
+
+      - name: Upload validation diagnostics
+        if: ${{ failure() }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: ci-diagnostics-${{ github.run_id }}
+          path: |
+            ${{ runner.temp }}/frontend-validation.log
+            ${{ runner.temp }}/unit-tests-validation.log
+            ${{ runner.temp }}/rust-validation.log
+          if-no-files-found: warn
