@@ -1,4 +1,4 @@
-import { Plus, HardDrive, Folder } from 'lucide-react';
+import { Plus, HardDrive, Folder } from '@phosphor-icons/react';
 import { useTranslation } from 'react-i18next';
 import { TelegramFolder } from '../../../types';
 

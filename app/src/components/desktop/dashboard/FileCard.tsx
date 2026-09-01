@@ -1,6 +1,6 @@
 import { motion } from 'framer-motion';
 import { useState, useEffect } from 'react';
-import { Folder, Eye, Trash2, Link, Download } from 'lucide-react';
+import { Folder, Eye, Trash2, Link, Download } from '../../shared/icons.tsx';
 import { invoke } from '@tauri-apps/api/core';
 import { TelegramFile } from '../../../types';
 import { createDragGhost } from '../../../utils';
@@ -130,9 +130,9 @@ export function FileCard({ file, onDelete, onDownload, onPreview, onShare, isSel
         >
             <motion.div
                 whileHover={{ y: -4 }}
-                className={`group cursor-pointer bg-stash-surface rounded-xl overflow-hidden border hover:shadow-[0_4px_20px_rgba(0,0,0,0.2)] transition-all relative
-                ${isSelected ? 'border-stash-primary bg-stash-primary/5 ring-1 ring-stash-primary' : 'border-stash-border hover:border-stash-primary/50'}
-                ${isDragOver ? 'ring-2 ring-stash-primary bg-stash-primary/20 scale-105' : ''}`}
+                className={`vault-file-card group cursor-pointer bg-stash-surface overflow-hidden border transition-all relative
+                ${isSelected ? 'is-selected' : ''}
+                ${isDragOver ? 'is-drag-over' : ''}`}
                 style={height ? { height: `${height}px` } : { aspectRatio: '4/3' }}
             >
                 {/* Thumbnail or Icon */}

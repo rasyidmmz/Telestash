@@ -1,5 +1,5 @@
 import { motion, AnimatePresence } from 'framer-motion';
-import { Download, X, RefreshCw, Sparkles } from 'lucide-react';
+import { Download, X, RefreshCw, Sparkles } from './icons.tsx';
 
 interface UpdateBannerProps {
     available: boolean;

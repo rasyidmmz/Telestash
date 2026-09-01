@@ -1,5 +1,5 @@
 import { AnimatePresence, motion } from 'framer-motion';
-import { AlertTriangle, Copy, Terminal, Trash2, X } from 'lucide-react';
+import { AlertTriangle, Copy, Terminal, Trash2, X } from '../../shared/icons.tsx';
 import { toast } from 'sonner';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { invoke } from '@tauri-apps/api/core';

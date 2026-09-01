@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { invoke } from '@tauri-apps/api/core';
 import { listen, UnlistenFn } from '@tauri-apps/api/event';
 import { useQueryClient } from '@tanstack/react-query';
-import { X, Folder, File, Archive, Loader2, AlertTriangle, FileArchive, Download, ChevronDown, HardDrive, Zap, Square, CheckCircle, XCircle } from 'lucide-react';
+import { X, Folder, File, Archive, Loader2, AlertTriangle, FileArchive, Download, ChevronDown, HardDrive, Zap, Square, CheckCircle, XCircle } from '../../shared/icons.tsx';
 import { useTranslation } from 'react-i18next';
 import { ArchiveEntry, TelegramFile, TelegramFolder } from '../../../types';
 import { formatBytes } from '../../../utils';

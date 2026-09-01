@@ -3,7 +3,7 @@ import { open } from '@tauri-apps/plugin-dialog';
 import { invoke } from '@tauri-apps/api/core';
 import { useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
-import { Subtitles, FolderOpen, CheckCircle2, AlertCircle, Loader2, X, FileText, Globe } from 'lucide-react';
+import { Subtitles, FolderOpen, CheckCircle2, AlertCircle, Loader2, X, FileText, Globe } from '../../shared/icons.tsx';
 import { TelegramFile } from '../../../types';
 import { isVideoFile } from '../../../utils';
 import { matchSubtitlesToVideos, SubtitleMatchResult, getLanguageLabel } from '../../../utils/subtitleMatcher';

@@ -1,5 +1,5 @@
 import { QueueItem } from "../../../types";
-import { X, RotateCcw, AlertCircle, Pause, Play } from "lucide-react";
+import { X, RotateCcw, AlertCircle, Pause, Play } from '../../shared/icons.tsx';
 
 function formatBytes(bytes: number): string {
     if (bytes === 0) return '0 B';

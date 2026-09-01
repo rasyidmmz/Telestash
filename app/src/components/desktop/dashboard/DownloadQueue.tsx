@@ -1,5 +1,5 @@
 import { DownloadItem } from "../../../types";
-import { Download, Check, X, AlertCircle, RotateCcw, Pause, Play } from "lucide-react";
+import { Download, Check, X, AlertCircle, RotateCcw, Pause, Play } from '../../shared/icons.tsx';
 
 function formatBytes(bytes: number): string {
     if (bytes === 0) return '0 B';

@@ -1,8 +1,4 @@
-import {
-    File, FileText, FileImage, FileVideo, FileAudio,
-    FileArchive, FileCode, FileSpreadsheet, Presentation,
-    FileType
-} from 'lucide-react';
+import { File, FileText, FileImage, FileVideo, FileAudio, FileArchive, FileCode, FileSpreadsheet, Presentation, FileType } from './icons.tsx';
 
 const extensionMap: Record<string, { icon: typeof File; color: string }> = {
     // Images

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Folder, MoreVertical } from 'lucide-react';
+import { Folder, MoreVertical } from '../../shared/icons.tsx';
 import { TelegramFile } from '../../../types';
 import { createDragGhost } from '../../../utils';
 import { FileTypeIcon } from '../../shared/FileTypeIcon';
@@ -88,10 +88,7 @@ export function FileListItem({
                     onDrop(e, file.id);
                 }
             }}
-            className={`group grid grid-cols-[2rem_minmax(0,1fr)_2.5rem] sm:grid-cols-[2rem_minmax(0,2fr)_6rem_8rem_2.5rem] gap-4 items-center px-4 py-3 rounded-lg cursor-pointer border border-transparent transition-all hover:bg-stash-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-stash-primary
-                ${selectedIds.includes(file.id) ? 'bg-stash-primary/10 border-stash-primary/20' : ''}
-                ${isDragOver ? 'ring-2 ring-stash-primary bg-stash-primary/20' : ''}
-            `}
+            className={`vault-file-row group ${selectedIds.includes(file.id) ? 'is-selected' : ''} ${isDragOver ? 'is-drag-over' : ''}`}
         >
             <div className="flex justify-center">
                 {isFolder ? <Folder className="w-5 h-5 text-stash-primary" /> : <FileTypeIcon filename={file.name} className="w-5 h-5" />}

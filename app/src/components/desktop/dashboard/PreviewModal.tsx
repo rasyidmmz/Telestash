@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { X, File, ChevronLeft, ChevronRight } from 'lucide-react';
+import { X, File, ChevronLeft, ChevronRight } from '../../shared/icons.tsx';
 import { invoke } from '@tauri-apps/api/core';
 import { convertFileSrc } from '@tauri-apps/api/core';
 import { TelegramFile } from '../../../types';

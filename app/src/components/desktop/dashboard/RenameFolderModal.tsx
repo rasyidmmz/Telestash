@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { Pencil, X } from 'lucide-react';
+import { Pencil, X } from '@phosphor-icons/react';
 import { useTranslation } from 'react-i18next';
 
 interface RenameFolderModalProps {

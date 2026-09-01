@@ -1,4 +1,4 @@
-import { Play, Clock, Trash2, History, Sparkles } from 'lucide-react';
+import { Play, Clock, Trash2, History, Sparkles } from '../../shared/icons.tsx';
 import { WatchHistoryEntry, removeWatchEntry, clearWatchHistory } from '../../../utils/watchHistory';
 import { formatBytes } from '../../../utils';
 import { TelegramFile } from '../../../types';

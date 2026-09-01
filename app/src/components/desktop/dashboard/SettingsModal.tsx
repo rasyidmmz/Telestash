@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, RotateCcw, Download, Upload, Trash2, HardDrive, Globe, Key, Copy, Check, RefreshCw, ChevronDown, Link, Sparkles, Info, Clipboard, Monitor, Loader2, Languages, Palette, Plus, Tag } from 'lucide-react';
+import { X, RotateCcw, Download, Upload, Trash2, HardDrive, Globe, Key, Copy, Check, RefreshCw, ChevronDown, Link, Sparkles, Info, Clipboard, Monitor, Loader2, Languages, Palette, Plus, Tag } from '../../shared/icons.tsx';
 import { invoke } from '@tauri-apps/api/core';
 import { open } from '@tauri-apps/plugin-shell';
 import { toast } from 'sonner';

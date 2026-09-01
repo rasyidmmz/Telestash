@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { X, Globe, ChevronDown } from 'lucide-react';
+import { X, Globe, ChevronDown } from '../../shared/icons.tsx';
 import { useTranslation } from 'react-i18next';
 import { TelegramFolder } from '../../../types';
 import { toast } from 'sonner';

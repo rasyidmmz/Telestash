@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion';
-import { UploadCloud } from 'lucide-react';
+import { UploadCloud } from '../../shared/icons.tsx';
 
 export function DragDropOverlay() {
     return (

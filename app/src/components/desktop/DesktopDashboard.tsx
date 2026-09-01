@@ -10,6 +10,7 @@ import { formatBytes, isMediaFile, isPdfFile, isArchiveFile, copyToClipboard } f
 
 // Components
 import { Sidebar } from './dashboard/Sidebar';
+import { VaultRail } from './dashboard/VaultRail';
 import { TopBar } from './dashboard/TopBar';
 import { FileExplorer } from './dashboard/FileExplorer';
 import { UploadQueue } from './dashboard/UploadQueue';
@@ -29,7 +30,7 @@ import { WatchLogsModal } from './dashboard/WatchLogsModal';
 import { StorageAnalyticsModal } from './dashboard/StorageAnalyticsModal';
 import { getRecentWatchHistory, recordWatchEvent, WatchHistoryEntry } from '../../utils/watchHistory';
 import { isVideoFile, isAudioFile } from '../../utils';
-import { Link, Copy, Check, X, Loader2 } from 'lucide-react';
+import { Link, Copy, Check, X, Loader2 } from '../shared/icons.tsx';
 
 // Hooks
 import { useTelegramConnection } from '../../hooks/useTelegramConnection';
@@ -38,6 +39,7 @@ import { useFileUpload } from '../../hooks/useFileUpload';
 import { useFileDownload } from '../../hooks/useFileDownload';
 import { useKeyboardShortcuts } from '../../hooks/useKeyboardShortcuts';
 import { useSettings } from '../../context/SettingsContext';
+import { useTheme } from '../../context/ThemeContext';
 import { useConfirm } from '../../context/ConfirmContext';
 import { useUpdate } from '../../context/UpdateContext';
 import { recordErrorLog } from '../../errorLogs';
@@ -58,6 +60,7 @@ export function Dashboard({ onLogout }: { onLogout: () => void }) {
 
 
     const { settings, updateSetting } = useSettings();
+    const { theme, toggleTheme } = useTheme();
     const { confirm } = useConfirm();
     const { checkForUpdates } = useUpdate();
     const viewMode = settings.viewMode;
@@ -70,6 +73,7 @@ export function Dashboard({ onLogout }: { onLogout: () => void }) {
     const [showLogs, setShowLogs] = useState(false);
     const [showWatchLogs, setShowWatchLogs] = useState(false);
     const [showAnalytics, setShowAnalytics] = useState(false);
+    const [showFolderDrawer, setShowFolderDrawer] = useState(false);
     const [watchHistory, setWatchHistory] = useState<WatchHistoryEntry[]>([]);
 
     const refreshWatchHistory = useCallback(() => {
@@ -742,44 +746,54 @@ export function Dashboard({ onLogout }: { onLogout: () => void }) {
                 )}
             </AnimatePresence>
 
-            <Sidebar
-                folders={folders}
-                groups={groups}
-                activeFolderId={activeFolderId}
-                setActiveFolderId={setActiveFolderId}
-                onDrop={handleDropOnFolder}
-                onDelete={handleFolderDelete}
-                onRename={(id, name) => setRenameFolder({ id, name })}
-                onToggleVisibility={async (id, _name, isPublic) => {
-                    try {
-                        await handleFolderToggleVisibility(id, !isPublic);
-                        queryClient.invalidateQueries({ queryKey: ['folders'] });
-                    } catch { /* toast handled in hook */ }
-                }}
-                onExportInvite={async (id, _name) => {
-                    try {
-                        const info = await handleExportFolderInvite(id);
-                        try {
-                            await copyToClipboard(info.link);
-                            toast.success(`Invite link copied: ${info.link}`);
-                        } catch (e) {
-                            toast.error(`Failed to copy to clipboard: ${e}`);
-                        }
-                    } catch { /* backend error already toasted in hook */ }
-                }}
-                onCreate={handleCreateFolder}
-                isSyncing={isSyncing}
+            <VaultRail
+                onFolders={() => setShowFolderDrawer(true)}
+                onUpload={handleManualUpload}
+                onAnalytics={() => setShowAnalytics(true)}
+                onSettings={() => setShowSettings(true)}
+                onToggleTheme={toggleTheme}
+                theme={theme}
                 isConnected={isConnected}
-                onSync={handleSyncFolders}
-                onLogout={handleLogout}
-                bandwidth={bandwidth || null}
-                onAssignFolderToGroup={handleAssignFolderToGroup}
-                onReorderFolders={handleReorderFolders}
-                onUpdateGroupOrder={handleUpdateGroupOrder}
-                onCreateGroup={handleCreateGroup}
-                onUpdateGroup={handleUpdateGroup}
-                onDeleteGroup={handleDeleteGroup}
+                uploadCount={uploadQueue.length}
+                downloadCount={downloadQueue.length}
             />
+
+            <AnimatePresence>
+                {showFolderDrawer && (
+                    <>
+                        <div className="vault-drawer-backdrop" onClick={() => setShowFolderDrawer(false)} />
+                        <aside className="vault-folder-drawer" aria-label="Collections drawer">
+                            <div className="vault-drawer-heading">
+                                <div><span className="vault-eyebrow">Vault index</span><h2>Collections</h2></div>
+                                <button className="vault-drawer-close" onClick={() => setShowFolderDrawer(false)} aria-label="Close collections">×</button>
+                            </div>
+                            <Sidebar
+                                folders={folders}
+                                groups={groups}
+                                activeFolderId={activeFolderId}
+                                setActiveFolderId={(id) => { setActiveFolderId(id); setShowFolderDrawer(false); }}
+                                onDrop={handleDropOnFolder}
+                                onDelete={handleFolderDelete}
+                                onRename={(id, name) => setRenameFolder({ id, name })}
+                                onToggleVisibility={async (id, _name, isPublic) => { try { await handleFolderToggleVisibility(id, !isPublic); queryClient.invalidateQueries({ queryKey: ['folders'] }); } catch { /* hook handles toast */ } }}
+                                onExportInvite={async (id, _name) => { try { const info = await handleExportFolderInvite(id); await copyToClipboard(info.link); toast.success(`Invite link copied: ${info.link}`); } catch { /* backend error already toasted */ } }}
+                                onCreate={handleCreateFolder}
+                                isSyncing={isSyncing}
+                                isConnected={isConnected}
+                                onSync={handleSyncFolders}
+                                onLogout={handleLogout}
+                                bandwidth={bandwidth || null}
+                                onAssignFolderToGroup={handleAssignFolderToGroup}
+                                onReorderFolders={handleReorderFolders}
+                                onUpdateGroupOrder={handleUpdateGroupOrder}
+                                onCreateGroup={handleCreateGroup}
+                                onUpdateGroup={handleUpdateGroup}
+                                onDeleteGroup={handleDeleteGroup}
+                            />
+                        </aside>
+                    </>
+                )}
+            </AnimatePresence>
 
             <main className="flex-1 flex flex-col min-w-0 overflow-hidden">
                 <TopBar

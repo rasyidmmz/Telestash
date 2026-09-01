@@ -1,4 +1,4 @@
-import { SearchX, Upload } from 'lucide-react';
+import { SearchX, Upload } from '../../shared/icons.tsx';
 import { useTranslation } from 'react-i18next';
 
 interface EmptyStateProps {

@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import { X, HardDrive, PieChart, Film, Music, FileText, Folder, Zap, Trash2 } from 'lucide-react';
+import { X, HardDrive, PieChart, Film, Music, FileText, Folder, Zap, Trash2 } from '../../shared/icons.tsx';
 import { TelegramFile, TelegramFolder } from '../../../types';
 import { formatBytes } from '../../../utils';
 import { toast } from 'sonner';

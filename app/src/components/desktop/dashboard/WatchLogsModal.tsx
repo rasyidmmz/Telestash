@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { X, Search, Trash2, Download, Film } from 'lucide-react';
+import { X, Search, Trash2, Download, Film } from '../../shared/icons.tsx';
 import { WatchLogEvent, getWatchLogs, clearWatchLogs, exportWatchLogsText } from '../../../utils/watchHistory';
 import { toast } from 'sonner';
 

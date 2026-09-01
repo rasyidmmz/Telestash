@@ -1,5 +1,5 @@
 import { useState, useMemo, useCallback, useRef, useEffect } from 'react';
-import { Plus, ArrowUpDown, ArrowUp, ArrowDown, FolderUp, ZoomIn, ZoomOut, Tv, Play, Sparkles, Subtitles } from 'lucide-react';
+import { Plus, ArrowUpDown, ArrowUp, ArrowDown, FolderUp, ZoomIn, ZoomOut, Tv, Play, Sparkles, Subtitles } from '../../shared/icons.tsx';
 import { useVirtualizer } from '@tanstack/react-virtual';
 import { useTranslation } from 'react-i18next';
 import { useSettings } from '../../../context/SettingsContext';
@@ -369,7 +369,7 @@ export function FileExplorer({
     return (
         <div
             ref={parentRef}
-            className="flex-1 p-6 overflow-auto custom-scrollbar"
+            className="vault-content-canvas"
         >
             {/* Series & Season Auto-Grouping Bar */}
             {seriesAnalysis.isSeriesFolder ? (
@@ -486,7 +486,7 @@ export function FileExplorer({
             {viewMode === 'grid' ? (
                 <>
 
-                    <div className="flex items-center gap-2 mb-4 text-xs text-stash-subtext">
+                    <div className="vault-control-row">
                         <span>Sort by:</span>
                         <button
                             onClick={() => handleSort('name')}

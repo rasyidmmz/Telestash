@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { HardDrive, Folder, Plus, RefreshCw, LogOut, ChevronLeft, ChevronRight, Settings2, Trash2, Check, X, Eye, EyeOff } from 'lucide-react';
+import { HardDrive, Folder, Plus, RefreshCw, LogOut, ChevronLeft, ChevronRight, Settings2, Trash2, Check, X, Eye, EyeOff } from '../../shared/icons.tsx';
 import { useTranslation } from 'react-i18next';
 import { version as appVersion } from '../../../../package.json';
 import { SidebarItem } from './SidebarItem';
