@@ -48,7 +48,7 @@ rand = "0.9"
 sha2 = "0.10"
 bcrypt = "0.19"
 constant_time_eq = "0.5"
-zip = { version = "2", default-features = false, features = ["deflate"] }
+zip = { version = "4", default-features = false, features = ["deflate"] }
 rar = "0.4"
 sevenz-rust2 = "0.7"
 walkdir = "2"
