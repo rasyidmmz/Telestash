@@ -1,5 +1,5 @@
 import { useState, useMemo, useCallback, useRef, useEffect } from 'react';
-import { Plus, ArrowUpDown, ArrowUp, ArrowDown, FolderUp, ZoomIn, ZoomOut, Tv, Play, Sparkles, Subtitles } from '../../shared/icons.tsx';
+import { Plus, ArrowUpDown, ArrowUp, ArrowDown, ZoomIn, ZoomOut, Tv, Play, Sparkles, Subtitles } from '../../shared/icons.tsx';
 import { useVirtualizer } from '@tanstack/react-virtual';
 import { useTranslation } from 'react-i18next';
 import { useSettings } from '../../../context/SettingsContext';
@@ -30,8 +30,6 @@ interface FileExplorerProps {
     onDownload: (id: number, name: string) => void;
     onPreview: (file: TelegramFile, orderedFiles?: TelegramFile[]) => void;
     onManualUpload: () => void;
-    onFolderUpload: () => void;
-    showFolderUpload: boolean;
     onToggleSelection: (id: number) => void;
     onDrop?: (e: React.DragEvent, folderId: number) => void;
     onDragStart?: (fileIds: number[]) => void;
@@ -83,7 +81,7 @@ function useGridColumns(containerRef: React.RefObject<HTMLDivElement | null>) {
 
 export function FileExplorer({
     files, loading, error, viewMode, selectedIds, activeFolderId,
-    onFileClick, onDelete, onDownload, onPreview, onManualUpload, onFolderUpload, showFolderUpload, onToggleSelection, onDrop, onDragStart, onDragEnd, onShare, onRename, onFileMove,
+    onFileClick, onDelete, onDownload, onPreview, onManualUpload, onToggleSelection, onDrop, onDragStart, onDragEnd, onShare, onRename, onFileMove,
     folders, cardScale, onCardScaleChange, searchTerm, onClearSearch, onRetry, watchHistory
 }: FileExplorerProps) {
     const [sortField, setSortField] = useState<SortField>('name');
@@ -275,22 +273,19 @@ export function FileExplorer({
 
 
     const gridRows = useMemo(() => {
-        const rows: (TelegramFile | 'upload' | 'upload-folder')[][] = [];
-        const tail: ('upload' | 'upload-folder')[] = ['upload'];
-        if (showFolderUpload) tail.push('upload-folder');
-        const itemsWithUpload: (TelegramFile | 'upload' | 'upload-folder')[] = [...sortedFiles, ...tail];
+        const rows: (TelegramFile | 'upload')[][] = [];
+        // Upload entry always leads the grid so it stays visible above the fold.
+        const itemsWithUpload: (TelegramFile | 'upload')[] = ['upload', ...sortedFiles];
         for (let i = 0; i < itemsWithUpload.length; i += columns) {
             rows.push(itemsWithUpload.slice(i, i + columns));
         }
         return rows;
-    }, [sortedFiles, columns, showFolderUpload]);
+    }, [sortedFiles, columns]);
 
 
     const listItems = useMemo(() => {
-        const tail: ('upload' | 'upload-folder')[] = ['upload'];
-        if (showFolderUpload) tail.push('upload-folder');
-        return [...sortedFiles, ...tail];
-    }, [sortedFiles, activeFolderId, showFolderUpload]);
+        return ['upload' as const, ...sortedFiles];
+    }, [sortedFiles, activeFolderId]);
 
 
     const gridVirtualizer = useVirtualizer({
@@ -571,19 +566,6 @@ export function FileExplorer({
                                                 </button>
                                             );
                                         }
-                                        if (item === 'upload-folder') {
-                                            return (
-                                                <button
-                                                    key="upload-folder"
-                                                    onClick={(e) => { e.stopPropagation(); onFolderUpload(); }}
-                                                    className="border-2 border-dashed border-stash-border rounded-xl flex flex-col items-center justify-center text-stash-subtext hover:border-stash-primary hover:text-stash-primary transition-all group overflow-hidden"
-                                                    style={{ height: `${cardHeight}px` }}
-                                                >
-                                                    <FolderUp className="w-8 h-8 mb-2 group-hover:scale-110 transition-transform" />
-                                                    <span className="text-sm font-medium">{t('common.upload_folder')}</span>
-                                                </button>
-                                            );
-                                        }
                                         const file = item;
                                         return (
                                             <FileCard
@@ -646,23 +628,6 @@ export function FileExplorer({
                                         >
                                             <div className="w-5 h-5 flex items-center justify-center"><Plus className="w-4 h-4" /></div>
                                             <span className="text-sm font-medium">{t('common.upload_file')}...</span>
-                                        </button>
-                                    </div>
-                                );
-                            }
-                            if (item === 'upload-folder') {
-                                return (
-                                    <div
-                                        key="upload-folder"
-                                        className="absolute top-0 left-0 w-full"
-                                        style={{ transform: `translateY(${virtualItem.start}px)` }}
-                                    >
-                                        <button
-                                            onClick={(e) => { e.stopPropagation(); onFolderUpload(); }}
-                                            className="flex items-center gap-4 px-4 py-3 rounded-lg cursor-pointer border border-dashed border-stash-border text-stash-subtext hover:text-stash-text hover:bg-stash-hover w-full"
-                                        >
-                                            <div className="w-5 h-5 flex items-center justify-center"><FolderUp className="w-4 h-4" /></div>
-                                            <span className="text-sm font-medium">{t('common.upload_folder')}...</span>
                                         </button>
                                     </div>
                                 );

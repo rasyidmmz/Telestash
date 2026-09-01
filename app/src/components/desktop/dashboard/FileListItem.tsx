@@ -67,7 +67,10 @@ export function FileListItem({
                 if (onDragEnd) onDragEnd();
             }}
             onDragOver={(e) => {
-                if (isFolder) {
+                // Internal drags only (TeleStash file IDs); OS file drops are ignored.
+                const isInternal = e.dataTransfer.types.includes("application/x-telegram-file-id") ||
+                    e.dataTransfer.types.includes("application/x-telegram-file-ids");
+                if (isFolder && isInternal) {
                     e.preventDefault();
                     e.stopPropagation();
                     if (!isDragOver) setIsDragOver(true);
@@ -81,7 +84,9 @@ export function FileListItem({
                 }
             }}
             onDrop={(e) => {
-                if (isFolder && onDrop) {
+                const isInternal = e.dataTransfer.types.includes("application/x-telegram-file-id") ||
+                    e.dataTransfer.types.includes("application/x-telegram-file-ids");
+                if (isFolder && isInternal && onDrop) {
                     e.preventDefault();
                     e.stopPropagation();
                     setIsDragOver(false);

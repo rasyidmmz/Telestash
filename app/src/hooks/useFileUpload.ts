@@ -191,51 +191,6 @@ export function useFileUpload(activeFolderId: number | null, store: Store | null
         }
     };
 
-    const handleFolderUpload = async () => {
-        const folderPath = await pickWithFallback(
-            async () => {
-                const selected = await open({ multiple: false, directory: true, title: 'Select Folder to Upload' });
-                if (!selected) return null;
-                const fp = Array.isArray(selected) ? selected[0] : selected;
-                return fp || null;
-            },
-            () => handleFolderUpload(),
-            {
-                errorTitle: 'Folder picker failed',
-                onBrowserPicker: async () => {
-                    const fallbackPaths = await showFileDialogFallback({ directory: true, multiple: true });
-                    if (fallbackPaths.length > 0) {
-                        // HTML folder picker returns individual file paths, not a folder path.
-                        // We can't zip without a folder path, so files upload individually.
-                        toast.info('Folder picker fallback cannot read the folder path, uploading files individually.');
-                        queueFiles(fallbackPaths);
-                    }
-                    return null; // Already handled via queueFiles — signal that the main flow should stop
-                },
-            },
-        );
-        if (!folderPath) return;
-
-        const folderName = folderPath.split('/').pop() || folderPath.split('\\').pop() || 'folder';
-
-        toast.info(`Zipping "${folderName}"...`);
-        try {
-            const zipPath = await invoke<string>('cmd_zip_folder', { folderPath });
-            const item: QueueItem = {
-                id: Math.random().toString(36).substr(2, 9),
-                path: zipPath,
-                folderId: activeFolderId,
-                status: 'pending',
-                tempZipPath: zipPath,
-            };
-            setUploadQueue(prev => [...prev, item]);
-            toast.success(`Queued "${folderName}.zip" for upload`);
-        } catch (e) {
-            console.error('[Upload] Zip error:', e);
-            toast.error(`Failed to zip folder: ${e}`);
-        }
-    };
-
     const cancelAll = () => {
         setUploadQueue(q => {
             const activeItems = q.filter(i => i.status === 'uploading' || i.status === 'downloading' || i.status === 'paused');
@@ -343,7 +298,6 @@ export function useFileUpload(activeFolderId: number | null, store: Store | null
         uploadQueue,
         setUploadQueue,
         handleManualUpload,
-        handleFolderUpload,
         handleUrlUpload,
         cancelAll,
         cancelItem,

@@ -106,7 +106,10 @@ export function FileCard({ file, onDelete, onDownload, onPreview, onShare, isSel
                 if (onDragEnd) onDragEnd();
             } : undefined}
             onDragOver={(e) => {
-                if (isFolder) {
+                // Internal drags only (TeleStash file IDs); OS file drops are ignored.
+                const isInternal = e.dataTransfer.types.includes("application/x-telegram-file-id") ||
+                    e.dataTransfer.types.includes("application/x-telegram-file-ids");
+                if (isFolder && isInternal) {
                     e.preventDefault();
                     e.stopPropagation();
                     if (!isDragOver) setIsDragOver(true);
@@ -120,7 +123,9 @@ export function FileCard({ file, onDelete, onDownload, onPreview, onShare, isSel
                 }
             }}
             onDrop={(e) => {
-                if (isFolder && onDrop) {
+                const isInternal = e.dataTransfer.types.includes("application/x-telegram-file-id") ||
+                    e.dataTransfer.types.includes("application/x-telegram-file-ids");
+                if (isFolder && isInternal && onDrop) {
                     e.preventDefault();
                     e.stopPropagation();
                     setIsDragOver(false);

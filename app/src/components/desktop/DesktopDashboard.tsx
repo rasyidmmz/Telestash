@@ -133,7 +133,6 @@ export function Dashboard({ onLogout }: { onLogout: () => void }) {
         uploadQueue,
         setUploadQueue,
         handleManualUpload,
-        handleFolderUpload,
         handleUrlUpload,
         cancelAll: cancelUploads,
         cancelItem: cancelUploadItem,
@@ -589,6 +588,11 @@ export function Dashboard({ onLogout }: { onLogout: () => void }) {
         e.preventDefault();
         e.stopPropagation();
 
+        // Internal drags only (TeleStash file IDs); OS/Explorer file drops are ignored.
+        const isInternal = e.dataTransfer.types.includes("application/x-telegram-file-id") ||
+            e.dataTransfer.types.includes("application/x-telegram-file-ids");
+        if (!isInternal) return;
+
         // Read multi-ID drag data (new format) or fall back to single-ID (legacy)
         let idsToMove: number[] | null = null;
         const rawIds = e.dataTransfer.getData("application/x-telegram-file-ids");
@@ -873,8 +877,6 @@ export function Dashboard({ onLogout }: { onLogout: () => void }) {
                     onDownload={(id, name) => queueDownload(id, name, activeFolderId)}
                     onPreview={handlePreview}
                     onManualUpload={handleManualUpload}
-                    onFolderUpload={handleFolderUpload}
-                    showFolderUpload
                     onToggleSelection={handleToggleSelection}
                     onDrop={handleDropOnFolder}
                     onDragStart={(ids) => setInternalDragIds(ids)}

@@ -123,12 +123,16 @@ export function SidebarItem({
             onClick={onClick}
             title={collapsed ? label : undefined}
             onDragEnter={(e) => {
+                // Only react to internal drags (TeleStash file IDs), never OS file drops.
+                const hasInternal = parseDragCount(e) > 0;
+                if (!hasInternal) return;
                 e.preventDefault();
                 e.stopPropagation();
                 setIsOver(true);
                 setDragCount(parseDragCount(e));
             }}
             onDragOver={(e) => {
+                if (parseDragCount(e) === 0 && !e.dataTransfer.types.includes("application/x-telegram-file-id") && !e.dataTransfer.types.includes("application/x-telegram-file-ids")) return;
                 e.preventDefault();
                 e.stopPropagation();
                 e.dataTransfer.dropEffect = 'move';
@@ -149,6 +153,10 @@ export function SidebarItem({
                 e.stopPropagation();
                 setIsOver(false);
                 setDragCount(0);
+                // External (OS) file drops are ignored; only internal moves are supported.
+                const isInternal = e.dataTransfer.types.includes("application/x-telegram-file-id") ||
+                    e.dataTransfer.types.includes("application/x-telegram-file-ids");
+                if (!isInternal) return;
                 if (onDrop) onDrop(e);
             }}
             onContextMenu={openContextMenu}
