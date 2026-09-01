@@ -50,15 +50,14 @@ export interface FolderInviteInfo {
 export interface QueueItem {
     id: string;
     path: string;
-    url?: string;
     folderId: number | null;
-    status: 'pending' | 'downloading' | 'uploading' | 'paused' | 'success' | 'error' | 'cancelled';
+    status: 'pending' | 'uploading' | 'paused' | 'success' | 'error' | 'cancelled';
     error?: string;
     progress?: number; // 0-100
     uploadedBytes?: number;
     totalBytes?: number;
     speedBytesPerSec?: number;
-    tempZipPath?: string; // Set when the upload originated from a zipped folder
+    tempZipPath?: string; // Set when the item holds a temp file that needs cleanup
 }
 
 export interface BandwidthStats {

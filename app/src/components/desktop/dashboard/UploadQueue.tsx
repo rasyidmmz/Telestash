@@ -36,7 +36,7 @@ export function UploadQueue({
 }: UploadQueueProps) {
     if (items.length === 0) return null;
 
-    const hasPendingOrActive = items.some(i => i.status === 'pending' || i.status === 'uploading' || i.status === 'downloading');
+    const hasPendingOrActive = items.some(i => i.status === 'pending' || i.status === 'uploading');
     const hasPaused = items.some(i => i.status === 'paused');
 
     return (
@@ -63,17 +63,16 @@ export function UploadQueue({
                             <div className={`w-2 h-2 rounded-full flex-shrink-0 ${
                                 item.status === 'pending' ? 'bg-yellow-500' :
                                 item.status === 'paused' ? 'bg-amber-500' :
-                                item.status === 'downloading' ? 'bg-cyan-500 animate-pulse' :
                                 item.status === 'uploading' ? 'bg-blue-500 animate-pulse' :
                                 item.status === 'cancelled' ? 'bg-gray-500' :
                                 item.status === 'error' ? 'bg-red-500' : 'bg-green-500'
                             }`} />
-                            <div className="flex-1 truncate text-stash-subtext text-xs" title={item.url || item.path}>
-                                {(item.url || item.path).split('/').pop() || (item.url || item.path).split('\\').pop()}
+                            <div className="flex-1 truncate text-stash-subtext text-xs" title={item.path}>
+                                {item.path.split('/').pop() || item.path.split('\\').pop()}
                             </div>
 
                             {/* Pause / Resume buttons per file */}
-                            {(item.status === 'uploading' || item.status === 'downloading') && onPauseItem && (
+                            {item.status === 'uploading' && onPauseItem && (
                                 <button
                                     onClick={() => onPauseItem(item.id)}
                                     className="p-1 text-gray-400 hover:text-amber-400 hover:bg-stash-surface/80 rounded transition-colors flex-shrink-0"
@@ -105,7 +104,7 @@ export function UploadQueue({
                             )}
 
                             {/* Cancel / Remove / Retry buttons */}
-                            {(item.status === 'uploading' || item.status === 'downloading' || item.status === 'paused') && (
+                            {(item.status === 'uploading' || item.status === 'paused') && (
                                 <button
                                     onClick={() => onCancelItem(item.id)}
                                     className="p-1 text-gray-400 hover:text-red-400 hover:bg-stash-surface/80 rounded transition-colors flex-shrink-0"
@@ -138,21 +137,21 @@ export function UploadQueue({
                         </div>
 
                         {/* Progress Bar for Active Items */}
-                        {(item.status === 'uploading' || item.status === 'downloading') && (
+                        {item.status === 'uploading' && (
                             <>
                                 <div className="w-full bg-stash-border h-1 mt-1 rounded-full overflow-hidden">
                                     {item.progress !== undefined ? (
                                         <div
-                                            className={`${item.status === 'downloading' ? 'bg-cyan-500' : 'bg-blue-500'} h-full rounded-full transition-all duration-300`}
+                                            className={`${'bg-blue-500'} h-full rounded-full transition-all duration-300`}
                                             style={{ width: `${item.progress}%` }}
                                         />
                                     ) : (
-                                        <div className={`${item.status === 'downloading' ? 'bg-cyan-500' : 'bg-blue-500'} h-full w-full animate-progress-indeterminate`} />
+                                        <div className={`${'bg-blue-500'} h-full w-full animate-progress-indeterminate`} />
                                     )}
                                 </div>
                                 <div className="flex justify-between text-[10px] text-stash-subtext mt-0.5">
                                     <span>
-                                        {item.status === 'downloading' ? 'Caching: ' : 'Uploading: '}
+                                        {'Uploading: '}
                                         {item.uploadedBytes !== undefined && item.totalBytes !== undefined
                                             ? `${formatBytes(item.uploadedBytes)} / ${formatBytes(item.totalBytes)}`
                                             : item.progress !== undefined ? `${item.progress}%` : ''}

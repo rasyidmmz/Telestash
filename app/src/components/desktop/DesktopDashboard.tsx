@@ -23,7 +23,6 @@ import { ArchiveViewerModal } from './dashboard/ArchiveViewerModal';
 import { ShareDialog } from './dashboard/ShareDialog';
 import { RenameFolderModal } from './dashboard/RenameFolderModal';
 import { RenameFileModal } from './dashboard/RenameFileModal';
-import { RemoteUploadModal } from './dashboard/RemoteUploadModal';
 import { LogsModal } from './dashboard/LogsModal';
 import { RecentWatchBar } from './dashboard/RecentWatchBar';
 import { WatchLogsModal } from './dashboard/WatchLogsModal';
@@ -92,7 +91,6 @@ export function Dashboard({ onLogout }: { onLogout: () => void }) {
     const setInternalDragIds = (ids: number[] | null) => {
         internalDragRef.current = ids;
     };
-    const [showRemoteUpload, setShowRemoteUpload] = useState(false);
     const [playingFile, setPlayingFile] = useState<TelegramFile | null>(null);
     const [pdfFile, setPdfFile] = useState<TelegramFile | null>(null);
     const [archiveViewFile, setArchiveViewFile] = useState<TelegramFile | null>(null);
@@ -133,7 +131,6 @@ export function Dashboard({ onLogout }: { onLogout: () => void }) {
         uploadQueue,
         setUploadQueue,
         handleManualUpload,
-        handleUrlUpload,
         cancelAll: cancelUploads,
         cancelItem: cancelUploadItem,
         pauseUpload,
@@ -166,9 +163,9 @@ export function Dashboard({ onLogout }: { onLogout: () => void }) {
             activeKeys.add(key);
             if (loggedTransferErrors.current.has(key)) continue;
 
-            const name = basename(item.url || item.path);
+            const name = basename(item.path);
             recordErrorLog({
-                source: item.url ? 'Remote upload' : 'Upload',
+                source: 'Upload',
                 message: `Upload failed: ${name}`,
                 details: item.error,
             });
@@ -739,15 +736,6 @@ export function Dashboard({ onLogout }: { onLogout: () => void }) {
                         key="pdf-viewer"
                     />
                 )}
-                {showRemoteUpload && (
-                    <RemoteUploadModal
-                        isOpen={showRemoteUpload}
-                        onClose={() => setShowRemoteUpload(false)}
-                        folders={folders}
-                        onUpload={handleUrlUpload}
-                        key="remote-upload-modal"
-                    />
-                )}
             </AnimatePresence>
 
             <VaultRail
@@ -817,7 +805,6 @@ export function Dashboard({ onLogout }: { onLogout: () => void }) {
                     onLogsClick={() => setShowLogs(true)}
                     onWatchLogsClick={() => setShowWatchLogs(true)}
                     onAnalyticsClick={() => setShowAnalytics(true)}
-                    onRemoteUploadClick={() => setShowRemoteUpload(true)}
                 />
                 {searchTerm.length > 2 && (
                     <div className="px-6 pt-4 pb-0">

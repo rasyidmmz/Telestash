@@ -272,20 +272,23 @@ export function FileExplorer({
     }, [onPreview, sortedFiles]);
 
 
+    // Upload entry leads the grid so it stays visible above the fold — but not
+    // during search, where results span folders and upload targets the active one.
+    const isSearchActive = searchTerm.trim().length > 2;
+
     const gridRows = useMemo(() => {
         const rows: (TelegramFile | 'upload')[][] = [];
-        // Upload entry always leads the grid so it stays visible above the fold.
-        const itemsWithUpload: (TelegramFile | 'upload')[] = ['upload', ...sortedFiles];
+        const itemsWithUpload: (TelegramFile | 'upload')[] = isSearchActive ? sortedFiles : ['upload', ...sortedFiles];
         for (let i = 0; i < itemsWithUpload.length; i += columns) {
             rows.push(itemsWithUpload.slice(i, i + columns));
         }
         return rows;
-    }, [sortedFiles, columns]);
+    }, [sortedFiles, columns, isSearchActive]);
 
 
     const listItems = useMemo(() => {
-        return ['upload' as const, ...sortedFiles];
-    }, [sortedFiles, activeFolderId]);
+        return isSearchActive ? sortedFiles : (['upload' as const, ...sortedFiles]);
+    }, [sortedFiles, activeFolderId, isSearchActive]);
 
 
     const gridVirtualizer = useVirtualizer({

@@ -1,4 +1,4 @@
-import { HardDrive, SquaresFour, List, Sun, Moon, Gear, X, Globe, Scroll, FilmStrip, ChartDonut } from '@phosphor-icons/react';
+import { HardDrive, SquaresFour, List, Sun, Moon, Gear, X, Scroll, FilmStrip, ChartDonut } from '@phosphor-icons/react';
 import { useTheme } from '../../../context/ThemeContext';
 import { useTranslation } from 'react-i18next';
 import { useErrorLogs } from '../../../errorLogs';
@@ -20,13 +20,12 @@ interface TopBarProps {
     onLogsClick: () => void;
     onWatchLogsClick?: () => void;
     onAnalyticsClick?: () => void;
-    onRemoteUploadClick: () => void;
 }
 
 export function TopBar({
     currentFolderName, selectedIds, onShowMoveModal, onBulkDownload, onBulkDelete, onBulkShare,
     onDownloadFolder, onClearSelection, viewMode, setViewMode, searchTerm, onSearchChange, onSettingsClick,
-    onLogsClick, onWatchLogsClick, onAnalyticsClick, onRemoteUploadClick
+    onLogsClick, onWatchLogsClick, onAnalyticsClick
 }: TopBarProps) {
     const { theme, toggleTheme } = useTheme();
     const { t } = useTranslation();
@@ -58,7 +57,6 @@ export function TopBar({
                     </div>
                 )}
                 <button className="vault-icon-button" onClick={onDownloadFolder} title={t('files.download_folder')} aria-label={t('files.download_folder')}><HardDrive size={18} /></button>
-                <button className="vault-icon-button" onClick={onRemoteUploadClick} title={t('files.remote_upload')} aria-label={t('files.remote_upload')}><Globe size={18} /></button>
                 <button className="vault-icon-button" onClick={() => setViewMode(viewMode === 'grid' ? 'list' : 'grid')} title={t('files.toggle_layout')} aria-label={t('files.toggle_layout')}>
                     {viewMode === 'grid' ? <SquaresFour size={18} /> : <List size={18} />}
                 </button>
