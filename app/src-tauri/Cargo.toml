@@ -38,7 +38,7 @@ env_logger = "0.11"
 tauri-plugin-updater = "2"
 actix-web = "4"
 actix-cors = "0.7"
-actix-multipart = "0.7"
+actix-multipart = "0.8"
 futures = "0.3"
 async-stream = "0.3"
 actix-rt = "2"
@@ -46,17 +46,17 @@ tauri-plugin-process = "2"
 tauri-plugin-clipboard-manager = "2"
 rand = "0.9"
 sha2 = "0.10"
-bcrypt = "0.16"
+bcrypt = "0.19"
 constant_time_eq = "0.5"
-zip = { version = "2", default-features = false, features = ["deflate"] }
+zip = { version = "4", default-features = false, features = ["deflate"] }
 rar = "0.4"
-sevenz-rust2 = "0.7"
+sevenz-rust2 = "0.22"
 walkdir = "2"
 sqlite = { version = "0.37.0", features = ["bundled"] }
 mp4parse = "0.17"
 urlencoding = "2"
 reqwest = { version = "0.12", features = ["stream", "rustls-tls"] }
-sysinfo = "0.30"
+sysinfo = "0.39"
 
 [package.metadata.tauri.bundle.windows]
 # Embed the WebView2 bootstrapper so the app works on Windows systems
