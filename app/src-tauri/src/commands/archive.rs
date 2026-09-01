@@ -437,7 +437,8 @@ async fn extract_sevenz_entry(
             .metadata()
             .map_err(|e| format!("Failed to read 7z file metadata: {}", e))?
             .len();
-        let mut reader = sevenz_rust2::SevenZReader::new(file, len, [].as_slice().into())
+        let _ = len; // metadata validated; ArchiveReader::new seeks itself
+        let mut reader = sevenz_rust2::ArchiveReader::new(file, sevenz_rust2::Password::empty())
             .map_err(|e| format!("Failed to create 7z reader: {}", e))?;
 
         let mut found: Option<(String, u64, Vec<u8>)> = None;
@@ -451,13 +452,13 @@ async fn extract_sevenz_entry(
                     return Ok(true); // continue
                 }
                 if entry.is_directory {
-                    return Err(sevenz_rust2::Error::other("Cannot extract a directory entry"));
+                    return Err(sevenz_rust2::Error::Other("Cannot extract a directory entry".into()));
                 }
                 let safe_name = sanitise_entry_name(entry.name(), entry_index);
                 let mut buf = Vec::new();
                 entry_reader
                     .read_to_end(&mut buf)
-                    .map_err(|e| sevenz_rust2::Error::other(format!("Failed to read 7z entry bytes: {}", e)))?;
+                    .map_err(|e| sevenz_rust2::Error::Other(format!("Failed to read 7z entry bytes: {}", e).into()))?;
                 found = Some((safe_name, entry.size, buf));
                 Ok(false) // stop iteration
             })
