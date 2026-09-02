@@ -5780,7 +5780,7 @@ dependencies = [
 
 [[package]]
 name = "telestash"
-version = "1.3.3"
+version = "1.3.4"
 dependencies = [
  "actix-cors",
  "actix-multipart",

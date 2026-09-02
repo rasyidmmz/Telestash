@@ -334,8 +334,8 @@ body,
 .vault-eyebrow { color: var(--color-stash-primary); font-family: ui-monospace, monospace; font-size: 11px; font-weight: 700; letter-spacing: .14em; text-transform: uppercase; }
 .vault-drawer-close { width: 32px; height: 32px; border-radius: 8px; font-size: 22px; }
 .vault-drawer-close:hover, .vault-drawer-close:focus-visible { color: var(--color-stash-text); background: var(--color-stash-hover); outline: none; }
-.vault-folder-drawer > aside { width: 100% !important; min-width: 0 !important; max-width: none !important; border: 0; background: transparent; min-height: 0; flex: 1; }
-.vault-folder-drawer > aside > div:first-child { display: none; }
+.vault-drawer-body > aside { width: 100% !important; min-width: 0 !important; max-width: none !important; border: 0; background: transparent; min-height: 0; flex: 1; }
+.vault-drawer-body > aside > div:first-child { display: none; }
 @keyframes vault-drawer-in { from { opacity: 0; transform: translateX(-12px); } to { opacity: 1; transform: translateX(0); } }
 .vault-command-bar { min-height: 68px; display: flex; align-items: center; gap: 18px; padding: 12px 22px; background: color-mix(in srgb, var(--color-stash-surface) 88%, transparent); border-bottom: 1px solid var(--color-stash-border); backdrop-filter: blur(16px); position: relative; z-index: 10; }
 .vault-command-context { display: flex; align-items: baseline; gap: 8px; min-width: 200px; max-width: 380px; white-space: nowrap; overflow: hidden; flex-shrink: 1; }

@@ -1,5 +1,11 @@
 # Changelog
 
+## [1.3.4]
+
+### Fixed
+
+- **Collections drawer scrolling actually works now**: the v1.3.3 height-bound CSS targeted `.vault-folder-drawer > aside`, but the sidebar sits inside the `.vault-drawer-body` wrapper, so the selector never matched and the folder list stayed clipped. The rule now targets `.vault-drawer-body > aside`, restoring the internal folder/channel list scroll while the sync/logout footer stays pinned.
+
 ## [1.3.3]
 
 ### Fixed
