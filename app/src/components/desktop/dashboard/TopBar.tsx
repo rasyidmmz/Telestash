@@ -54,13 +54,13 @@ export function TopBar({
                         <button className="vault-icon-button" onClick={onClearSelection} aria-label={t('files.clear_selection')}><X size={16} /></button>
                     </div>
                 )}
-                <button className="vault-icon-button" onClick={onDownloadFolder} data-tooltip={t('files.download_folder')} title={t('files.download_folder')} aria-label={t('files.download_folder')}><HardDrive size={18} /></button>
-                <button className="vault-icon-button" onClick={() => setViewMode(viewMode === 'grid' ? 'list' : 'grid')} data-tooltip={t('files.toggle_layout')} title={t('files.toggle_layout')} aria-label={t('files.toggle_layout')}>
+                <button className="vault-icon-button" onClick={onDownloadFolder} data-tooltip={t('files.download_folder')} aria-label={t('files.download_folder')}><HardDrive size={18} /></button>
+                <button className="vault-icon-button" onClick={() => setViewMode(viewMode === 'grid' ? 'list' : 'grid')} data-tooltip={t('files.toggle_layout')} aria-label={t('files.toggle_layout')}>
                     {viewMode === 'grid' ? <SquaresFour size={18} /> : <List size={18} />}
                 </button>
                 <span className="vault-command-divider" />
-                {onWatchLogsClick && <button className="vault-icon-button" onClick={onWatchLogsClick} data-tooltip="Watch history" title="Watch history" aria-label="Watch history"><FilmStrip size={18} /></button>}
-                <button className="vault-icon-button" onClick={onLogsClick} data-tooltip="Error logs" title="Error logs" aria-label="Error logs"><Scroll size={18} />{errorLogs.length > 0 && <i className="vault-alert-dot" />}</button>
+                {onWatchLogsClick && <button className="vault-icon-button" onClick={onWatchLogsClick} data-tooltip="Watch history" aria-label="Watch history"><FilmStrip size={18} /></button>}
+                <button className="vault-icon-button" onClick={onLogsClick} data-tooltip="Error logs" aria-label="Error logs"><Scroll size={18} />{errorLogs.length > 0 && <i className="vault-alert-dot" />}</button>
             </div>
         </header>
     )
