@@ -746,6 +746,9 @@ export function Dashboard({ onLogout }: { onLogout: () => void }) {
                 onToggleTheme={toggleTheme}
                 theme={theme}
                 isConnected={isConnected}
+                isSyncing={isSyncing}
+                onSync={handleSyncFolders}
+                bandwidth={bandwidth || null}
                 uploadCount={uploadQueue.length}
                 downloadCount={downloadQueue.length}
             />
@@ -801,10 +804,8 @@ export function Dashboard({ onLogout }: { onLogout: () => void }) {
                     setViewMode={setViewMode}
                     searchTerm={searchTerm}
                     onSearchChange={setSearchTerm}
-                    onSettingsClick={() => setShowSettings(true)}
                     onLogsClick={() => setShowLogs(true)}
                     onWatchLogsClick={() => setShowWatchLogs(true)}
-                    onAnalyticsClick={() => setShowAnalytics(true)}
                 />
                 {searchTerm.length > 2 && (
                     <div className="px-6 pt-4 pb-0">

@@ -351,6 +351,83 @@ body,
 .vault-icon-button:active { transform: scale(.94); }
 .vault-command-divider { width: 1px; height: 22px; margin: 0 5px; background: var(--color-stash-border); }
 .vault-alert-dot { position: absolute; top: 6px; right: 6px; width: 6px; height: 6px; border-radius: 50%; background: #c87968; }
+
+/* ── Tooltips (pure CSS, quiet — replaces native title on icons) ─────────
+   Attach data-tooltip="label" to any button/element. Keeps a single
+   low-contrast, dark surface with a soft fade/slide — no JavaScript. */
+[data-tooltip] { position: relative; }
+[data-tooltip]::after {
+  content: attr(data-tooltip);
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 50%;
+  transform: translateX(-50%) translateY(-3px);
+  padding: 4px 9px;
+  border-radius: 6px;
+  background: color-mix(in srgb, var(--color-stash-bg) 92%, #000 8%);
+  border: 1px solid var(--color-stash-border);
+  color: var(--color-stash-text);
+  font-size: 10.5px;
+  font-weight: 500;
+  line-height: 1.35;
+  letter-spacing: .01em;
+  white-space: nowrap;
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  z-index: 90;
+  box-shadow: 0 6px 18px rgba(0,0,0,.18);
+  transition: opacity 150ms ease, transform 150ms ease, visibility 150ms ease;
+}
+[data-tooltip]:hover::after,
+[data-tooltip]:focus-visible::after {
+  opacity: 1;
+  visibility: visible;
+  transform: translateX(-50%) translateY(0);
+}
+/* Role-specific offsets so rail/bottom tooltips don't clip off the edge. */
+.vault-rail [data-tooltip]::after { top: auto; bottom: calc(100% + 8px); transform: translateX(-50%) translateY(3px); }
+.vault-rail [data-tooltip]:hover::after, .vault-rail [data-tooltip]:focus-visible::after { transform: translateX(-50%) translateY(0); }
+.vault-rail-bottom [data-tooltip]::after { bottom: calc(100% + 8px); }
+.vault-sync-button [data-tooltip]::after { bottom: calc(100% + 8px); }
+
+/* ── Sync status popover ───────────────────────────────────────────────── */
+.vault-rail-bottom { align-items: center; }
+.vault-sync-button { position: relative; display: inline-flex; flex-direction: column; align-items: center; gap: 0; }
+.vault-connection-dot { width: 9px; height: 9px; border-radius: 99px; }
+.vault-connection-dot.is-online { background: #75b798; box-shadow: 0 0 0 3px color-mix(in srgb, #75b798 14%, transparent); }
+.vault-connection-dot.is-offline { background: #c87968; box-shadow: 0 0 0 3px color-mix(in srgb, #c87968 14%, transparent); }
+.vault-sync-pop {
+  position: absolute;
+  bottom: calc(100% + 12px);
+  left: 50%;
+  transform: translateX(-50%) translateY(4px);
+  width: 232px;
+  padding: 14px;
+  border: 1px solid var(--color-stash-border);
+  border-radius: 12px 12px 12px 4px;
+  background: color-mix(in srgb, var(--color-stash-surface) 96%, transparent);
+  box-shadow: 0 18px 44px rgba(0,0,0,.28);
+  z-index: 95;
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transition: opacity 160ms ease, transform 160ms ease, visibility 160ms ease;
+}
+.vault-sync-button[data-open="true"] .vault-sync-pop,
+.vault-sync-button:focus-within .vault-sync-pop { opacity: 1; visibility: visible; pointer-events: auto; transform: translateX(-50%) translateY(0); }
+.vault-sync-pop-head { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
+.vault-sync-pop-head .vault-eyebrow { margin: 0; }
+.vault-sync-pop-head strong { color: var(--color-stash-text); font-size: 12.5px; letter-spacing: -.01em; }
+.vault-sync-pop-status { display: flex; align-items: center; gap: 7px; font-size: 11px; color: var(--color-stash-subtext); margin-bottom: 12px; }
+.vault-sync-pop-usage { font-size: 10px; color: var(--color-stash-subtext); margin-bottom: 6px; display: flex; justify-content: space-between; align-items: baseline; }
+.vault-sync-pop-track { width: 100%; height: 4px; border-radius: 99px; background: var(--color-stash-border); overflow: hidden; }
+.vault-sync-pop-track > i { display: block; height: 100%; border-radius: 99px; background: var(--color-stash-primary); transition: width 500ms ease; }
+.vault-sync-pop-legend { display: flex; justify-content: space-between; margin-top: 6px; font-size: 10px; opacity: .72; }
+.vault-sync-pop-action { margin-top: 12px; width: 100%; display: inline-flex; align-items: center; justify-content: center; gap: 7px; padding: 8px 12px; border: 0; border-radius: 8px; background: var(--color-stash-primary); color: var(--color-stash-bg); font-size: 11.5px; font-weight: 600; cursor: pointer; transition: transform 150ms ease, filter 150ms ease; }
+.vault-sync-pop-action:hover { filter: brightness(1.08); }
+.vault-sync-pop-action:active { transform: scale(.98); }
+.vault-sync-pop-action:disabled { opacity: .55; cursor: not-allowed; }
 .vault-selection-strip { display: flex; align-items: center; gap: 5px; padding: 4px 6px 4px 10px; margin-right: 4px; border: 1px solid color-mix(in srgb, var(--color-stash-primary) 28%, transparent); border-radius: 9px; background: color-mix(in srgb, var(--color-stash-primary) 8%, transparent); color: var(--color-stash-primary); font-size: 11px; white-space: nowrap; }
 .vault-selection-strip button { border: 0; border-radius: 5px; padding: 5px 7px; color: var(--color-stash-text); background: transparent; font-size: 11px; cursor: pointer; }
 .vault-selection-strip button:hover { background: color-mix(in srgb, var(--color-stash-primary) 15%, transparent); }
