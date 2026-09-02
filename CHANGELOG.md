@@ -1,5 +1,23 @@
 # Changelog
 
+## [1.3.1]
+
+### Added
+
+- **Flood-wait countdown**: the Rust backend now emits a `flood-wait` event whenever a transfer enters Telegram FLOOD_WAIT, and a countdown button appears in the icon rail with a live popover showing remaining time, retry attempt, and a note on Telegram's rate limits.
+- **Quiet icon tooltips**: every icon action in the rail and command bar now shows a consistent, minimal tooltip on hover instead of the native browser tooltip.
+- **Sync status popover**: the rail connection dot opens a popover with live connection state, up/down bandwidth usage against the 250 GB daily budget, and a Sync-folders action.
+
+### Changed
+
+- **Command bar cleanup**: Analytics, Settings, and the theme toggle now live only in the icon rail (no duplicated actions); the search bar moved to the right so long folder names are no longer cropped; the context label reads "Saved Messages" or "Channel" to match the MTProto model.
+- **About panel**: credits the author Rasyid Muhamad Muflih Zain; legacy donation links removed.
+
+### Fixed
+
+- **Collections drawer scroll**: the folder list inside the drawer now scrolls correctly instead of being clipped.
+- **Rail brand mark**: shows the real TeleStash logo and is no longer clickable (the Collections button is the single entry point).
+
 ## [1.3.0]
 
 ### Added
