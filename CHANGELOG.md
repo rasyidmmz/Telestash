@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.3.3]
+
+### Fixed
+
+- **Rail popovers clipped at the screen edge**: the sync-status and flood-wait popovers opened centred above a button that sits ~27px from the left screen corner, so they were half-hidden in fullscreen. They now open to the right of the button, fully visible. Rail tooltips follow the same activity-bar pattern (open to the right, vertically centred).
+- **Command bar icons squashed by the selection strip**: selecting files made the nowrap selection strip push and compress the fixed-size icon buttons (flex-shrink was left at its default), clipping the rightmost icons. Icon buttons, the selection strip, and the divider can no longer shrink; the context label and search bar absorb the space instead, and everything restores cleanly on deselect.
+- **Inconsistent secondary type scale**: section labels and eyebrows (Channel, Continue Watching, sort headers) now share one 11px label size with matching uppercase/tracking; micro-badges sit at 10px instead of 9–9.5px.
+
 ## [1.3.2]
 
 ### Fixed
