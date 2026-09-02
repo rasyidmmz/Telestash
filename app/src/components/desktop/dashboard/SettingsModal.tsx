@@ -812,17 +812,8 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                                             {/* Creator Info */}
                                             <div className="text-center space-y-3">
                                                 <div>
-                                                    <p className="text-sm font-semibold text-stash-text">Cameron Amer</p>
+                                                    <p className="text-sm font-semibold text-stash-text">Rasyid Muhamad Muflih Zain</p>
                                                 </div>
-
-                                                {/* Website Link */}
-                                                <button
-                                                    onClick={(e) => { e.preventDefault(); open('https://www.cameronamer.com'); }}
-                                                    className="flex items-center justify-center gap-1.5 text-xs text-stash-primary hover:text-stash-primary/80 transition-colors cursor-pointer"
-                                                >
-                                                    <Globe className="w-3.5 h-3.5" />
-                                                    www.cameronamer.com
-                                                </button>
 
                                                 {/* GitHub Link */}
                                                 <button
