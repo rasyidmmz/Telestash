@@ -645,6 +645,9 @@ export function Dashboard({ onLogout }: { onLogout: () => void }) {
         ? "Saved Messages"
         : folders.find(f => f.id === activeFolderId)?.name || "Folder";
 
+    // TeleStash folders map to Telegram channels via MTProto; label matches the context.
+    const contextLabel = activeFolderId === null ? "Saved Messages" : "Channel";
+
 
     const handleRootDragOver = (e: React.DragEvent) => {
         // Accept our internal file drags (custom MIME type) so drops work anywhere
@@ -808,6 +811,7 @@ export function Dashboard({ onLogout }: { onLogout: () => void }) {
                     onSearchChange={setSearchTerm}
                     onLogsClick={() => setShowLogs(true)}
                     onWatchLogsClick={() => setShowWatchLogs(true)}
+                    contextLabel={contextLabel}
                 />
                 {searchTerm.length > 2 && (
                     <div className="px-6 pt-4 pb-0">

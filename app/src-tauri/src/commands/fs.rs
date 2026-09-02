@@ -274,6 +274,14 @@ struct ProgressPayload {
     speed_bytes_per_sec: u64,
 }
 
+/// Emitted when a transfer enters Telegram FLOOD_WAIT so the UI can show a countdown.
+#[derive(Clone, serde::Serialize)]
+pub struct FloodWaitPayload {
+    pub wait_seconds: u64,
+    pub attempt: u32,
+    pub max_attempts: u32,
+}
+
 /// Async reader wrapper that tracks bytes read for progress reporting.
 /// Wraps a tokio File and counts how many bytes have been consumed.
 pub(crate) struct ProgressReader {
@@ -627,6 +635,7 @@ async fn upload_path_and_send(
                         }
                         let wait = secs.min(300);
                         log::info!("Respecting FLOOD_WAIT for split upload ({}/{}): sleeping {}s", flood_wait_count, flood_wait_attempts, wait);
+                        let _ = app_handle.emit("flood-wait", FloodWaitPayload { wait_seconds: wait, attempt: flood_wait_count, max_attempts: flood_wait_attempts });
                         tokio::time::sleep(std::time::Duration::from_secs(wait)).await;
                         continue;
                     }
@@ -681,7 +690,9 @@ async fn upload_path_and_send(
                     if let Ok(secs) = err.trim_start_matches("FLOOD_WAIT_").parse::<u64>() {
                         last_err = err;
                         if attempt < max_send_attempts {
-                            tokio::time::sleep(std::time::Duration::from_secs(secs.min(300))).await;
+                            let wait = secs.min(300);
+                            let _ = app_handle.emit("flood-wait", FloodWaitPayload { wait_seconds: wait, attempt: attempt + 1, max_attempts: max_send_attempts });
+                            tokio::time::sleep(std::time::Duration::from_secs(wait)).await;
                             continue;
                         }
                         break;
@@ -1554,6 +1565,7 @@ async fn cmd_upload_file_inner(
                         }
                         let wait = secs.min(300);
                         log::info!("Respecting FLOOD_WAIT for upload ({}/{}): sleeping {}s", flood_wait_count, flood_wait_attempts, wait);
+                        let _ = app_handle.emit("flood-wait", FloodWaitPayload { wait_seconds: wait, attempt: flood_wait_count, max_attempts: flood_wait_attempts });
                         tokio::time::sleep(std::time::Duration::from_secs(wait)).await;
                         continue;
                     }
@@ -1691,6 +1703,7 @@ async fn cmd_upload_file_inner(
                         if attempt < max_retries {
                             let wait = secs.min(300); // cap at 5 min
                             log::info!("Respecting FLOOD_WAIT: sleeping {}s", wait);
+                            let _ = app_handle.emit("flood-wait", FloodWaitPayload { wait_seconds: wait, attempt: attempt + 1, max_attempts: max_retries });
                             tokio::time::sleep(std::time::Duration::from_secs(wait)).await;
                             continue;
                         }

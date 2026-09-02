@@ -1,8 +1,9 @@
-import { Archive, ChartPie, Gear, Moon, Sun, UploadSimple } from '@phosphor-icons/react';
+import { Archive, ChartPie, Gear, Moon, Sun, UploadSimple, Hourglass } from '@phosphor-icons/react';
 import { RefreshCw } from '../../shared/icons';
 import { useState } from 'react';
 import { BandwidthStats } from '../../../types';
 import { formatBytes } from '../../../utils';
+import { useFloodWait, formatCountdown } from '../../../hooks/useFloodWait';
 
 interface VaultRailProps {
     onFolders: () => void;
@@ -21,6 +22,8 @@ interface VaultRailProps {
 
 export function VaultRail({ onFolders, onUpload, onAnalytics, onSettings, onToggleTheme, theme, isConnected, isSyncing = false, onSync, bandwidth = null, uploadCount = 0, downloadCount = 0 }: VaultRailProps) {
     const [syncOpen, setSyncOpen] = useState(false);
+    const [floodOpen, setFloodOpen] = useState(false);
+    const flood = useFloodWait();
 
     const actions = [
         { label: 'Collections', icon: Archive, onClick: onFolders },
@@ -48,6 +51,55 @@ export function VaultRail({ onFolders, onUpload, onAnalytics, onSettings, onTogg
                 ))}
             </nav>
             <div className="vault-rail-bottom">
+                {flood && (
+                    <div
+                        className="vault-sync-button"
+                        data-open={floodOpen}
+                        onMouseEnter={() => setFloodOpen(true)}
+                        onMouseLeave={() => setFloodOpen(false)}
+                        onClick={() => setFloodOpen(v => !v)}
+                        onKeyDown={(e) => { if (e.key === 'Escape') setFloodOpen(false); }}
+                        aria-label="Flood wait countdown"
+                        role="button"
+                        tabIndex={0}
+                    >
+                        <button
+                            className="vault-rail-action vault-flood-btn"
+                            data-tooltip="Flood wait"
+                            aria-label="Flood wait countdown"
+                            aria-expanded={floodOpen}
+                        >
+                            <Hourglass size={18} weight="regular" />
+                            <span className="vault-flood-badge">{formatCountdown(flood.remainingSec)}</span>
+                        </button>
+                        {floodOpen && (
+                            <div className="vault-sync-pop" role="dialog" aria-label="Flood wait countdown">
+                                <div className="vault-sync-pop-head">
+                                    <span className="vault-eyebrow">Flood wait</span>
+                                    <strong>{formatCountdown(flood.remainingSec)}</strong>
+                                </div>
+                                <div className="vault-sync-pop-status">
+                                    <Hourglass size={14} weight="regular" />
+                                    <span>Telegram is rate-limiting this transfer.</span>
+                                </div>
+                                <div className="vault-sync-pop-usage">
+                                    <span>Retry attempt</span>
+                                    <span>{flood.attempt} / {flood.maxAttempts}</span>
+                                </div>
+                                <div className="vault-sync-pop-track">
+                                    <i style={{ width: `${(flood.remainingSec / flood.waitSeconds) * 100}%` }} />
+                                </div>
+                                <div className="vault-sync-pop-legend">
+                                    <span>Waiting {formatCountdown(flood.remainingSec)}</span>
+                                    <span>of {formatCountdown(flood.waitSeconds)}</span>
+                                </div>
+                                <p className="vault-flood-note">
+                                    Telegram enforces FLOOD_WAIT when a client sends too many requests too quickly. This client honors the protocol and waits automatically — repeated hits may require waiting up to 24–48 hours per Telegram's docs.
+                                </p>
+                            </div>
+                        )}
+                    </div>
+                )}
                 <div
                     className="vault-sync-button"
                     data-open={syncOpen}

@@ -17,19 +17,21 @@ interface TopBarProps {
     onSearchChange: (term: string) => void;
     onLogsClick: () => void;
     onWatchLogsClick?: () => void;
+    /** Context label above the folder name, e.g. "Saved Messages" or "Channel". */
+    contextLabel?: string;
 }
 
 export function TopBar({
     currentFolderName, selectedIds, onShowMoveModal, onBulkDownload, onBulkDelete, onBulkShare,
     onDownloadFolder, onClearSelection, viewMode, setViewMode, searchTerm, onSearchChange,
-    onLogsClick, onWatchLogsClick
+    onLogsClick, onWatchLogsClick, contextLabel = 'Workspace'
 }: TopBarProps) {
     const { t } = useTranslation();
     const errorLogs = useErrorLogs();
     return (
         <header className="vault-command-bar" onClick={e => e.stopPropagation()}>
             <div className="vault-command-context">
-                <span className="vault-eyebrow">Workspace</span>
+                <span className="vault-eyebrow">{contextLabel}</span>
                 <strong title={currentFolderName}>{currentFolderName}</strong>
                 <span className="vault-command-separator">·</span>
                 <span className="vault-command-count">{selectedIds.length > 0 ? `${selectedIds.length} selected` : 'Private vault'}</span>

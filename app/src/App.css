@@ -338,15 +338,15 @@ body,
 .vault-folder-drawer > aside > div:first-child { display: none; }
 @keyframes vault-drawer-in { from { opacity: 0; transform: translateX(-12px); } to { opacity: 1; transform: translateX(0); } }
 .vault-command-bar { min-height: 68px; display: flex; align-items: center; gap: 18px; padding: 12px 22px; background: color-mix(in srgb, var(--color-stash-surface) 88%, transparent); border-bottom: 1px solid var(--color-stash-border); backdrop-filter: blur(16px); position: relative; z-index: 10; }
-.vault-command-context { display: flex; align-items: baseline; gap: 8px; min-width: 180px; max-width: 250px; white-space: nowrap; overflow: hidden; }
+.vault-command-context { display: flex; align-items: baseline; gap: 8px; min-width: 200px; max-width: 380px; white-space: nowrap; overflow: hidden; flex-shrink: 0; }
 .vault-command-context strong { overflow: hidden; text-overflow: ellipsis; color: var(--color-stash-text); font-size: 14px; letter-spacing: -.02em; }
 .vault-command-count, .vault-command-separator { color: var(--color-stash-subtext); font-size: 11px; }
-.vault-command-search { flex: 1; max-width: 520px; min-width: 180px; height: 38px; display: flex; align-items: center; gap: 10px; padding: 0 12px; border: 1px solid var(--color-stash-border); border-radius: 10px; background: var(--color-stash-hover); color: var(--color-stash-subtext); }
+.vault-command-search { flex: 0 1 520px; max-width: 520px; min-width: 180px; height: 38px; display: flex; align-items: center; gap: 10px; padding: 0 12px; border: 1px solid var(--color-stash-border); border-radius: 10px; background: var(--color-stash-hover); color: var(--color-stash-subtext); margin-left: auto; }
 .vault-command-search:focus-within { border-color: color-mix(in srgb, var(--color-stash-primary) 60%, transparent); box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-stash-primary) 10%, transparent); }
 .vault-command-search input { flex: 1; min-width: 0; border: 0; outline: 0; background: transparent !important; color: var(--color-stash-text); font-size: 13px; }
 .vault-search-glyph { color: var(--color-stash-primary); font-family: ui-monospace, monospace; }
 .vault-search-hint { border: 1px solid var(--color-stash-border); border-radius: 4px; padding: 1px 5px; font: 11px ui-monospace, monospace; }
-.vault-command-actions { display: flex; align-items: center; justify-content: flex-end; gap: 4px; min-width: 0; margin-left: auto; }
+.vault-command-actions { display: flex; align-items: center; justify-content: flex-end; gap: 4px; min-width: 0; }
 .vault-icon-button { position: relative; display: inline-flex; align-items: center; justify-content: center; width: 34px; height: 34px; border: 0; border-radius: 8px; color: var(--color-stash-subtext); background: transparent; cursor: pointer; transition: .18s ease; }
 .vault-icon-button:hover, .vault-icon-button:focus-visible { color: var(--color-stash-primary); background: var(--color-stash-hover); outline: none; }
 .vault-icon-button:active { transform: scale(.94); }
@@ -429,6 +429,29 @@ body,
 .vault-sync-pop-action:hover { filter: brightness(1.08); }
 .vault-sync-pop-action:active { transform: scale(.98); }
 .vault-sync-pop-action:disabled { opacity: .55; cursor: not-allowed; }
+
+/* ── Flood-wait countdown button ────────────────────────────────────────── */
+.vault-flood-btn { position: relative; }
+.vault-flood-btn .vault-flood-badge {
+  position: absolute;
+  bottom: 2px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 8px;
+  font-weight: 700;
+  color: var(--color-stash-primary);
+  font-family: ui-monospace, monospace;
+  line-height: 1;
+  pointer-events: none;
+  white-space: nowrap;
+}
+.vault-flood-note {
+  margin: 10px 0 0;
+  font-size: 10px;
+  line-height: 1.5;
+  color: var(--color-stash-subtext);
+  opacity: .85;
+}
 .vault-selection-strip { display: flex; align-items: center; gap: 5px; padding: 4px 6px 4px 10px; margin-right: 4px; border: 1px solid color-mix(in srgb, var(--color-stash-primary) 28%, transparent); border-radius: 9px; background: color-mix(in srgb, var(--color-stash-primary) 8%, transparent); color: var(--color-stash-primary); font-size: 11px; white-space: nowrap; }
 .vault-selection-strip button { border: 0; border-radius: 5px; padding: 5px 7px; color: var(--color-stash-text); background: transparent; font-size: 11px; cursor: pointer; }
 .vault-selection-strip button:hover { background: color-mix(in srgb, var(--color-stash-primary) 15%, transparent); }
