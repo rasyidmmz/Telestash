@@ -35,9 +35,9 @@ export function VaultRail({ onFolders, onUpload, onAnalytics, onSettings, onTogg
 
     return (
         <aside className="vault-rail" aria-label="Vault navigation">
-            <button className="vault-rail-brand" onClick={onFolders} data-tooltip="Collections" aria-label="Open collections">
-                <span className="vault-rail-mark">◆</span>
-            </button>
+            <div className="vault-rail-brand" aria-label="TeleStash">
+                <img src="/telestash-logo.png" alt="TeleStash" className="vault-rail-logo" />
+            </div>
             <div className="vault-rail-rule" />
             <nav className="vault-rail-nav">
                 {actions.map(({ label, icon: Icon, onClick }) => (

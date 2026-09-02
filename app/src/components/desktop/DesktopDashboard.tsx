@@ -762,29 +762,31 @@ export function Dashboard({ onLogout }: { onLogout: () => void }) {
                                 <div><span className="vault-eyebrow">Vault index</span><h2>Collections</h2></div>
                                 <button className="vault-drawer-close" onClick={() => setShowFolderDrawer(false)} aria-label="Close collections">×</button>
                             </div>
-                            <Sidebar
-                                folders={folders}
-                                groups={groups}
-                                activeFolderId={activeFolderId}
-                                setActiveFolderId={(id) => { setActiveFolderId(id); setShowFolderDrawer(false); }}
-                                onDrop={handleDropOnFolder}
-                                onDelete={handleFolderDelete}
-                                onRename={(id, name) => setRenameFolder({ id, name })}
-                                onToggleVisibility={async (id, _name, isPublic) => { try { await handleFolderToggleVisibility(id, !isPublic); queryClient.invalidateQueries({ queryKey: ['folders'] }); } catch { /* hook handles toast */ } }}
-                                onExportInvite={async (id, _name) => { try { const info = await handleExportFolderInvite(id); await copyToClipboard(info.link); toast.success(`Invite link copied: ${info.link}`); } catch { /* backend error already toasted */ } }}
-                                onCreate={handleCreateFolder}
-                                isSyncing={isSyncing}
-                                isConnected={isConnected}
-                                onSync={handleSyncFolders}
-                                onLogout={handleLogout}
-                                bandwidth={bandwidth || null}
-                                onAssignFolderToGroup={handleAssignFolderToGroup}
-                                onReorderFolders={handleReorderFolders}
-                                onUpdateGroupOrder={handleUpdateGroupOrder}
-                                onCreateGroup={handleCreateGroup}
-                                onUpdateGroup={handleUpdateGroup}
-                                onDeleteGroup={handleDeleteGroup}
-                            />
+                            <div className="vault-drawer-body">
+                                <Sidebar
+                                    folders={folders}
+                                    groups={groups}
+                                    activeFolderId={activeFolderId}
+                                    setActiveFolderId={(id) => { setActiveFolderId(id); setShowFolderDrawer(false); }}
+                                    onDrop={handleDropOnFolder}
+                                    onDelete={handleFolderDelete}
+                                    onRename={(id, name) => setRenameFolder({ id, name })}
+                                    onToggleVisibility={async (id, _name, isPublic) => { try { await handleFolderToggleVisibility(id, !isPublic); queryClient.invalidateQueries({ queryKey: ['folders'] }); } catch { /* hook handles toast */ } }}
+                                    onExportInvite={async (id, _name) => { try { const info = await handleExportFolderInvite(id); await copyToClipboard(info.link); toast.success(`Invite link copied: ${info.link}`); } catch { /* backend error already toasted */ } }}
+                                    onCreate={handleCreateFolder}
+                                    isSyncing={isSyncing}
+                                    isConnected={isConnected}
+                                    onSync={handleSyncFolders}
+                                    onLogout={handleLogout}
+                                    bandwidth={bandwidth || null}
+                                    onAssignFolderToGroup={handleAssignFolderToGroup}
+                                    onReorderFolders={handleReorderFolders}
+                                    onUpdateGroupOrder={handleUpdateGroupOrder}
+                                    onCreateGroup={handleCreateGroup}
+                                    onUpdateGroup={handleUpdateGroup}
+                                    onDeleteGroup={handleDeleteGroup}
+                                />
+                            </div>
                         </aside>
                     </>
                 )}

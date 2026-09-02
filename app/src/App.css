@@ -314,8 +314,8 @@ body,
 /* Vault Console shell */
 .vault-rail { width: 58px; min-width: 58px; height: 100%; display: flex; flex-direction: column; align-items: center; gap: 12px; padding: 14px 8px; background: var(--color-stash-surface); border-right: 1px solid var(--color-stash-border); z-index: 30; }
 .vault-rail-brand, .vault-rail-action, .vault-drawer-close { display: inline-flex; align-items: center; justify-content: center; border: 0; color: var(--color-stash-subtext); background: transparent; cursor: pointer; transition: color 180ms ease, background-color 180ms ease, transform 180ms ease; }
-.vault-rail-brand { width: 38px; height: 38px; color: var(--color-stash-primary); border: 1px solid color-mix(in srgb, var(--color-stash-primary) 35%, transparent); border-radius: 12px 12px 12px 4px; background: color-mix(in srgb, var(--color-stash-primary) 10%, transparent); }
-.vault-rail-mark { font-size: 18px; line-height: 1; }
+.vault-rail-brand { width: 40px; height: 40px; border-radius: 12px; padding: 6px; background: color-mix(in srgb, var(--color-stash-primary) 12%, transparent); border: 1px solid color-mix(in srgb, var(--color-stash-primary) 30%, transparent); cursor: default; }
+.vault-rail-logo { width: 100%; height: 100%; object-fit: contain; border-radius: 6px; }
 .vault-rail-rule { width: 24px; height: 1px; background: var(--color-stash-border); }
 .vault-rail-nav, .vault-rail-bottom { display: flex; flex-direction: column; align-items: center; gap: 8px; }
 .vault-rail-bottom { margin-top: auto; }
@@ -327,13 +327,14 @@ body,
 .vault-connection-dot.is-online { background: #75b798; box-shadow: 0 0 0 3px color-mix(in srgb, #75b798 12%, transparent); }
 .vault-connection-dot.is-offline { background: #c87968; box-shadow: 0 0 0 3px color-mix(in srgb, #c87968 12%, transparent); }
 .vault-folder-drawer { position: fixed; inset: 0 auto 0 58px; width: min(340px, calc(100vw - 58px)); z-index: 41; display: flex; flex-direction: column; overflow: hidden; background: var(--color-stash-surface); border-right: 1px solid var(--color-stash-border); box-shadow: 24px 0 60px rgba(0,0,0,.22); animation: vault-drawer-in 180ms ease-out; }
+.vault-drawer-body { flex: 1; min-height: 0; overflow: hidden; display: flex; flex-direction: column; }
 .vault-drawer-backdrop { position: fixed; inset: 0; z-index: 40; background: rgba(5, 6, 8, .46); backdrop-filter: blur(2px); }
 .vault-drawer-heading { min-height: 76px; display: flex; align-items: center; justify-content: space-between; padding: 18px; border-bottom: 1px solid var(--color-stash-border); }
 .vault-drawer-heading h2 { margin: 2px 0 0; color: var(--color-stash-text); font-size: 20px; letter-spacing: -.03em; }
 .vault-eyebrow { color: var(--color-stash-primary); font-family: ui-monospace, monospace; font-size: 9px; font-weight: 700; letter-spacing: .16em; text-transform: uppercase; }
 .vault-drawer-close { width: 32px; height: 32px; border-radius: 8px; font-size: 22px; }
 .vault-drawer-close:hover, .vault-drawer-close:focus-visible { color: var(--color-stash-text); background: var(--color-stash-hover); outline: none; }
-.vault-folder-drawer > aside { width: 100% !important; min-width: 0 !important; max-width: none !important; border: 0; background: transparent; }
+.vault-folder-drawer > aside { width: 100% !important; min-width: 0 !important; max-width: none !important; border: 0; background: transparent; min-height: 0; flex: 1; }
 .vault-folder-drawer > aside > div:first-child { display: none; }
 @keyframes vault-drawer-in { from { opacity: 0; transform: translateX(-12px); } to { opacity: 1; transform: translateX(0); } }
 .vault-command-bar { min-height: 68px; display: flex; align-items: center; gap: 18px; padding: 12px 22px; background: color-mix(in srgb, var(--color-stash-surface) 88%, transparent); border-bottom: 1px solid var(--color-stash-border); backdrop-filter: blur(16px); position: relative; z-index: 10; }
