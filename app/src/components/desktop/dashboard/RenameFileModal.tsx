@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { Pencil, X } from 'lucide-react';
+import { Pencil, X } from '@phosphor-icons/react';
 import { useTranslation } from 'react-i18next';
 
 interface RenameFileModalProps {
@@ -50,17 +50,17 @@ export function RenameFileModal({ fileName, onRename, onClose }: RenameFileModal
             onClick={onClose}
         >
             <div
-                className="bg-telegram-surface border border-telegram-border rounded-xl w-[360px] shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-150"
+                className="bg-stash-surface border border-stash-border rounded-xl w-[360px] shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-150"
                 onClick={e => e.stopPropagation()}
             >
-                <div className="p-4 border-b border-telegram-border flex items-center justify-between">
-                    <h3 className="text-telegram-text font-medium flex items-center gap-2">
+                <div className="p-4 border-b border-stash-border flex items-center justify-between">
+                    <h3 className="text-stash-text font-medium flex items-center gap-2">
                         <Pencil className="w-4 h-4 text-blue-400" />
                         {t('files.rename_file')}
                     </h3>
                     <button
                         onClick={onClose}
-                        className="text-telegram-subtext hover:text-telegram-text transition-colors"
+                        className="text-stash-subtext hover:text-stash-text transition-colors"
                         disabled={isSubmitting}
                     >
                         <X className="w-4 h-4" />
@@ -75,16 +75,16 @@ export function RenameFileModal({ fileName, onRename, onClose }: RenameFileModal
                         onChange={e => setName(e.target.value)}
                         onKeyDown={handleKeyDown}
                         maxLength={200}
-                        className="w-full bg-telegram-bg border border-telegram-border rounded-lg px-3 py-2 text-sm text-telegram-text placeholder:text-telegram-subtext/50 focus:outline-none focus:ring-2 focus:ring-telegram-primary/50 focus:border-telegram-primary/50 transition-all"
+                        className="w-full bg-stash-bg border border-stash-border rounded-lg px-3 py-2 text-sm text-stash-text placeholder:text-stash-subtext/50 focus:outline-none focus:ring-2 focus:ring-stash-primary/50 focus:border-stash-primary/50 transition-all"
                         placeholder={t('files.file_name')}
                         disabled={isSubmitting}
                     />
                 </div>
 
-                <div className="p-4 border-t border-telegram-border flex justify-end gap-2 bg-telegram-hover/10">
+                <div className="p-4 border-t border-stash-border flex justify-end gap-2 bg-stash-hover/10">
                     <button
                         onClick={onClose}
-                        className="px-4 py-2 text-sm font-medium text-telegram-subtext hover:text-telegram-text bg-telegram-hover/50 hover:bg-telegram-hover rounded-lg transition-colors"
+                        className="px-4 py-2 text-sm font-medium text-stash-subtext hover:text-stash-text bg-stash-hover/50 hover:bg-stash-hover rounded-lg transition-colors"
                         disabled={isSubmitting}
                     >
                         {t('common.cancel')}
@@ -92,7 +92,7 @@ export function RenameFileModal({ fileName, onRename, onClose }: RenameFileModal
                     <button
                         onClick={handleSubmit}
                         disabled={isSubmitting || !name.trim() || name.trim() === fileName}
-                        className="px-4 py-2 text-sm font-medium text-white bg-telegram-primary hover:bg-telegram-primary/90 disabled:opacity-40 disabled:cursor-not-allowed rounded-lg transition-colors"
+                        className="px-4 py-2 text-sm font-medium text-white bg-stash-primary hover:bg-stash-primary/90 disabled:opacity-40 disabled:cursor-not-allowed rounded-lg transition-colors"
                     >
                         {isSubmitting ? t('files.renaming') : t('files.rename')}
                     </button>

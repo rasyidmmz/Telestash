@@ -3,30 +3,30 @@
 /* stylelint-disable at-rule-no-unknown */
 /* Dark Theme (Default) - Using Tailwind v4 @theme directive */
 @theme {
-  --color-telegram-bg: #0e1621;
-  --color-telegram-surface: #17212b;
-  --color-telegram-primary: #ffae00;
-  --color-telegram-secondary: #2481cc;
-  --color-telegram-text: #ffffff;
-  --color-telegram-subtext: #8e9fb3;
-  --color-telegram-border: rgba(255, 255, 255, 0.1);
-  --color-telegram-hover: rgba(255, 255, 255, 0.05);
-  --color-telegram-glass-bg: #17212b;
-  --color-telegram-glass-border: #ffffff;
+  --color-stash-bg: #0b0c0f;
+  --color-stash-surface: #14161a;
+  --color-stash-primary: #e8a33d;
+  --color-stash-secondary: #7d9cc0;
+  --color-stash-text: #f2f3f5;
+  --color-stash-subtext: #969ea8;
+  --color-stash-border: rgba(255, 255, 255, 0.08);
+  --color-stash-hover: rgba(255, 255, 255, 0.05);
+  --color-stash-glass-bg: #14161a;
+  --color-stash-glass-border: #ffffff;
 }
 
 /* Light Theme Overrides */
 :root.light {
-  --color-telegram-bg: #f0f2f5;
-  --color-telegram-surface: #ffffff;
-  --color-telegram-primary: #e69500;
-  --color-telegram-secondary: #2481cc;
-  --color-telegram-text: #1a1a1a;
-  --color-telegram-subtext: #65676b;
-  --color-telegram-border: rgba(0, 0, 0, 0.1);
-  --color-telegram-hover: rgba(0, 0, 0, 0.03);
-  --color-telegram-glass-bg: #ffffff;
-  --color-telegram-glass-border: #000000;
+  --color-stash-bg: #f4f4f2;
+  --color-stash-surface: #ffffff;
+  --color-stash-primary: #c98a1e;
+  --color-stash-secondary: #4a739f;
+  --color-stash-text: #17191d;
+  --color-stash-subtext: #6c7178;
+  --color-stash-border: rgba(0, 0, 0, 0.09);
+  --color-stash-hover: rgba(0, 0, 0, 0.035);
+  --color-stash-glass-bg: #ffffff;
+  --color-stash-glass-border: #000000;
 }
 
 body,
@@ -36,46 +36,50 @@ body,
   width: 100vw;
   height: 100vh;
   overflow: hidden;
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  font-family: 'Outfit Variable', 'Segoe UI Variable', 'Segoe UI', system-ui, -apple-system, sans-serif;
   -webkit-font-smoothing: antialiased;
-  background: var(--color-telegram-bg);
-  color: var(--color-telegram-text);
+  background: var(--color-stash-bg);
+  color: var(--color-stash-text);
   transition: background-color 0.3s ease, color 0.3s ease;
 }
 
 /* Auth screen gradient background */
 .auth-gradient {
-  background: radial-gradient(120% 120% at 0% 0%, #3ca5ff 0%, #007aff 100%);
+  background:
+    radial-gradient(90% 90% at 85% 8%, rgba(232, 163, 61, 0.14) 0%, transparent 52%),
+    radial-gradient(120% 120% at 0% 0%, #1d2028 0%, #0b0c0f 100%);
 }
 
 :root.light .auth-gradient {
-  background: linear-gradient(135deg, #3b82f6 0%, #06b6d4 100%);
+  background:
+    radial-gradient(90% 90% at 85% 8%, rgba(201, 138, 30, 0.12) 0%, transparent 52%),
+    linear-gradient(135deg, #f7f6f3 0%, #eceae4 100%);
 }
 
 /* Glassmorphism Utilities - Dark */
 .glass {
-  background: color-mix(in srgb, var(--color-telegram-glass-bg) 70%, transparent);
+  background: color-mix(in srgb, var(--color-stash-glass-bg) 70%, transparent);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
-  border: 1px solid color-mix(in srgb, var(--color-telegram-glass-border) 8%, transparent);
+  border: 1px solid color-mix(in srgb, var(--color-stash-glass-border) 8%, transparent);
 }
 
 :root.light .glass {
-  background: color-mix(in srgb, var(--color-telegram-glass-bg) 85%, transparent);
-  border: 1px solid color-mix(in srgb, var(--color-telegram-glass-border) 8%, transparent);
+  background: color-mix(in srgb, var(--color-stash-glass-bg) 85%, transparent);
+  border: 1px solid color-mix(in srgb, var(--color-stash-glass-border) 8%, transparent);
 }
 
 /* Auth-specific glass - works on gradient backgrounds in both themes */
 .auth-glass {
-  background: color-mix(in srgb, var(--color-telegram-glass-bg) 85%, transparent);
+  background: color-mix(in srgb, var(--color-stash-glass-bg) 85%, transparent);
   backdrop-filter: blur(24px);
   -webkit-backdrop-filter: blur(24px);
-  border: 1px solid color-mix(in srgb, var(--color-telegram-glass-border) 10%, transparent);
+  border: 1px solid color-mix(in srgb, var(--color-stash-glass-border) 10%, transparent);
 }
 
 :root.light .auth-glass {
-  background: color-mix(in srgb, var(--color-telegram-glass-bg) 90%, transparent);
-  border: 1px solid color-mix(in srgb, var(--color-telegram-glass-border) 30%, transparent);
+  background: color-mix(in srgb, var(--color-stash-glass-bg) 90%, transparent);
+  border: 1px solid color-mix(in srgb, var(--color-stash-glass-border) 30%, transparent);
   color: #1a1a1a;
 }
 
@@ -122,14 +126,14 @@ body,
 }
 
 .glass-input {
-  background: color-mix(in srgb, var(--color-telegram-glass-bg) 60%, transparent);
-  border: 1px solid color-mix(in srgb, var(--color-telegram-glass-border) 10%, transparent);
+  background: color-mix(in srgb, var(--color-stash-glass-bg) 60%, transparent);
+  border: 1px solid color-mix(in srgb, var(--color-stash-glass-border) 10%, transparent);
   backdrop-filter: blur(10px);
 }
 
 :root.light .glass-input {
-  background: color-mix(in srgb, var(--color-telegram-glass-bg) 90%, transparent);
-  border: 1px solid color-mix(in srgb, var(--color-telegram-glass-border) 15%, transparent);
+  background: color-mix(in srgb, var(--color-stash-glass-bg) 90%, transparent);
+  border: 1px solid color-mix(in srgb, var(--color-stash-glass-border) 15%, transparent);
 }
 
 /* Custom Scrollbar - Dark */
@@ -180,22 +184,22 @@ body,
 }
 
 /* Light mode specific overrides for common patterns */
-:root.light .bg-telegram-bg {
-  background-color: var(--color-telegram-bg);
+:root.light .bg-stash-bg {
+  background-color: var(--color-stash-bg);
 }
 
-:root.light .bg-telegram-surface {
-  background-color: var(--color-telegram-surface);
+:root.light .bg-stash-surface {
+  background-color: var(--color-stash-surface);
 }
 
 :root.light .border-white\/5,
 :root.light .border-white\/10 {
-  border-color: var(--color-telegram-border);
+  border-color: var(--color-stash-border);
 }
 
 :root.light .bg-white\/5,
 :root.light .hover\:bg-white\/5:hover {
-  background-color: var(--color-telegram-hover);
+  background-color: var(--color-stash-hover);
 }
 
 :root.light .bg-white\/10,
@@ -216,16 +220,16 @@ body,
 }
 
 :root.light .file-action-btn:hover {
-  background-color: var(--color-telegram-primary) !important;
+  background-color: var(--color-stash-primary) !important;
 }
 
 /* Invert text colors for light mode where needed */
-:root.light .text-telegram-text {
-  color: var(--color-telegram-text);
+:root.light .text-stash-text {
+  color: var(--color-stash-text);
 }
 
-:root.light .text-telegram-subtext {
-  color: var(--color-telegram-subtext);
+:root.light .text-stash-subtext {
+  color: var(--color-stash-subtext);
 }
 
 /* Card shadows for light mode */
@@ -248,7 +252,7 @@ body,
 
 :root.light input:focus,
 :root.light textarea:focus {
-  border-color: var(--color-telegram-primary);
+  border-color: var(--color-stash-primary);
 }
 
 /* ── Default Performance Mode ──────────────────────────────── */
@@ -277,6 +281,13 @@ body,
   -webkit-backdrop-filter: none !important;
 }
 
+/* Vault Console surfaces must honor performance mode too. */
+.performance-mode .vault-command-bar,
+.performance-mode .vault-drawer-backdrop {
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+
 /* Kill heavy shadows */
 .performance-mode .shadow-lg,
 .performance-mode .shadow-xl,
@@ -299,3 +310,167 @@ body,
   -ms-overflow-style: none;  /* IE and Edge */
   scrollbar-width: none;  /* Firefox */
 }
+
+/* Vault Console shell */
+.vault-rail { width: 58px; min-width: 58px; height: 100%; display: flex; flex-direction: column; align-items: center; gap: 12px; padding: 14px 8px; background: var(--color-stash-surface); border-right: 1px solid var(--color-stash-border); z-index: 30; }
+.vault-rail-brand, .vault-rail-action, .vault-drawer-close { display: inline-flex; align-items: center; justify-content: center; border: 0; color: var(--color-stash-subtext); background: transparent; cursor: pointer; transition: color 180ms ease, background-color 180ms ease, transform 180ms ease; }
+.vault-rail-brand { width: 40px; height: 40px; border-radius: 12px; padding: 6px; background: color-mix(in srgb, var(--color-stash-primary) 12%, transparent); border: 1px solid color-mix(in srgb, var(--color-stash-primary) 30%, transparent); cursor: default; }
+.vault-rail-logo { width: 100%; height: 100%; object-fit: contain; border-radius: 6px; }
+.vault-rail-rule { width: 24px; height: 1px; background: var(--color-stash-border); }
+.vault-rail-nav, .vault-rail-bottom { display: flex; flex-direction: column; align-items: center; gap: 8px; }
+.vault-rail-bottom { margin-top: auto; }
+.vault-rail-action { position: relative; width: 38px; height: 38px; border-radius: 10px; }
+.vault-rail-action:hover, .vault-rail-action:focus-visible { color: var(--color-stash-primary); background: var(--color-stash-hover); outline: none; }
+.vault-rail-action:active { transform: scale(.94); }
+.vault-rail-badge { position: absolute; top: 2px; right: 2px; min-width: 15px; height: 15px; padding: 0 3px; border-radius: 99px; background: var(--color-stash-primary); color: var(--color-stash-bg); font-size: 9px; font-weight: 700; line-height: 15px; }
+.vault-connection-dot { width: 7px; height: 7px; border-radius: 99px; margin: 4px 0; }
+.vault-connection-dot.is-online { background: #75b798; box-shadow: 0 0 0 3px color-mix(in srgb, #75b798 12%, transparent); }
+.vault-connection-dot.is-offline { background: #c87968; box-shadow: 0 0 0 3px color-mix(in srgb, #c87968 12%, transparent); }
+.vault-folder-drawer { position: fixed; inset: 0 auto 0 58px; width: min(340px, calc(100vw - 58px)); z-index: 41; display: flex; flex-direction: column; overflow: hidden; background: var(--color-stash-surface); border-right: 1px solid var(--color-stash-border); box-shadow: 24px 0 60px rgba(0,0,0,.22); animation: vault-drawer-in 180ms ease-out; }
+.vault-drawer-body { flex: 1; min-height: 0; overflow: hidden; display: flex; flex-direction: column; }
+.vault-drawer-backdrop { position: fixed; inset: 0; z-index: 40; background: rgba(5, 6, 8, .46); backdrop-filter: blur(2px); }
+.vault-drawer-heading { min-height: 76px; display: flex; align-items: center; justify-content: space-between; padding: 18px; border-bottom: 1px solid var(--color-stash-border); }
+.vault-drawer-heading h2 { margin: 2px 0 0; color: var(--color-stash-text); font-size: 20px; letter-spacing: -.03em; }
+.vault-eyebrow { color: var(--color-stash-primary); font-family: ui-monospace, monospace; font-size: 9px; font-weight: 700; letter-spacing: .16em; text-transform: uppercase; }
+.vault-drawer-close { width: 32px; height: 32px; border-radius: 8px; font-size: 22px; }
+.vault-drawer-close:hover, .vault-drawer-close:focus-visible { color: var(--color-stash-text); background: var(--color-stash-hover); outline: none; }
+.vault-folder-drawer > aside { width: 100% !important; min-width: 0 !important; max-width: none !important; border: 0; background: transparent; min-height: 0; flex: 1; }
+.vault-folder-drawer > aside > div:first-child { display: none; }
+@keyframes vault-drawer-in { from { opacity: 0; transform: translateX(-12px); } to { opacity: 1; transform: translateX(0); } }
+.vault-command-bar { min-height: 68px; display: flex; align-items: center; gap: 18px; padding: 12px 22px; background: color-mix(in srgb, var(--color-stash-surface) 88%, transparent); border-bottom: 1px solid var(--color-stash-border); backdrop-filter: blur(16px); position: relative; z-index: 10; }
+.vault-command-context { display: flex; align-items: baseline; gap: 8px; min-width: 200px; max-width: 380px; white-space: nowrap; overflow: hidden; flex-shrink: 0; }
+.vault-command-context strong { overflow: hidden; text-overflow: ellipsis; color: var(--color-stash-text); font-size: 14px; letter-spacing: -.02em; }
+.vault-command-count, .vault-command-separator { color: var(--color-stash-subtext); font-size: 11px; }
+.vault-command-search { flex: 0 1 520px; max-width: 520px; min-width: 180px; height: 38px; display: flex; align-items: center; gap: 10px; padding: 0 12px; border: 1px solid var(--color-stash-border); border-radius: 10px; background: var(--color-stash-hover); color: var(--color-stash-subtext); margin-left: auto; }
+.vault-command-search:focus-within { border-color: color-mix(in srgb, var(--color-stash-primary) 60%, transparent); box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-stash-primary) 10%, transparent); }
+.vault-command-search input { flex: 1; min-width: 0; border: 0; outline: 0; background: transparent !important; color: var(--color-stash-text); font-size: 13px; }
+.vault-search-glyph { color: var(--color-stash-primary); font-family: ui-monospace, monospace; }
+.vault-search-hint { border: 1px solid var(--color-stash-border); border-radius: 4px; padding: 1px 5px; font: 11px ui-monospace, monospace; }
+.vault-command-actions { display: flex; align-items: center; justify-content: flex-end; gap: 4px; min-width: 0; }
+.vault-icon-button { position: relative; display: inline-flex; align-items: center; justify-content: center; width: 34px; height: 34px; border: 0; border-radius: 8px; color: var(--color-stash-subtext); background: transparent; cursor: pointer; transition: .18s ease; }
+.vault-icon-button:hover, .vault-icon-button:focus-visible { color: var(--color-stash-primary); background: var(--color-stash-hover); outline: none; }
+.vault-icon-button:active { transform: scale(.94); }
+.vault-command-divider { width: 1px; height: 22px; margin: 0 5px; background: var(--color-stash-border); }
+.vault-alert-dot { position: absolute; top: 6px; right: 6px; width: 6px; height: 6px; border-radius: 50%; background: #c87968; }
+
+/* ── Tooltips (pure CSS, quiet — replaces native title on icons) ─────────
+   Attach data-tooltip="label" to any button/element. Keeps a single
+   low-contrast, dark surface with a soft fade/slide — no JavaScript. */
+[data-tooltip] { position: relative; }
+[data-tooltip]::after {
+  content: attr(data-tooltip);
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 50%;
+  transform: translateX(-50%) translateY(-3px);
+  padding: 4px 9px;
+  border-radius: 6px;
+  background: color-mix(in srgb, var(--color-stash-bg) 92%, #000 8%);
+  border: 1px solid var(--color-stash-border);
+  color: var(--color-stash-text);
+  font-size: 10.5px;
+  font-weight: 500;
+  line-height: 1.35;
+  letter-spacing: .01em;
+  white-space: nowrap;
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  z-index: 90;
+  box-shadow: 0 6px 18px rgba(0,0,0,.18);
+  transition: opacity 150ms ease, transform 150ms ease, visibility 150ms ease;
+}
+[data-tooltip]:hover::after,
+[data-tooltip]:focus-visible::after {
+  opacity: 1;
+  visibility: visible;
+  transform: translateX(-50%) translateY(0);
+}
+/* Role-specific offsets so rail/bottom tooltips don't clip off the edge. */
+.vault-rail [data-tooltip]::after { top: auto; bottom: calc(100% + 8px); transform: translateX(-50%) translateY(3px); }
+.vault-rail [data-tooltip]:hover::after, .vault-rail [data-tooltip]:focus-visible::after { transform: translateX(-50%) translateY(0); }
+.vault-rail-bottom [data-tooltip]::after { bottom: calc(100% + 8px); }
+.vault-sync-button [data-tooltip]::after { bottom: calc(100% + 8px); }
+
+/* ── Sync status popover ───────────────────────────────────────────────── */
+.vault-rail-bottom { align-items: center; }
+.vault-sync-button { position: relative; display: inline-flex; flex-direction: column; align-items: center; gap: 0; }
+.vault-connection-dot { width: 9px; height: 9px; border-radius: 99px; }
+.vault-connection-dot.is-online { background: #75b798; box-shadow: 0 0 0 3px color-mix(in srgb, #75b798 14%, transparent); }
+.vault-connection-dot.is-offline { background: #c87968; box-shadow: 0 0 0 3px color-mix(in srgb, #c87968 14%, transparent); }
+.vault-sync-pop {
+  position: absolute;
+  bottom: calc(100% + 12px);
+  left: 50%;
+  transform: translateX(-50%) translateY(4px);
+  width: 232px;
+  padding: 14px;
+  border: 1px solid var(--color-stash-border);
+  border-radius: 12px 12px 12px 4px;
+  background: color-mix(in srgb, var(--color-stash-surface) 96%, transparent);
+  box-shadow: 0 18px 44px rgba(0,0,0,.28);
+  z-index: 95;
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transition: opacity 160ms ease, transform 160ms ease, visibility 160ms ease;
+}
+.vault-sync-button[data-open="true"] .vault-sync-pop,
+.vault-sync-button:focus-within .vault-sync-pop { opacity: 1; visibility: visible; pointer-events: auto; transform: translateX(-50%) translateY(0); }
+.vault-sync-pop-head { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
+.vault-sync-pop-head .vault-eyebrow { margin: 0; }
+.vault-sync-pop-head strong { color: var(--color-stash-text); font-size: 12.5px; letter-spacing: -.01em; }
+.vault-sync-pop-status { display: flex; align-items: center; gap: 7px; font-size: 11px; color: var(--color-stash-subtext); margin-bottom: 12px; }
+.vault-sync-pop-usage { font-size: 10px; color: var(--color-stash-subtext); margin-bottom: 6px; display: flex; justify-content: space-between; align-items: baseline; }
+.vault-sync-pop-track { width: 100%; height: 4px; border-radius: 99px; background: var(--color-stash-border); overflow: hidden; }
+.vault-sync-pop-track > i { display: block; height: 100%; border-radius: 99px; background: var(--color-stash-primary); transition: width 500ms ease; }
+.vault-sync-pop-legend { display: flex; justify-content: space-between; margin-top: 6px; font-size: 10px; opacity: .72; }
+.vault-sync-pop-action { margin-top: 12px; width: 100%; display: inline-flex; align-items: center; justify-content: center; gap: 7px; padding: 8px 12px; border: 0; border-radius: 8px; background: var(--color-stash-primary); color: var(--color-stash-bg); font-size: 11.5px; font-weight: 600; cursor: pointer; transition: transform 150ms ease, filter 150ms ease; }
+.vault-sync-pop-action:hover { filter: brightness(1.08); }
+.vault-sync-pop-action:active { transform: scale(.98); }
+.vault-sync-pop-action:disabled { opacity: .55; cursor: not-allowed; }
+
+/* ── Flood-wait countdown button ────────────────────────────────────────── */
+.vault-flood-btn { position: relative; }
+.vault-flood-btn .vault-flood-badge {
+  position: absolute;
+  bottom: 2px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 8px;
+  font-weight: 700;
+  color: var(--color-stash-primary);
+  font-family: ui-monospace, monospace;
+  line-height: 1;
+  pointer-events: none;
+  white-space: nowrap;
+}
+.vault-flood-note {
+  margin: 10px 0 0;
+  font-size: 10px;
+  line-height: 1.5;
+  color: var(--color-stash-subtext);
+  opacity: .85;
+}
+.vault-selection-strip { display: flex; align-items: center; gap: 5px; padding: 4px 6px 4px 10px; margin-right: 4px; border: 1px solid color-mix(in srgb, var(--color-stash-primary) 28%, transparent); border-radius: 9px; background: color-mix(in srgb, var(--color-stash-primary) 8%, transparent); color: var(--color-stash-primary); font-size: 11px; white-space: nowrap; }
+.vault-selection-strip button { border: 0; border-radius: 5px; padding: 5px 7px; color: var(--color-stash-text); background: transparent; font-size: 11px; cursor: pointer; }
+.vault-selection-strip button:hover { background: color-mix(in srgb, var(--color-stash-primary) 15%, transparent); }
+.vault-selection-strip button.is-danger { color: #d98d7e; }
+.vault-content-canvas { flex: 1; min-height: 0; overflow: auto; padding: 28px clamp(18px, 4vw, 52px) 48px; scrollbar-gutter: stable; }
+.vault-content-canvas > * { max-width: 1440px; margin-inline: auto; }
+.vault-control-row { display: flex; align-items: center; gap: 6px; min-height: 34px; margin-bottom: 18px; color: var(--color-stash-subtext); font-size: 11px; }
+.vault-file-card { border-color: var(--color-stash-border); border-radius: 14px 14px 14px 4px; box-shadow: 0 8px 24px rgba(0,0,0,.08); }
+.vault-file-card:hover { border-color: color-mix(in srgb, var(--color-stash-primary) 52%, transparent); box-shadow: 0 14px 32px color-mix(in srgb, var(--color-stash-primary) 10%, transparent); }
+.vault-file-card.is-selected { border-color: var(--color-stash-primary); background: color-mix(in srgb, var(--color-stash-primary) 7%, var(--color-stash-surface)); box-shadow: 0 0 0 2px color-mix(in srgb, var(--color-stash-primary) 22%, transparent); }
+.vault-file-row { display: grid; grid-template-columns: 2rem minmax(0, 1fr) 7rem 8rem 2.5rem; gap: 14px; align-items: center; min-height: 52px; padding: 8px 12px; border: 1px solid transparent; border-radius: 9px; cursor: pointer; transition: background-color 160ms ease, border-color 160ms ease; }
+.vault-file-row:hover { background: var(--color-stash-hover); border-color: var(--color-stash-border); }
+.vault-file-row.is-selected { background: color-mix(in srgb, var(--color-stash-primary) 10%, transparent); border-color: color-mix(in srgb, var(--color-stash-primary) 35%, transparent); }
+@media (max-width: 900px) { .vault-command-context { min-width: 0; max-width: 130px; } .vault-command-count, .vault-command-separator { display: none; } .vault-command-bar { gap: 8px; padding-inline: 12px; } .vault-selection-strip > span, .vault-selection-strip button:not(.vault-icon-button) { display: none; } }
+@media (max-width: 700px) { .vault-content-canvas { padding-inline: 14px; padding-top: 18px; } .vault-file-row { grid-template-columns: 2rem minmax(0, 1fr) 2.5rem; gap: 8px; } }
+@media (prefers-reduced-motion: reduce) { .vault-folder-drawer { animation: none; } .vault-rail-action, .vault-rail-brand { transition: none; } }
+
+/* Light theme: vault scrim and status dots need explicit overrides. */
+:root.light .vault-drawer-backdrop { background: rgba(30, 32, 38, .32); }
+:root.light .vault-folder-drawer { box-shadow: 24px 0 60px rgba(0, 0, 0, .12); }
+:root.light .vault-selection-strip button.is-danger { color: #a8482f; }
+:root.light .vault-alert-dot { background: #a8482f; }

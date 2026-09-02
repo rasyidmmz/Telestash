@@ -130,17 +130,17 @@ function AppContent() {
   // Styled splash screen while verifying the session
   if (authStatus === "loading") {
     return (
-      <main className="h-screen w-screen flex items-center justify-center bg-telegram-bg">
+      <main className="h-screen w-screen flex items-center justify-center bg-stash-bg">
         <div className="flex flex-col items-center gap-4">
           <img src="/telestash-logo.png" className="w-16 h-16 drop-shadow-lg animate-pulse" alt="TeleStash" />
-          <p className="text-sm text-telegram-subtext tracking-wide">Restoring session...</p>
+          <p className="text-sm text-stash-subtext tracking-wide">Restoring session...</p>
         </div>
       </main>
     );
   }
 
   return (
-    <main className="absolute inset-0 text-telegram-text overflow-hidden selection:bg-telegram-primary/30">
+    <main className="absolute inset-0 text-stash-text overflow-hidden selection:bg-stash-primary/30">
       <UpdateBanner
         available={available}
         version={version}
@@ -155,8 +155,8 @@ function AppContent() {
       <Toaster theme={theme} position="bottom-center" />
       {authStatus === "authenticated" && (
         <Suspense fallback={
-          <div className="h-screen w-screen flex flex-col items-center justify-center bg-telegram-bg">
-            <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-telegram-primary"></div>
+          <div className="h-screen w-screen flex flex-col items-center justify-center bg-stash-bg">
+            <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-stash-primary"></div>
           </div>
         }>
           <ErrorBoundary>

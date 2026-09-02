@@ -1,5 +1,47 @@
 # Changelog
 
+## [1.3.2]
+
+### Fixed
+
+- **Search hides split parts in all cases**: parts of large files could appear in global search results when Telegram returned messages without captions. Parts are now also detected by their `.tdpart####of####` document filename in both the search path and the folder listing, and the frontend search filter mirrors the same rule. Only the unified main file appears when searching.
+- **No duplicate tooltips**: command bar icons no longer show both the custom tooltip and the native browser tooltip on hover.
+
+## [1.3.1]
+
+### Added
+
+- **Flood-wait countdown**: the Rust backend now emits a `flood-wait` event whenever a transfer enters Telegram FLOOD_WAIT, and a countdown button appears in the icon rail with a live popover showing remaining time, retry attempt, and a note on Telegram's rate limits.
+- **Quiet icon tooltips**: every icon action in the rail and command bar now shows a consistent, minimal tooltip on hover instead of the native browser tooltip.
+- **Sync status popover**: the rail connection dot opens a popover with live connection state, up/down bandwidth usage against the 250 GB daily budget, and a Sync-folders action.
+
+### Changed
+
+- **Command bar cleanup**: Analytics, Settings, and the theme toggle now live only in the icon rail (no duplicated actions); the search bar moved to the right so long folder names are no longer cropped; the context label reads "Saved Messages" or "Channel" to match the MTProto model.
+- **About panel**: credits the author Rasyid Muhamad Muflih Zain; legacy donation links removed.
+
+### Fixed
+
+- **Collections drawer scroll**: the folder list inside the drawer now scrolls correctly instead of being clipped.
+- **Rail brand mark**: shows the real TeleStash logo and is no longer clickable (the Collections button is the single entry point).
+
+## [1.3.0]
+
+### Added
+
+- **Vault identity & console layout**: self-hosted Outfit variable font (uniform typography everywhere), charcoal + gold Vault palette with refreshed theme presets, and a new console layout — icon navigation rail, folder drawer, and a compact command bar. Phosphor icons replace Lucide.
+- **CI workflow** (`.github/workflows/ci.yml`): every pull request and main push now runs the same validation as releases — `tsc --noEmit`, automated unit tests, and `cargo check --locked` on a Windows MSVC runner.
+
+### Changed
+
+- **Single ingestion path — file upload only**: uploads go through the file picker into the currently selected folder, with the upload entry as the first item in grid and list views. Folder upload (zip-and-upload), remote URL upload, and OS/Explorer drag-and-drop ingestion were removed along with their backend commands (`cmd_zip_folder`, `cmd_upload_from_url`), the unused `reqwest` dependency, and their UI/i18n surfaces. In-app drag-to-folder moves still work.
+- **Direct-only networking**: the `grammers-mtsender` `proxy` feature is no longer enabled; no proxy or VPN configuration remains in the app.
+- **Dependency updates**: framer-motion 12 → 13 (React 19 strict-mode compatible), bcrypt 0.16 → 0.19, sysinfo 0.30 → 0.39, actix-multipart 0.7 → 0.8, sevenz-rust2 0.7 → 0.22 (with archive API adaptation and upstream malicious-archive hardening), zip 2.4 → 4.6 (deflate-only feature set preserved).
+
+### Removed
+
+- Dead code: unused `DragDropOverlay` component and legacy planning documents; ~700 lines of unreachable backend upload machinery.
+
 ## [1.2.4]
 
 ### Changed

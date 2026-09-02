@@ -1,5 +1,5 @@
 import { QueueItem } from "../../../types";
-import { X, RotateCcw, AlertCircle, Pause, Play } from "lucide-react";
+import { X, RotateCcw, AlertCircle, Pause, Play } from '../../shared/icons.tsx';
 
 function formatBytes(bytes: number): string {
     if (bytes === 0) return '0 B';
@@ -36,13 +36,13 @@ export function UploadQueue({
 }: UploadQueueProps) {
     if (items.length === 0) return null;
 
-    const hasPendingOrActive = items.some(i => i.status === 'pending' || i.status === 'uploading' || i.status === 'downloading');
+    const hasPendingOrActive = items.some(i => i.status === 'pending' || i.status === 'uploading');
     const hasPaused = items.some(i => i.status === 'paused');
 
     return (
-        <div className={`fixed ${bottomOffsetClass} right-4 w-80 bg-telegram-surface border border-telegram-border rounded-xl shadow-2xl overflow-hidden z-[100]`}>
-            <div className="p-3 border-b border-telegram-border bg-telegram-hover flex justify-between items-center">
-                <h4 className="text-sm font-medium text-telegram-text">Uploads</h4>
+        <div className={`fixed ${bottomOffsetClass} right-4 w-80 bg-stash-surface border border-stash-border rounded-xl shadow-2xl overflow-hidden z-[100]`}>
+            <div className="p-3 border-b border-stash-border bg-stash-hover flex justify-between items-center">
+                <h4 className="text-sm font-medium text-stash-text">Uploads</h4>
                 <div className="flex gap-2 items-center">
                     {hasPendingOrActive && onPauseAll && (
                         <button onClick={onPauseAll} className="text-xs text-amber-400 hover:text-amber-300 transition-colors">Pause All</button>
@@ -53,30 +53,29 @@ export function UploadQueue({
                     {hasPendingOrActive && (
                         <button onClick={onCancelAll} className="text-xs text-red-400 hover:text-red-300 transition-colors">Cancel All</button>
                     )}
-                    <button onClick={onClearFinished} className="text-xs text-telegram-primary hover:text-telegram-text transition-colors">Clear Finished</button>
+                    <button onClick={onClearFinished} className="text-xs text-stash-primary hover:text-stash-text transition-colors">Clear Finished</button>
                 </div>
             </div>
             <div className="max-h-60 overflow-y-auto p-2 space-y-2">
                 {items.map(item => (
-                    <div key={item.id} className="flex flex-col gap-1 p-2 bg-telegram-hover rounded">
+                    <div key={item.id} className="flex flex-col gap-1 p-2 bg-stash-hover rounded">
                         <div className="flex items-center gap-2 text-sm">
                             <div className={`w-2 h-2 rounded-full flex-shrink-0 ${
                                 item.status === 'pending' ? 'bg-yellow-500' :
                                 item.status === 'paused' ? 'bg-amber-500' :
-                                item.status === 'downloading' ? 'bg-cyan-500 animate-pulse' :
                                 item.status === 'uploading' ? 'bg-blue-500 animate-pulse' :
                                 item.status === 'cancelled' ? 'bg-gray-500' :
                                 item.status === 'error' ? 'bg-red-500' : 'bg-green-500'
                             }`} />
-                            <div className="flex-1 truncate text-telegram-subtext text-xs" title={item.url || item.path}>
-                                {(item.url || item.path).split('/').pop() || (item.url || item.path).split('\\').pop()}
+                            <div className="flex-1 truncate text-stash-subtext text-xs" title={item.path}>
+                                {item.path.split('/').pop() || item.path.split('\\').pop()}
                             </div>
 
                             {/* Pause / Resume buttons per file */}
-                            {(item.status === 'uploading' || item.status === 'downloading') && onPauseItem && (
+                            {item.status === 'uploading' && onPauseItem && (
                                 <button
                                     onClick={() => onPauseItem(item.id)}
-                                    className="p-1 text-gray-400 hover:text-amber-400 hover:bg-telegram-surface/80 rounded transition-colors flex-shrink-0"
+                                    className="p-1 text-gray-400 hover:text-amber-400 hover:bg-stash-surface/80 rounded transition-colors flex-shrink-0"
                                     title="Pause upload"
                                     aria-label="Pause upload"
                                 >
@@ -86,7 +85,7 @@ export function UploadQueue({
                             {item.status === 'pending' && onPauseItem && (
                                 <button
                                     onClick={() => onPauseItem(item.id)}
-                                    className="p-1 text-gray-400 hover:text-amber-400 hover:bg-telegram-surface/80 rounded transition-colors flex-shrink-0"
+                                    className="p-1 text-gray-400 hover:text-amber-400 hover:bg-stash-surface/80 rounded transition-colors flex-shrink-0"
                                     title="Pause / Hold in queue"
                                     aria-label="Pause queued upload"
                                 >
@@ -96,7 +95,7 @@ export function UploadQueue({
                             {item.status === 'paused' && onResumeItem && (
                                 <button
                                     onClick={() => onResumeItem(item.id)}
-                                    className="p-1 text-amber-400 hover:text-green-400 hover:bg-telegram-surface/80 rounded transition-colors flex-shrink-0"
+                                    className="p-1 text-amber-400 hover:text-green-400 hover:bg-stash-surface/80 rounded transition-colors flex-shrink-0"
                                     title="Resume upload"
                                     aria-label="Resume upload"
                                 >
@@ -105,10 +104,10 @@ export function UploadQueue({
                             )}
 
                             {/* Cancel / Remove / Retry buttons */}
-                            {(item.status === 'uploading' || item.status === 'downloading' || item.status === 'paused') && (
+                            {(item.status === 'uploading' || item.status === 'paused') && (
                                 <button
                                     onClick={() => onCancelItem(item.id)}
-                                    className="p-1 text-gray-400 hover:text-red-400 hover:bg-telegram-surface/80 rounded transition-colors flex-shrink-0"
+                                    className="p-1 text-gray-400 hover:text-red-400 hover:bg-stash-surface/80 rounded transition-colors flex-shrink-0"
                                     title="Cancel"
                                     aria-label="Cancel upload"
                                 >
@@ -118,7 +117,7 @@ export function UploadQueue({
                             {item.status === 'pending' && (
                                 <button
                                     onClick={() => onCancelItem(item.id)}
-                                    className="p-1 text-gray-400 hover:text-red-400 hover:bg-telegram-surface/80 rounded transition-colors flex-shrink-0"
+                                    className="p-1 text-gray-400 hover:text-red-400 hover:bg-stash-surface/80 rounded transition-colors flex-shrink-0"
                                     title="Remove from queue"
                                     aria-label="Remove from queue"
                                 >
@@ -128,7 +127,7 @@ export function UploadQueue({
                             {(item.status === 'error' || item.status === 'cancelled') && (
                                 <button
                                     onClick={() => onRetryItem(item.id)}
-                                    className="p-1 text-gray-400 hover:text-blue-400 hover:bg-telegram-surface/80 rounded transition-colors flex-shrink-0"
+                                    className="p-1 text-gray-400 hover:text-blue-400 hover:bg-stash-surface/80 rounded transition-colors flex-shrink-0"
                                     title="Retry"
                                     aria-label="Retry upload"
                                 >
@@ -138,21 +137,21 @@ export function UploadQueue({
                         </div>
 
                         {/* Progress Bar for Active Items */}
-                        {(item.status === 'uploading' || item.status === 'downloading') && (
+                        {item.status === 'uploading' && (
                             <>
-                                <div className="w-full bg-telegram-border h-1 mt-1 rounded-full overflow-hidden">
+                                <div className="w-full bg-stash-border h-1 mt-1 rounded-full overflow-hidden">
                                     {item.progress !== undefined ? (
                                         <div
-                                            className={`${item.status === 'downloading' ? 'bg-cyan-500' : 'bg-blue-500'} h-full rounded-full transition-all duration-300`}
+                                            className={`${'bg-blue-500'} h-full rounded-full transition-all duration-300`}
                                             style={{ width: `${item.progress}%` }}
                                         />
                                     ) : (
-                                        <div className={`${item.status === 'downloading' ? 'bg-cyan-500' : 'bg-blue-500'} h-full w-full animate-progress-indeterminate`} />
+                                        <div className={`${'bg-blue-500'} h-full w-full animate-progress-indeterminate`} />
                                     )}
                                 </div>
-                                <div className="flex justify-between text-[10px] text-telegram-subtext mt-0.5">
+                                <div className="flex justify-between text-[10px] text-stash-subtext mt-0.5">
                                     <span>
-                                        {item.status === 'downloading' ? 'Caching: ' : 'Uploading: '}
+                                        {'Uploading: '}
                                         {item.uploadedBytes !== undefined && item.totalBytes !== undefined
                                             ? `${formatBytes(item.uploadedBytes)} / ${formatBytes(item.totalBytes)}`
                                             : item.progress !== undefined ? `${item.progress}%` : ''}
@@ -169,7 +168,7 @@ export function UploadQueue({
                         {/* Progress Bar for Paused Items */}
                         {item.status === 'paused' && (
                             <>
-                                <div className="w-full bg-telegram-border h-1 mt-1 rounded-full overflow-hidden">
+                                <div className="w-full bg-stash-border h-1 mt-1 rounded-full overflow-hidden">
                                     <div
                                         className="bg-amber-500 h-full rounded-full transition-all duration-300"
                                         style={{ width: `${item.progress || 0}%` }}

@@ -46,6 +46,23 @@ pub fn is_split_part_caption(caption: &str) -> bool {
         || c.starts_with(LEGACY_PART_PREFIX_4)
 }
 
+/// Detect a split-part document filename, e.g. "movie.mkv.tdpart0001of0005".
+/// The caption prefix is the primary marker, but search results can arrive
+/// without captions, so the filename suffix is the fallback signal.
+pub fn is_split_part_filename(name: &str) -> bool {
+    let trimmed = name.trim_end();
+    let Some(idx) = trimmed.rfind(".tdpart") else { return false };
+    let suffix = &trimmed[idx + 7..];
+    if suffix.len() != 10 {
+        return false;
+    }
+    let (digits_a, rest) = suffix.split_at(4);
+    let (of, digits_b) = rest.split_at(2);
+    digits_a.chars().all(|c| c.is_ascii_digit())
+        && of == "of"
+        && digits_b.chars().all(|c| c.is_ascii_digit())
+}
+
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct SplitPart {
     pub message_id: i32,

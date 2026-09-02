@@ -203,6 +203,16 @@ mod tests {
     }
 
     #[test]
+    fn recognizes_split_part_filenames() {
+        assert!(crate::models::is_split_part_filename("movie.mkv.tdpart0001of0005"));
+        assert!(crate::models::is_split_part_filename("a.tdpart0001of0001"));
+        assert!(crate::models::is_split_part_filename("big file.mkv.tdpart0012of0012"));
+        assert!(!crate::models::is_split_part_filename("movie.mkv"));
+        assert!(!crate::models::is_split_part_filename("notes.tdpart12of34.txt"));
+        assert!(!crate::models::is_split_part_filename("my.tdpart0001of0005.bak"));
+    }
+
+    #[test]
     fn deserializes_legacy_teledrive_manifest_json() {
         let json_data = r#"{
             "teledrive_split": 1,

@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { X, ChevronLeft, ChevronRight } from 'lucide-react';
+import { X, ChevronLeft, ChevronRight } from '../../shared/icons.tsx';
 import { invoke } from '@tauri-apps/api/core';
 import { TelegramFile } from '../../../types';
 import { isVideoFile, isAudioFile } from '../../../utils';
@@ -121,7 +121,7 @@ export function MediaPlayer({ file, onClose, onNext, onPrev, currentIndex, total
 
     return (
         <div className="fixed inset-0 z-[200] bg-black/90 flex items-center justify-center p-4 backdrop-blur-md" onClick={onClose}>
-            <div className="relative w-full max-w-lg text-center p-8 bg-telegram-surface border border-telegram-border/60 rounded-2xl shadow-2xl flex flex-col items-center gap-6" onClick={e => e.stopPropagation()}>
+            <div className="relative w-full max-w-lg text-center p-8 bg-stash-surface border border-stash-border/60 rounded-2xl shadow-2xl flex flex-col items-center gap-6" onClick={e => e.stopPropagation()}>
                 {/* Close Button */}
                 <div className="absolute top-4 right-4">
                     <button
@@ -157,7 +157,7 @@ export function MediaPlayer({ file, onClose, onNext, onPrev, currentIndex, total
                 {/* Media Icon & Status */}
                 {!streamUrl ? (
                     <div className="flex flex-col items-center gap-4 py-6">
-                        <div className="w-10 h-10 border-4 border-telegram-primary border-t-transparent rounded-full animate-spin"></div>
+                        <div className="w-10 h-10 border-4 border-stash-primary border-t-transparent rounded-full animate-spin"></div>
                         <p className="text-white/80">Connecting stream...</p>
                     </div>
                 ) : mpvError ? (
@@ -170,7 +170,7 @@ export function MediaPlayer({ file, onClose, onNext, onPrev, currentIndex, total
                     </div>
                 ) : (
                     <>
-                        <div className="w-20 h-20 rounded-full bg-telegram-primary/10 flex items-center justify-center text-telegram-primary border border-telegram-primary/25 animate-pulse">
+                        <div className="w-20 h-20 rounded-full bg-stash-primary/10 flex items-center justify-center text-stash-primary border border-stash-primary/25 animate-pulse">
                             {isVideo ? (
                                 <svg xmlns="http://www.w3.org/2000/svg" className="w-10 h-10 fill-current" viewBox="0 0 24 24"><polygon points="6 3 20 12 6 21 6 3"/></svg>
                             ) : (
@@ -203,7 +203,7 @@ export function MediaPlayer({ file, onClose, onNext, onPrev, currentIndex, total
                                         });
                                     }
                                 }}
-                                className="w-full py-3 bg-telegram-primary text-black rounded-xl hover:shadow-lg hover:shadow-telegram-primary/20 transition-all text-sm font-semibold"
+                                className="w-full py-3 bg-stash-primary text-black rounded-xl hover:shadow-lg hover:shadow-stash-primary/20 transition-all text-sm font-semibold"
                             >
                                 Reopen in MPV
                             </button>

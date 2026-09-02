@@ -1,4 +1,4 @@
-import { Clock } from 'lucide-react';
+import { Clock } from '@phosphor-icons/react';
 import { VideoMetadata } from '../../types';
 
 interface VideoMetaBadgeProps {

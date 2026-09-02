@@ -1,5 +1,5 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
-import { Eye, HardDrive, Trash2, FolderOpen, Pencil, Play, FileText, Link, Copy, ArrowRightLeft } from 'lucide-react';
+import { Eye, HardDrive, Trash2, FolderOpen, Pencil, Play, FileText, Link, Copy, ArrowRightLeft } from '../../shared/icons.tsx';
 import { useTranslation } from 'react-i18next';
 import { TelegramFile, TelegramFolder } from '../../../types';
 import { isMediaFile, isPdfFile, isVideoFile } from '../../../utils';
@@ -87,20 +87,20 @@ export function ContextMenu({
     return (
         <div
             ref={menuRef}
-            className="fixed z-50 min-w-[200px] bg-telegram-surface/95 backdrop-blur-xl border border-telegram-border rounded-lg shadow-2xl p-1.5 animate-in fade-in zoom-in-95 duration-100 flex flex-col gap-0.5"
+            className="fixed z-50 min-w-[200px] bg-stash-surface/95 backdrop-blur-xl border border-stash-border rounded-lg shadow-2xl p-1.5 animate-in fade-in zoom-in-95 duration-100 flex flex-col gap-0.5"
             style={{ left: adjustedPos.x, top: adjustedPos.y }}
             onClick={(e) => e.stopPropagation()}
             onContextMenu={(e) => e.preventDefault()}
         >
-            <div className="px-2 py-1.5 text-xs text-telegram-subtext font-medium truncate max-w-[180px] border-b border-telegram-border mb-1">
+            <div className="px-2 py-1.5 text-xs text-stash-subtext font-medium truncate max-w-[180px] border-b border-stash-border mb-1">
                 {file.name}
             </div>
 
             {file.type !== 'folder' && (
-                <button onClick={onPreview} className="flex items-center gap-2 px-2 py-1.5 text-sm text-telegram-text hover:bg-telegram-hover rounded transition-colors text-left w-full">
+                <button onClick={onPreview} className="flex items-center gap-2 px-2 py-1.5 text-sm text-stash-text hover:bg-stash-hover rounded transition-colors text-left w-full">
                     {isMediaFile(file.name) ? (
                         <>
-                            <Play className="w-4 h-4 text-telegram-primary" />
+                            <Play className="w-4 h-4 text-stash-primary" />
                             {t('common.play')}
                         </>
                     ) : isPdfFile(file.name) ? (
@@ -118,20 +118,20 @@ export function ContextMenu({
             )}
 
             {file.type === 'folder' && (
-                <button onClick={onPreview} className="flex items-center gap-2 px-2 py-1.5 text-sm text-telegram-text hover:bg-telegram-hover rounded transition-colors text-left w-full">
+                <button onClick={onPreview} className="flex items-center gap-2 px-2 py-1.5 text-sm text-stash-text hover:bg-stash-hover rounded transition-colors text-left w-full">
                     <FolderOpen className="w-4 h-4 text-yellow-500" />
                     {t('files.open')}
                 </button>
             )}
 
-            <button onClick={onDownload} className="flex items-center gap-2 px-2 py-1.5 text-sm text-telegram-text hover:bg-telegram-hover rounded transition-colors text-left w-full">
+            <button onClick={onDownload} className="flex items-center gap-2 px-2 py-1.5 text-sm text-stash-text hover:bg-stash-hover rounded transition-colors text-left w-full">
                 <HardDrive className="w-4 h-4 text-green-500" />
                 {t('files.download')}
             </button>
 
             {file.type !== 'folder' && onShare && (
-                <button onClick={onShare} className="flex items-center gap-2 px-2 py-1.5 text-sm text-telegram-text hover:bg-telegram-hover rounded transition-colors text-left w-full">
-                    <Link className="w-4 h-4 text-telegram-primary" />
+                <button onClick={onShare} className="flex items-center gap-2 px-2 py-1.5 text-sm text-stash-text hover:bg-stash-hover rounded transition-colors text-left w-full">
+                    <Link className="w-4 h-4 text-stash-primary" />
                     {t('files.share_link')}
                 </button>
             )}
@@ -153,8 +153,8 @@ export function ContextMenu({
                             onClose();
                         };
                         return (
-                            <button onClick={handleCopyLink} className="flex items-center gap-2 px-2 py-1.5 text-sm text-telegram-text hover:bg-telegram-hover rounded transition-colors text-left w-full">
-                                <Copy className="w-4 h-4 text-telegram-primary" />
+                            <button onClick={handleCopyLink} className="flex items-center gap-2 px-2 py-1.5 text-sm text-stash-text hover:bg-stash-hover rounded transition-colors text-left w-full">
+                                <Copy className="w-4 h-4 text-stash-primary" />
                                 {t('files.copy_telegram_link')}
                             </button>
                         );
@@ -163,7 +163,7 @@ export function ContextMenu({
                             <button 
                                 disabled 
                                 title="Only available for public channels" 
-                                className="flex items-center gap-2 px-2 py-1.5 text-sm text-telegram-subtext hover:bg-telegram-hover rounded transition-colors text-left w-full cursor-not-allowed opacity-50"
+                                className="flex items-center gap-2 px-2 py-1.5 text-sm text-stash-subtext hover:bg-stash-hover rounded transition-colors text-left w-full cursor-not-allowed opacity-50"
                             >
                                 <Copy className="w-4 h-4" />
                                 {t('files.copy_telegram_link')}
@@ -174,21 +174,21 @@ export function ContextMenu({
             )}
 
             {file.type !== 'folder' && onMove && (
-                <button onClick={onMove} className="flex items-center gap-2 px-2 py-1.5 text-sm text-telegram-text hover:bg-telegram-hover rounded transition-colors text-left w-full">
+                <button onClick={onMove} className="flex items-center gap-2 px-2 py-1.5 text-sm text-stash-text hover:bg-stash-hover rounded transition-colors text-left w-full">
                     <ArrowRightLeft className="w-4 h-4 text-amber-400" />
                     {t('files.move_to_folder')}
                 </button>
             )}
 
             {file.type !== 'folder' && onRename && (
-                <button onClick={onRename} className="flex items-center gap-2 px-2 py-1.5 text-sm text-telegram-text hover:bg-telegram-hover rounded transition-colors text-left w-full">
+                <button onClick={onRename} className="flex items-center gap-2 px-2 py-1.5 text-sm text-stash-text hover:bg-stash-hover rounded transition-colors text-left w-full">
                     <Pencil className="w-4 h-4 text-blue-400" />
                     {t('files.rename')}
                 </button>
             )}
 
             {file.type !== 'folder' && !onRename && (
-                <button disabled className="flex items-center gap-2 px-2 py-1.5 text-sm text-telegram-subtext hover:bg-telegram-hover rounded transition-colors text-left w-full cursor-not-allowed opacity-50">
+                <button disabled className="flex items-center gap-2 px-2 py-1.5 text-sm text-stash-subtext hover:bg-stash-hover rounded transition-colors text-left w-full cursor-not-allowed opacity-50">
                     <Pencil className="w-4 h-4" />
                     {t('files.rename')}
                 </button>
@@ -200,14 +200,14 @@ export function ContextMenu({
                         onGenerateCc();
                         onClose();
                     }}
-                    className="flex items-center gap-2 px-2 py-1.5 text-sm text-telegram-text hover:bg-telegram-hover rounded transition-colors text-left w-full"
+                    className="flex items-center gap-2 px-2 py-1.5 text-sm text-stash-text hover:bg-stash-hover rounded transition-colors text-left w-full"
                 >
                     <Play className="w-4 h-4 text-purple-400 rotate-90" />
                     {hasCc ? "Regenerate English CC" : "Generate English CC"}
                 </button>
             )}
 
-            <div className="h-px bg-telegram-border my-1" />
+            <div className="h-px bg-stash-border my-1" />
 
             <button onClick={onDelete} className="flex items-center gap-2 px-2 py-1.5 text-sm text-red-500 hover:bg-red-500/10 rounded transition-colors text-left w-full">
                 <Trash2 className="w-4 h-4" />

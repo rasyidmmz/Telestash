@@ -10,6 +10,7 @@ import { formatBytes, isMediaFile, isPdfFile, isArchiveFile, copyToClipboard } f
 
 // Components
 import { Sidebar } from './dashboard/Sidebar';
+import { VaultRail } from './dashboard/VaultRail';
 import { TopBar } from './dashboard/TopBar';
 import { FileExplorer } from './dashboard/FileExplorer';
 import { UploadQueue } from './dashboard/UploadQueue';
@@ -22,14 +23,13 @@ import { ArchiveViewerModal } from './dashboard/ArchiveViewerModal';
 import { ShareDialog } from './dashboard/ShareDialog';
 import { RenameFolderModal } from './dashboard/RenameFolderModal';
 import { RenameFileModal } from './dashboard/RenameFileModal';
-import { RemoteUploadModal } from './dashboard/RemoteUploadModal';
 import { LogsModal } from './dashboard/LogsModal';
 import { RecentWatchBar } from './dashboard/RecentWatchBar';
 import { WatchLogsModal } from './dashboard/WatchLogsModal';
 import { StorageAnalyticsModal } from './dashboard/StorageAnalyticsModal';
 import { getRecentWatchHistory, recordWatchEvent, WatchHistoryEntry } from '../../utils/watchHistory';
 import { isVideoFile, isAudioFile } from '../../utils';
-import { Link, Copy, Check, X, Loader2 } from 'lucide-react';
+import { Link, Copy, Check, X, Loader2 } from '../shared/icons.tsx';
 
 // Hooks
 import { useTelegramConnection } from '../../hooks/useTelegramConnection';
@@ -38,6 +38,7 @@ import { useFileUpload } from '../../hooks/useFileUpload';
 import { useFileDownload } from '../../hooks/useFileDownload';
 import { useKeyboardShortcuts } from '../../hooks/useKeyboardShortcuts';
 import { useSettings } from '../../context/SettingsContext';
+import { useTheme } from '../../context/ThemeContext';
 import { useConfirm } from '../../context/ConfirmContext';
 import { useUpdate } from '../../context/UpdateContext';
 import { recordErrorLog } from '../../errorLogs';
@@ -58,6 +59,7 @@ export function Dashboard({ onLogout }: { onLogout: () => void }) {
 
 
     const { settings, updateSetting } = useSettings();
+    const { theme, toggleTheme } = useTheme();
     const { confirm } = useConfirm();
     const { checkForUpdates } = useUpdate();
     const viewMode = settings.viewMode;
@@ -70,6 +72,7 @@ export function Dashboard({ onLogout }: { onLogout: () => void }) {
     const [showLogs, setShowLogs] = useState(false);
     const [showWatchLogs, setShowWatchLogs] = useState(false);
     const [showAnalytics, setShowAnalytics] = useState(false);
+    const [showFolderDrawer, setShowFolderDrawer] = useState(false);
     const [watchHistory, setWatchHistory] = useState<WatchHistoryEntry[]>([]);
 
     const refreshWatchHistory = useCallback(() => {
@@ -88,7 +91,6 @@ export function Dashboard({ onLogout }: { onLogout: () => void }) {
     const setInternalDragIds = (ids: number[] | null) => {
         internalDragRef.current = ids;
     };
-    const [showRemoteUpload, setShowRemoteUpload] = useState(false);
     const [playingFile, setPlayingFile] = useState<TelegramFile | null>(null);
     const [pdfFile, setPdfFile] = useState<TelegramFile | null>(null);
     const [archiveViewFile, setArchiveViewFile] = useState<TelegramFile | null>(null);
@@ -129,8 +131,6 @@ export function Dashboard({ onLogout }: { onLogout: () => void }) {
         uploadQueue,
         setUploadQueue,
         handleManualUpload,
-        handleFolderUpload,
-        handleUrlUpload,
         cancelAll: cancelUploads,
         cancelItem: cancelUploadItem,
         pauseUpload,
@@ -163,9 +163,9 @@ export function Dashboard({ onLogout }: { onLogout: () => void }) {
             activeKeys.add(key);
             if (loggedTransferErrors.current.has(key)) continue;
 
-            const name = basename(item.url || item.path);
+            const name = basename(item.path);
             recordErrorLog({
-                source: item.url ? 'Remote upload' : 'Upload',
+                source: 'Upload',
                 message: `Upload failed: ${name}`,
                 details: item.error,
             });
@@ -367,7 +367,8 @@ export function Dashboard({ onLogout }: { onLogout: () => void }) {
                     name.startsWith('[tg-part]') ||
                     name.startsWith('#telestash_sub:') ||
                     name.endsWith('.tdmanifest.json') ||
-                    name === 'telestash.tdmanifest.json'
+                    name === 'telestash.tdmanifest.json' ||
+                    /\.tdpart\d{4}of\d{4}$/i.test(name)
                 ) {
                     return false;
                 }
@@ -585,6 +586,11 @@ export function Dashboard({ onLogout }: { onLogout: () => void }) {
         e.preventDefault();
         e.stopPropagation();
 
+        // Internal drags only (TeleStash file IDs); OS/Explorer file drops are ignored.
+        const isInternal = e.dataTransfer.types.includes("application/x-telegram-file-id") ||
+            e.dataTransfer.types.includes("application/x-telegram-file-ids");
+        if (!isInternal) return;
+
         // Read multi-ID drag data (new format) or fall back to single-ID (legacy)
         let idsToMove: number[] | null = null;
         const rawIds = e.dataTransfer.getData("application/x-telegram-file-ids");
@@ -640,6 +646,9 @@ export function Dashboard({ onLogout }: { onLogout: () => void }) {
         ? "Saved Messages"
         : folders.find(f => f.id === activeFolderId)?.name || "Folder";
 
+    // TeleStash folders map to Telegram channels via MTProto; label matches the context.
+    const contextLabel = activeFolderId === null ? "Saved Messages" : "Channel";
+
 
     const handleRootDragOver = (e: React.DragEvent) => {
         // Accept our internal file drags (custom MIME type) so drops work anywhere
@@ -668,7 +677,7 @@ export function Dashboard({ onLogout }: { onLogout: () => void }) {
 
     return (
         <div
-            className="flex h-screen w-full overflow-hidden bg-telegram-bg relative"
+            className="flex h-screen w-full overflow-hidden bg-stash-bg relative"
             onDragOver={handleRootDragOver}
             onDragEnter={handleRootDragEnter}
         >
@@ -731,55 +740,61 @@ export function Dashboard({ onLogout }: { onLogout: () => void }) {
                         key="pdf-viewer"
                     />
                 )}
-                {showRemoteUpload && (
-                    <RemoteUploadModal
-                        isOpen={showRemoteUpload}
-                        onClose={() => setShowRemoteUpload(false)}
-                        folders={folders}
-                        onUpload={handleUrlUpload}
-                        key="remote-upload-modal"
-                    />
-                )}
             </AnimatePresence>
 
-            <Sidebar
-                folders={folders}
-                groups={groups}
-                activeFolderId={activeFolderId}
-                setActiveFolderId={setActiveFolderId}
-                onDrop={handleDropOnFolder}
-                onDelete={handleFolderDelete}
-                onRename={(id, name) => setRenameFolder({ id, name })}
-                onToggleVisibility={async (id, _name, isPublic) => {
-                    try {
-                        await handleFolderToggleVisibility(id, !isPublic);
-                        queryClient.invalidateQueries({ queryKey: ['folders'] });
-                    } catch { /* toast handled in hook */ }
-                }}
-                onExportInvite={async (id, _name) => {
-                    try {
-                        const info = await handleExportFolderInvite(id);
-                        try {
-                            await copyToClipboard(info.link);
-                            toast.success(`Invite link copied: ${info.link}`);
-                        } catch (e) {
-                            toast.error(`Failed to copy to clipboard: ${e}`);
-                        }
-                    } catch { /* backend error already toasted in hook */ }
-                }}
-                onCreate={handleCreateFolder}
-                isSyncing={isSyncing}
+            <VaultRail
+                onFolders={() => setShowFolderDrawer(true)}
+                onUpload={handleManualUpload}
+                onAnalytics={() => setShowAnalytics(true)}
+                onSettings={() => setShowSettings(true)}
+                onToggleTheme={toggleTheme}
+                theme={theme}
                 isConnected={isConnected}
+                isSyncing={isSyncing}
                 onSync={handleSyncFolders}
-                onLogout={handleLogout}
                 bandwidth={bandwidth || null}
-                onAssignFolderToGroup={handleAssignFolderToGroup}
-                onReorderFolders={handleReorderFolders}
-                onUpdateGroupOrder={handleUpdateGroupOrder}
-                onCreateGroup={handleCreateGroup}
-                onUpdateGroup={handleUpdateGroup}
-                onDeleteGroup={handleDeleteGroup}
+                uploadCount={uploadQueue.length}
+                downloadCount={downloadQueue.length}
             />
+
+            <AnimatePresence>
+                {showFolderDrawer && (
+                    <>
+                        <div className="vault-drawer-backdrop" onClick={() => setShowFolderDrawer(false)} />
+                        <aside className="vault-folder-drawer" aria-label="Collections drawer">
+                            <div className="vault-drawer-heading">
+                                <div><span className="vault-eyebrow">Vault index</span><h2>Collections</h2></div>
+                                <button className="vault-drawer-close" onClick={() => setShowFolderDrawer(false)} aria-label="Close collections">×</button>
+                            </div>
+                            <div className="vault-drawer-body">
+                                <Sidebar
+                                    folders={folders}
+                                    groups={groups}
+                                    activeFolderId={activeFolderId}
+                                    setActiveFolderId={(id) => { setActiveFolderId(id); setShowFolderDrawer(false); }}
+                                    onDrop={handleDropOnFolder}
+                                    onDelete={handleFolderDelete}
+                                    onRename={(id, name) => setRenameFolder({ id, name })}
+                                    onToggleVisibility={async (id, _name, isPublic) => { try { await handleFolderToggleVisibility(id, !isPublic); queryClient.invalidateQueries({ queryKey: ['folders'] }); } catch { /* hook handles toast */ } }}
+                                    onExportInvite={async (id, _name) => { try { const info = await handleExportFolderInvite(id); await copyToClipboard(info.link); toast.success(`Invite link copied: ${info.link}`); } catch { /* backend error already toasted */ } }}
+                                    onCreate={handleCreateFolder}
+                                    isSyncing={isSyncing}
+                                    isConnected={isConnected}
+                                    onSync={handleSyncFolders}
+                                    onLogout={handleLogout}
+                                    bandwidth={bandwidth || null}
+                                    onAssignFolderToGroup={handleAssignFolderToGroup}
+                                    onReorderFolders={handleReorderFolders}
+                                    onUpdateGroupOrder={handleUpdateGroupOrder}
+                                    onCreateGroup={handleCreateGroup}
+                                    onUpdateGroup={handleUpdateGroup}
+                                    onDeleteGroup={handleDeleteGroup}
+                                />
+                            </div>
+                        </aside>
+                    </>
+                )}
+            </AnimatePresence>
 
             <main className="flex-1 flex flex-col min-w-0 overflow-hidden">
                 <TopBar
@@ -795,16 +810,14 @@ export function Dashboard({ onLogout }: { onLogout: () => void }) {
                     setViewMode={setViewMode}
                     searchTerm={searchTerm}
                     onSearchChange={setSearchTerm}
-                    onSettingsClick={() => setShowSettings(true)}
                     onLogsClick={() => setShowLogs(true)}
                     onWatchLogsClick={() => setShowWatchLogs(true)}
-                    onAnalyticsClick={() => setShowAnalytics(true)}
-                    onRemoteUploadClick={() => setShowRemoteUpload(true)}
+                    contextLabel={contextLabel}
                 />
                 {searchTerm.length > 2 && (
                     <div className="px-6 pt-4 pb-0">
-                        <h2 className="text-sm font-medium text-telegram-subtext">
-                            Search Results for <span className="text-telegram-primary">"{searchTerm}"</span>
+                        <h2 className="text-sm font-medium text-stash-subtext">
+                            Search Results for <span className="text-stash-primary">"{searchTerm}"</span>
                         </h2>
                     </div>
                 )}
@@ -859,8 +872,6 @@ export function Dashboard({ onLogout }: { onLogout: () => void }) {
                     onDownload={(id, name) => queueDownload(id, name, activeFolderId)}
                     onPreview={handlePreview}
                     onManualUpload={handleManualUpload}
-                    onFolderUpload={handleFolderUpload}
-                    showFolderUpload
                     onToggleSelection={handleToggleSelection}
                     onDrop={handleDropOnFolder}
                     onDragStart={(ids) => setInternalDragIds(ids)}
@@ -976,23 +987,23 @@ export function Dashboard({ onLogout }: { onLogout: () => void }) {
                     onClick={() => setBulkShareLinks(null)}
                 >
                     <div
-                        className="bg-telegram-surface border border-telegram-border rounded-xl w-[500px] max-h-[70vh] shadow-2xl overflow-hidden flex flex-col animate-in fade-in zoom-in-95 duration-150"
+                        className="bg-stash-surface border border-stash-border rounded-xl w-[500px] max-h-[70vh] shadow-2xl overflow-hidden flex flex-col animate-in fade-in zoom-in-95 duration-150"
                         onClick={e => e.stopPropagation()}
                     >
-                        <div className="p-4 border-b border-telegram-border flex items-center justify-between">
-                            <h3 className="text-telegram-text font-medium flex items-center gap-2">
-                                <Link className="w-5 h-5 text-telegram-primary" />
+                        <div className="p-4 border-b border-stash-border flex items-center justify-between">
+                            <h3 className="text-stash-text font-medium flex items-center gap-2">
+                                <Link className="w-5 h-5 text-stash-primary" />
                                 {bulkShareLinks.length} Share Link{bulkShareLinks.length !== 1 ? 's' : ''}
                             </h3>
-                            <button onClick={() => setBulkShareLinks(null)} className="text-telegram-subtext hover:text-telegram-text">
+                            <button onClick={() => setBulkShareLinks(null)} className="text-stash-subtext hover:text-stash-text">
                                 <X className="w-5 h-5" />
                             </button>
                         </div>
 
                         {bulkShareLoading ? (
                             <div className="flex flex-col items-center justify-center py-16 space-y-3">
-                                <Loader2 className="w-8 h-8 text-telegram-primary animate-spin" />
-                                <p className="text-sm text-telegram-subtext">Generating share links...</p>
+                                <Loader2 className="w-8 h-8 text-stash-primary animate-spin" />
+                                <p className="text-sm text-stash-subtext">Generating share links...</p>
                             </div>
                         ) : (
                             <div className="flex-1 overflow-y-auto p-4 space-y-2 min-h-0">
@@ -1001,22 +1012,22 @@ export function Dashboard({ onLogout }: { onLogout: () => void }) {
                                     return (
                                         <div
                                             key={file.id}
-                                            className="p-3 rounded-lg bg-telegram-hover/30 border border-telegram-border/30 space-y-2"
+                                            className="p-3 rounded-lg bg-stash-hover/30 border border-stash-border/30 space-y-2"
                                         >
-                                            <p className="text-xs font-semibold text-telegram-text truncate">{file.name}</p>
+                                            <p className="text-xs font-semibold text-stash-text truncate">{file.name}</p>
                                             <div className="flex gap-2">
                                                 <input
                                                     type="text"
                                                     readOnly
                                                     value={link}
-                                                    className="flex-1 bg-telegram-bg border border-telegram-border rounded-lg px-2.5 py-1.5 text-xs text-telegram-text focus:outline-none select-all truncate"
+                                                    className="flex-1 bg-stash-bg border border-stash-border rounded-lg px-2.5 py-1.5 text-xs text-stash-text focus:outline-none select-all truncate"
                                                 />
                                                 <button
                                                     onClick={() => handleCopyBulkLink(link)}
                                                     className={`px-2.5 py-1.5 rounded-lg border flex items-center justify-center transition-all flex-shrink-0 ${
                                                         isCopied
                                                             ? 'bg-emerald-500 border-emerald-500 text-white'
-                                                            : 'bg-telegram-hover border-telegram-border text-telegram-text hover:bg-white/10'
+                                                            : 'bg-stash-hover border-stash-border text-stash-text hover:bg-white/10'
                                                     }`}
                                                 >
                                                     {isCopied ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
@@ -1030,7 +1041,7 @@ export function Dashboard({ onLogout }: { onLogout: () => void }) {
 
                         <button
                             onClick={() => setBulkShareLinks(null)}
-                            className="w-full px-4 py-2.5 border-t border-telegram-border bg-telegram-hover/20 hover:bg-telegram-hover/40 text-telegram-text text-sm font-medium transition-colors"
+                            className="w-full px-4 py-2.5 border-t border-stash-border bg-stash-hover/20 hover:bg-stash-hover/40 text-stash-text text-sm font-medium transition-colors"
                         >
                             Done
                         </button>

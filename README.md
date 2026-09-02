@@ -96,6 +96,7 @@ The data path is intentionally short and deterministic: the Windows application 
 * 🎙️ **Automated Whisper AI Subtitles**: Local English CC generation, SRT caching, and active-folder upload.
 * 🛡️ **Bounded Streaming Prefetch**: 16 MiB in-memory forward buffer per active stream; no full media download is retained by the stream path.
 * 📁 **Folder & Channel Storage**: Organize movies and TV series using Saved Messages and private channels as folders.
+* 📤 **Single-Path Upload Console**: One file-picker upload flow into the active folder, always visible as the first item in the file grid/list — no drag-drop, folder, or URL ingestion paths.
 * 📊 **Transfer Diagnostics**: Detailed error classification, attempt history, part indexes, and retry decisions in the desktop logs view.
 * 🖥️ **Windows 11 System Integration**: Autostart toggle via `HKCU\Software\Microsoft\Windows\CurrentVersion\Run`.
 
@@ -104,26 +105,30 @@ The data path is intentionally short and deterministic: the Windows application 
 ## 🎨 Brand Identity & Visual System
 
 ### Core Brand Metaphor: *The Vault & The Stream*
-TeleStash fuses **The Vault** (a personal, immutable Telegram-backed library) with **The Stream** (instant local MPV playback from an in-memory ring buffer). The visual identity balances high-precision developer tooling with a dark, cinematic media experience.
+TeleStash fuses **The Vault** (a personal, immutable Telegram-backed library) with **The Stream** (instant local MPV playback from an in-memory ring buffer). The UI is a compact **Vault Console**: a narrow icon navigation rail, a folder drawer, and a single command bar — designed as its own product identity rather than a file-manager fork.
 
-### 🎨 Color System Palette
+### 🎨 Color System Palette (Default Dark Theme)
 
-| Color Name | Hex Code | HSL Value | Primary Application |
-| :--- | :--- | :--- | :--- |
-| **Electric Cyan** | `#06B6D4` | `hsl(189, 94%, 43%)` | Primary brand accent, MTProto active stream indicators, system focus states |
-| **Midnight Slate** | `#0F172A` | `hsl(222, 47%, 11%)` | Cinema viewport canvas, dark-mode root desktop background |
-| **Deep Charcoal** | `#1E293B` | `hsl(215, 25%, 27%)` | Card containers, sidebar navigation background, dialog panels |
-| **Vivid Emerald** | `#10B981` | `hsl(160, 84%, 39%)` | Active connection badge, SQLite upload checkpoints, successful transfers |
-| **Crimson Rose** | `#E11D48` | `hsl(347, 77%, 50%)` | Codec engine tags, error classification, emergency cancellation controls |
+| Color Name | Hex Code | Primary Application |
+| :--- | :--- | :--- |
+| **Vault Gold** | `#E8A33D` | Primary brand accent, active states, upload and selection highlights |
+| **Vault Charcoal** | `#0B0C0F` | Root background, cinema viewport canvas |
+| **Surface Ink** | `#14161A` | Card containers, panels, dialogs, command bar |
+| **Steel Blue** | `#7D9CC0` | Secondary accent, informational states |
+| **Signal Red** | `#E11D48` | Error classification, destructive actions |
+
+Additional built-in theme presets: Charcoal, Nord, Monokai, Cyber Teal, Default Light, Solarized Light — all driven through the same `stash-*` design tokens.
 
 ### 🔤 Typography System
-* **Display & Interface**: `Geist` / `Inter` — Geometric sans-serif engineered for high legibility across Windows desktop displays, file cards, and player controls.
-* **Monospace & Telemetry**: `Geist Mono` / `JetBrains Mono` — Monospaced typography for file paths, transfer rates, message IDs, and system diagnostic logs.
+* **Display & Interface**: `Outfit Variable` (self-hosted via Fontsource) — one geometric sans-serif for the entire UI, guaranteeing uniform rendering on every Windows machine without system-font drift.
+* **Monospace & Telemetry**: system `ui-monospace` stack for file paths, transfer rates, message IDs, and diagnostic logs.
+* **Iconography**: Phosphor Icons — consistent stroke weight across the console.
 
 ### 📐 Design Principles
-1. **Zero-Slop Transparency**: Direct MTProto connection without hidden proxy hops or application-level data collection.
-2. **Distraction-Free Cinema**: Dark UI surfaces step back so media content and playback controls take center stage.
-3. **Deterministic Performance**: In-memory ring buffer, bounded prefetching, and predictable CPU/RAM allocation.
+1. **One Ingestion Path**: Files enter the vault through a single file-picker upload targeting the active folder — no drag-and-drop, folder uploads, or URL fetches to reason about.
+2. **Direct-Only Transparency**: Direct MTProto connection without proxy hops or application-level data collection.
+3. **Distraction-Free Cinema**: Dark UI surfaces step back so media content and playback controls take center stage.
+4. **Deterministic Performance**: In-memory ring buffer, bounded prefetching, and predictable CPU/RAM allocation.
 
 ---
 

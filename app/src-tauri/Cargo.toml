@@ -1,6 +1,6 @@
 [package]
 name = "telestash"
-version = "1.2.4"
+version = "1.3.2"
 description = "Windows 11 x64 Telegram-backed media and file drive."
 authors = ["rasyidmmz"]
 edition = "2021"
@@ -23,7 +23,7 @@ serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 grammers-client = "0.10"
 grammers-session = "0.10"
-grammers-mtsender = { version = "0.10", features = ["proxy"] }
+grammers-mtsender = "0.10"
 grammers-tl-types = "0.10"
 tokio = { version = "1", features = ["full"] }
 
@@ -55,7 +55,6 @@ walkdir = "2"
 sqlite = { version = "0.37.0", features = ["bundled"] }
 mp4parse = "0.17"
 urlencoding = "2"
-reqwest = { version = "0.12", features = ["stream", "rustls-tls"] }
 sysinfo = "0.39"
 
 [package.metadata.tauri.bundle.windows]
