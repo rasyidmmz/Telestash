@@ -66,7 +66,7 @@ export function RecentWatchBar({ entries, currentFiles, onPlay, onPlayFile, onRe
             <div className="flex items-center justify-between mb-3">
                 <div className="flex items-center gap-2">
                     <History className="w-4 h-4 text-cyan-400" />
-                    <span className="text-xs font-mono font-bold text-stash-text uppercase tracking-wider">
+                    <span className="text-[11px] font-mono font-bold text-stash-text uppercase tracking-wider">
                         Continue Watching / Recent Watch
                     </span>
                     <span className="text-[10px] font-mono px-1.5 py-0.2 rounded bg-slate-900 border border-gray-800 text-cyan-400">
@@ -158,7 +158,7 @@ export function RecentWatchBar({ entries, currentFiles, onPlay, onPlayFile, onRe
                         >
                             <div className="flex items-start justify-between gap-2 mb-2">
                                 <div className="flex items-center gap-1.5">
-                                    <span className="text-[9.5px] font-mono font-medium px-2 py-0.5 rounded bg-slate-800/90 border border-slate-700/80 text-slate-300 tracking-wide">
+                                    <span className="text-[10px] font-mono font-medium px-2 py-0.5 rounded bg-slate-800/90 border border-slate-700/80 text-slate-300 tracking-wide">
                                         {epInfo.isEpisode ? (epInfo.displayBadge || 'EPISODE') : 'MOVIE'}
                                     </span>
                                     {epInfo.seriesTitle && (
@@ -193,7 +193,7 @@ export function RecentWatchBar({ entries, currentFiles, onPlay, onPlayFile, onRe
                                     {formattedDate}
                                 </span>
                                 {entry.status === 'completed' && (
-                                    <span className="text-[9px] text-emerald-400">Finished</span>
+                                    <span className="text-[10px] text-emerald-400">Finished</span>
                                 )}
                             </div>
 
