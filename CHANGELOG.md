@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.3.2]
+
+### Fixed
+
+- **Search hides split parts in all cases**: parts of large files could appear in global search results when Telegram returned messages without captions. Parts are now also detected by their `.tdpart####of####` document filename in both the search path and the folder listing, and the frontend search filter mirrors the same rule. Only the unified main file appears when searching.
+- **No duplicate tooltips**: command bar icons no longer show both the custom tooltip and the native browser tooltip on hover.
+
 ## [1.3.1]
 
 ### Added
