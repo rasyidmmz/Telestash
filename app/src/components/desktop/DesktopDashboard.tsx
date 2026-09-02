@@ -367,7 +367,8 @@ export function Dashboard({ onLogout }: { onLogout: () => void }) {
                     name.startsWith('[tg-part]') ||
                     name.startsWith('#telestash_sub:') ||
                     name.endsWith('.tdmanifest.json') ||
-                    name === 'telestash.tdmanifest.json'
+                    name === 'telestash.tdmanifest.json' ||
+                    /\.tdpart\d{4}of\d{4}$/i.test(name)
                 ) {
                     return false;
                 }

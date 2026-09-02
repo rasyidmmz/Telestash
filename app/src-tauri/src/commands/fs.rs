@@ -2180,6 +2180,14 @@ pub async fn cmd_get_files(
             if crate::models::is_split_part_caption(caption) {
                 continue;
             }
+            // Parts can arrive without captions (e.g. restored messages); also
+            // reject the .tdpart####of#### document filename pattern.
+            if let Media::Document(d) = &doc {
+                let doc_name = d.name().unwrap_or_default();
+                if crate::models::is_split_part_filename(doc_name) {
+                    continue;
+                }
+            }
             if let Some(manifest) = split_manifest_from_media(&client, &doc, caption).await {
                 files.push(FileMetadata {
                     id: msg.id() as i64,
@@ -2238,6 +2246,7 @@ fn extract_search_files(msgs: &[tl::enums::Message]) -> Vec<FileMetadata> {
                     if doc_name.ends_with(SPLIT_MANIFEST_SUFFIX)
                         || doc_name == SPLIT_MANIFEST_UPLOAD_NAME
                         || is_split_part_caption(&doc_name)
+                        || crate::models::is_split_part_filename(&doc_name)
                     {
                         continue;
                     }
