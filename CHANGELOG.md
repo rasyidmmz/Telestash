@@ -1,5 +1,15 @@
 # Changelog
 
+## [1.3.5]
+
+### Added
+
+- **Rust unit tests now run in CI**: both the CI and release workflows execute `cargo test --locked --lib` after the compile gate — the existing test suites across transfer retry, split manifest, streaming, and subtitle logic are now enforced on every pull request and release, instead of sitting inert.
+
+### Fixed
+
+- **Whisper-generated English subtitles are no longer orphan files**: the auto-generated `.en.srt` was uploaded without the `#telestash_sub:` caption tag and without a `video_subtitles` row, so it appeared as a regular file in vault listings and never showed in a video's subtitle languages. It is now tagged and registered exactly like manually attached subtitles (hidden from listings, listed as an English sidecar).
+
 ## [1.3.4]
 
 ### Fixed
