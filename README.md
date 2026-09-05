@@ -61,6 +61,7 @@ Unlike a browser-only media workflow, TeleStash is a native 64-bit Rust/Tauri ap
 ### 🎙️ 4. Automated Whisper AI Subtitles
 * **Local Whisper Processing**: TeleStash uses the bundled Whisper CLI to generate SRT files from compatible media, automatically detecting the audio language (English, Indonesian, Spanish, and 90+ others via the multilingual base model).
 * **Auto-Language Sidecars**: The generated `.xx.srt` is hidden from vault listings, registered to the video's subtitle languages, and auto-selected by MPV when available.
+* **Offline Indonesian Translation**: One-click "Generate Indonesian Subtitle" translates an existing source sidecar to Bahasa Indonesia with the bundled Bergamot engine (Firefox Translations technology) — fully offline, ~15 MB model downloaded once. MPV auto-selects the Indonesian track when present.
 * **System-Friendly Priority**: Whisper runs with Windows `BELOW_NORMAL_PRIORITY_CLASS` and a maximum of two CPU threads.
 * **Cloud Library Reuse**: Generated `.en.srt` subtitle files can be uploaded to the active Telegram folder for later playback.
 
@@ -97,6 +98,8 @@ The data path is intentionally short and deterministic: the Windows application 
 * 🎙️ **Automated Whisper AI Subtitles**: Local English CC generation, SRT caching, and active-folder upload.
 * 🛡️ **Bounded Streaming Prefetch**: 16 MiB in-memory forward buffer per active stream; no full media download is retained by the stream path.
 * 📁 **Folder & Channel Storage**: Organize movies and TV series using Saved Messages and private channels as folders.
+* 🔍 **Duplicate Finder**: Detects duplicate files across folders by exact size + content hash, with manual multi-select cleanup.
+* ⏱️ **MPV-accurate Resume**: Continue Watching reads MPV watch-later positions for true playback progress.
 * 📤 **Single-Path Upload Console**: One file-picker upload flow into the active folder, always visible as the first item in the file grid/list — no drag-drop, folder, or URL ingestion paths.
 * 📊 **Transfer Diagnostics**: Detailed error classification, attempt history, part indexes, and retry decisions in the desktop logs view.
 * 🖥️ **Windows 11 System Integration**: Autostart toggle via `HKCU\Software\Microsoft\Windows\CurrentVersion\Run`.

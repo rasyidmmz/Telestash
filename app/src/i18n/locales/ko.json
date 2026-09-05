@@ -235,7 +235,19 @@
     "cc_extracting": "오디오 추출 중",
     "cc_transcribing": "전사 중",
     "cc_status_error": "상태 모니터링 오류",
-    "cc_start_failed": "생성을 시작하지 못했습니다"
+    "cc_start_failed": "생성을 시작하지 못했습니다",
+    "sub_id_generate": "인도네시아어 자막 생성",
+    "sub_id_starting": "번역 준비 중...",
+    "sub_id_progress_model": "번역 엔진/모델 다운로드 중: {file}",
+    "sub_id_progress": "번역 중 {done}/{total}",
+    "sub_id_done": "인도네시아어 자막 생성 완료 ({count}줄)!",
+    "sub_id_failed": "인도네시아어 자막 생성 실패",
+    "sub_id_no_source": "소스 자막이 없습니다 — 먼저 생성하거나 첨부하세요",
+    "sub_id_cancelled": "인도네시아어 자막 생성이 취소되었습니다.",
+    "dup_button": "중복 찾기",
+    "dup_scanning": "스캔 중...",
+    "dup_none": "중복 항목이 없습니다.",
+    "dup_deleted": "중복 파일 {count}개를 삭제했습니다."
   },
   "archive": {
     "archive_viewer": "압축 파일 뷰어",

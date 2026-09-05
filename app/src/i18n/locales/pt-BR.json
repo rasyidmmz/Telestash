@@ -235,7 +235,19 @@
     "cc_extracting": "Extraindo áudio",
     "cc_transcribing": "Transcrevendo",
     "cc_status_error": "Erro no monitoramento de status",
-    "cc_start_failed": "Falha ao iniciar a geração"
+    "cc_start_failed": "Falha ao iniciar a geração",
+    "sub_id_generate": "Gerar legenda em indonésio",
+    "sub_id_starting": "Preparando tradução...",
+    "sub_id_progress_model": "Baixando motor/modelo de tradução: {file}",
+    "sub_id_progress": "Traduzindo {done}/{total}",
+    "sub_id_done": "Legenda em indonésio gerada ({count} linhas)!",
+    "sub_id_failed": "Falha ao gerar legenda em indonésio",
+    "sub_id_no_source": "Nenhuma legenda de origem — gere ou anexe uma primeiro",
+    "sub_id_cancelled": "Geração de legenda em indonésio cancelada.",
+    "dup_button": "ENCONTRAR DUPLICATAS",
+    "dup_scanning": "ESCANEANDO...",
+    "dup_none": "Nenhuma duplicata encontrada.",
+    "dup_deleted": "{count} arquivos duplicados excluídos."
   },
   "archive": {
     "archive_viewer": "Visualizador de arquivos compactados",

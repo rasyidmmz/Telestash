@@ -235,7 +235,19 @@
     "cc_extracting": "Extraction de l'audio",
     "cc_transcribing": "Transcription",
     "cc_status_error": "Erreur de surveillance de l'état",
-    "cc_start_failed": "Échec du démarrage de la génération"
+    "cc_start_failed": "Échec du démarrage de la génération",
+    "sub_id_generate": "Générer un sous-titre en indonésien",
+    "sub_id_starting": "Préparation de la traduction...",
+    "sub_id_progress_model": "Téléchargement du moteur/modèle : {file}",
+    "sub_id_progress": "Traduction {done}/{total}",
+    "sub_id_done": "Sous-titre indonésien généré ({count} lignes) !",
+    "sub_id_failed": "Échec de la génération du sous-titre indonésien",
+    "sub_id_no_source": "Aucun sous-titre source — générez ou joignez-en un d'abord",
+    "sub_id_cancelled": "Génération du sous-titre indonésien annulée.",
+    "dup_button": "TROUVER LES DOUBLONS",
+    "dup_scanning": "ANALYSE...",
+    "dup_none": "Aucun doublon trouvé.",
+    "dup_deleted": "{count} fichiers en double supprimés."
   },
   "archive": {
     "archive_viewer": "Lecteur d'archive",

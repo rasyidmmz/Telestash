@@ -1,5 +1,5 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
-import { Eye, HardDrive, Trash2, FolderOpen, Pencil, Play, FileText, Link, Copy, ArrowRightLeft } from '../../shared/icons.tsx';
+import { Eye, HardDrive, Trash2, FolderOpen, Pencil, Play, FileText, Link, Copy, ArrowRightLeft, Languages} from '../../shared/icons.tsx';
 import { useTranslation } from 'react-i18next';
 import { TelegramFile, TelegramFolder } from '../../../types';
 import { isMediaFile, isPdfFile, isVideoFile } from '../../../utils';
@@ -21,6 +21,7 @@ interface ContextMenuProps {
     onGenerateCc?: () => void;
     hasCc?: boolean;
     ccLanguage?: string | null;
+    onTranslateToId?: () => void;
 }
 
 export function ContextMenu({
@@ -38,7 +39,8 @@ export function ContextMenu({
     activeFolderId,
     onGenerateCc,
     hasCc,
-    ccLanguage
+    ccLanguage,
+    onTranslateToId
 }: ContextMenuProps) {
     const [adjustedPos, setAdjustedPos] = useState({ x, y });
     const menuRef = useRef<HTMLDivElement>(null);
@@ -206,6 +208,19 @@ export function ContextMenu({
                 >
                     <Play className="w-4 h-4 text-purple-400 rotate-90" />
                     {hasCc ? t('files.cc_regenerate', { language: ccLanguage ?? 'en' }) : t('files.cc_generate')}
+                </button>
+            )}
+
+            {file.type !== 'folder' && isVideoFile(file.name) && onTranslateToId && (
+                <button
+                    onClick={() => {
+                        onTranslateToId();
+                        onClose();
+                    }}
+                    className="flex items-center gap-2 px-2 py-1.5 text-sm text-stash-text hover:bg-stash-hover rounded transition-colors text-left w-full"
+                >
+                    <Languages className="w-4 h-4 text-emerald-400" />
+                    {t('files.sub_id_generate')}
                 </button>
             )}
 

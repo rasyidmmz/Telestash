@@ -15,6 +15,7 @@ import { analyzeSeriesFolder, parseEpisodeInfo, getNextEpisode } from '../../../
 import { WatchHistoryEntry } from '../../../utils/watchHistory';
 import { formatBytes } from '../../../utils';
 import { getLanguageLabel } from '../../../utils/subtitleMatcher';
+import { translateSubtitleToIndonesian, cancelTranslation } from '../../../lib/translation/translateSubtitle';
 
 type SortField = 'name' | 'size' | 'date';
 type SortDirection = 'asc' | 'desc';
@@ -165,6 +166,40 @@ export function FileExplorer({
             }, 750);
         } catch (err) {
             toast.error(`${t('files.cc_start_failed')}: ${err}`, { id: toastId });
+        }
+    };
+
+    const handleTranslateToId = async (file: TelegramFile) => {
+        let toastId = toast.loading(t('files.sub_id_starting'), {
+            action: {
+                label: t('common.cancel'),
+                onClick: () => cancelTranslation(),
+            },
+        });
+
+        try {
+            const result = await translateSubtitleToIndonesian(file, (p) => {
+                const text = p.phase === 'downloading'
+                    ? t('files.sub_id_progress_model', { file: p.file ?? '' })
+                    : t('files.sub_id_progress', { done: p.cueDone ?? 0, total: p.cueTotal ?? 0 });
+                toast.loading(text, {
+                    id: toastId,
+                    action: {
+                        label: t('common.cancel'),
+                        onClick: () => cancelTranslation(),
+                    },
+                });
+            });
+            toast.success(t('files.sub_id_done', { count: result.cueCount }), { id: toastId });
+        } catch (err) {
+            const msg = String(err);
+            if (msg.includes('NO_SOURCE_SUBTITLE')) {
+                toast.error(t('files.sub_id_no_source'), { id: toastId });
+            } else if (msg.includes('CANCELLED')) {
+                toast.info(t('files.sub_id_cancelled'), { id: toastId });
+            } else {
+                toast.error(`${t('files.sub_id_failed')}: ${msg}`, { id: toastId });
+            }
         }
     };
 
@@ -700,6 +735,7 @@ export function FileExplorer({
                     onGenerateCc={() => handleGenerateCc(contextMenu.file)}
                     hasCc={contextMenu.hasCc}
                     ccLanguage={contextMenu.ccLanguage}
+                    onTranslateToId={() => handleTranslateToId(contextMenu.file)}
                 />
             )}
 

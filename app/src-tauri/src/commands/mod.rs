@@ -65,4 +65,9 @@ pub use archive::*;
 pub use folder_groups::*;
 pub use english_cc::*;
 pub use subtitles::*;
-
+pub mod translation;
+pub use translation::*;
+pub mod duplicates;
+pub mod resume;
+pub use duplicates::*;
+pub use resume::*;

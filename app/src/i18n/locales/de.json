@@ -235,7 +235,19 @@
     "cc_extracting": "Audio wird extrahiert",
     "cc_transcribing": "Transkribiere",
     "cc_status_error": "Statusüberwachungsfehler",
-    "cc_start_failed": "Generierung konnte nicht gestartet werden"
+    "cc_start_failed": "Generierung konnte nicht gestartet werden",
+    "sub_id_generate": "Indonesischen Untertitel generieren",
+    "sub_id_starting": "Übersetzung wird vorbereitet...",
+    "sub_id_progress_model": "Übersetzungs-Engine/Modell wird geladen: {file}",
+    "sub_id_progress": "Übersetze {done}/{total}",
+    "sub_id_done": "Indonesischer Untertitel erstellt ({count} Zeilen)!",
+    "sub_id_failed": "Indonesischer Untertitel konnte nicht erstellt werden",
+    "sub_id_no_source": "Kein Quell-Untertitel vorhanden — zuerst generieren oder anhängen",
+    "sub_id_cancelled": "Indonesische Untertitelgenerierung abgebrochen.",
+    "dup_button": "DUPLIKATE FINDEN",
+    "dup_scanning": "SCANNING...",
+    "dup_none": "Keine Duplikate gefunden.",
+    "dup_deleted": "{count} Duplikatdateien gelöscht."
   },
   "archive": {
     "archive_viewer": "Archiv-Viewer",

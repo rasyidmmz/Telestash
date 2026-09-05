@@ -1,5 +1,6 @@
-import { useMemo } from 'react';
-import { X, HardDrive, PieChart, Film, Music, FileText, Folder, Zap, Trash2 } from '../../shared/icons.tsx';
+import { useMemo, useState } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
+import { X, HardDrive, PieChart, Film, Music, FileText, Folder, Zap, Trash2, Copy } from '../../shared/icons.tsx';
 import { TelegramFile, TelegramFolder } from '../../../types';
 import { formatBytes } from '../../../utils';
 import { toast } from 'sonner';
@@ -11,7 +12,61 @@ interface StorageAnalyticsModalProps {
     onClose: () => void;
 }
 
+interface DuplicateGroup {
+    size: number;
+    hash: string;
+    files: { message_id: number; folder_id: number | null; name: string; size: number; created_at: string; hash: string }[];
+}
+
 export function StorageAnalyticsModal({ files, folders, onClose }: StorageAnalyticsModalProps) {
+    const queryClient = useQueryClient();
+    const [dupScanning, setDupScanning] = useState(false);
+    const [dupGroups, setDupGroups] = useState<DuplicateGroup[] | null>(null);
+    const [dupSelected, setDupSelected] = useState<Set<string>>(new Set());
+
+    const handleFindDuplicates = async () => {
+        setDupScanning(true);
+        setDupGroups(null);
+        try {
+            const folderIds: (number | null)[] = [null, ...folders.map((f) => f.id)];
+            const groups = await invoke<DuplicateGroup[]>('cmd_find_duplicates', { folderIds });
+            setDupGroups(groups);
+            if (groups.length === 0) toast.success('No duplicates found.');
+        } catch (err) {
+            toast.error(`Duplicate scan failed: ${err}`);
+        } finally {
+            setDupScanning(false);
+        }
+    };
+
+    const toggleDup = (key: string) => {
+        setDupSelected((prev) => {
+            const next = new Set(prev);
+            if (next.has(key)) next.delete(key);
+            else next.add(key);
+            return next;
+        });
+    };
+
+    const handleDeleteSelected = async () => {
+        const keys = Array.from(dupSelected);
+        let deleted = 0;
+        for (const key of keys) {
+            const [fid, mid] = key.split(':');
+            const folderId = fid === 'null' ? null : Number(fid);
+            try {
+                await invoke('cmd_delete_file', { messageId: Number(mid), folderId });
+                deleted += 1;
+            } catch (err) {
+                toast.error(`Delete failed for message ${mid}: ${err}`);
+            }
+        }
+        setDupSelected(new Set());
+        setDupGroups(null);
+        queryClient.invalidateQueries({ queryKey: ['files'] });
+        toast.success(`Deleted ${deleted} duplicate file(s).`);
+    };
+
     const analytics = useMemo(() => {
         let videoSize = 0;
         let videoCount = 0;
@@ -196,6 +251,69 @@ export function StorageAnalyticsModal({ files, folders, onClose }: StorageAnalyt
                     </div>
 
                 </div>
+
+                    {/* Duplicates */}
+                    <div className="p-4 bg-gray-900/60 border border-gray-800 rounded-xl">
+                        <div className="flex items-center justify-between mb-3">
+                            <div className="flex items-center gap-2 text-xs font-mono text-gray-300 uppercase tracking-wider">
+                                <Copy className="w-3.5 h-3.5 text-amber-400" />
+                                DUPLICATE FILES
+                            </div>
+                            <button
+                                onClick={handleFindDuplicates}
+                                disabled={dupScanning}
+                                className="px-3 py-1.5 bg-amber-500/10 border border-amber-500/30 text-amber-400 rounded-lg hover:bg-amber-500/20 text-xs font-mono disabled:opacity-50"
+                            >
+                                {dupScanning ? 'SCANNING...' : 'FIND DUPLICATES'}
+                            </button>
+                        </div>
+
+                        {dupScanning && (
+                            <p className="text-xs text-gray-500 font-mono">Streaming file prefixes from Telegram — this can take a while for large folders.</p>
+                        )}
+
+                        {dupGroups && dupGroups.length === 0 && (
+                            <p className="text-xs text-gray-500 font-mono">No duplicates found.</p>
+                        )}
+
+                        {dupGroups && dupGroups.length > 0 && (
+                            <div className="space-y-3 max-h-64 overflow-y-auto">
+                                {dupGroups.map((group, gi) => (
+                                    <div key={gi} className="border border-gray-800 rounded-lg p-3">
+                                        <div className="flex items-center justify-between mb-2">
+                                            <span className="text-xs font-mono text-amber-400">{group.files.length} copies</span>
+                                            <span className="text-xs font-mono text-gray-500">{formatBytes(group.size)} each</span>
+                                        </div>
+                                        <div className="space-y-1.5">
+                                            {group.files.map((f) => {
+                                                const key = `${f.folder_id ?? 'null'}:${f.message_id}`;
+                                                return (
+                                                    <label key={key} className="flex items-center gap-2 text-xs text-gray-300 cursor-pointer group">
+                                                        <input
+                                                            type="checkbox"
+                                                            checked={dupSelected.has(key)}
+                                                            onChange={() => toggleDup(key)}
+                                                            className="accent-red-500"
+                                                        />
+                                                        <span className="truncate flex-1" title={f.name}>{f.name}</span>
+                                                        <span className="text-gray-600 font-mono">{new Date(f.created_at).toLocaleDateString()}</span>
+                                                    </label>
+                                                );
+                                            })}
+                                        </div>
+                                    </div>
+                                ))}
+                                {dupSelected.size > 0 && (
+                                    <button
+                                        onClick={handleDeleteSelected}
+                                        className="w-full px-3 py-2 bg-red-500/10 border border-red-500/30 text-red-400 rounded-lg hover:bg-red-500/20 text-xs font-mono"
+                                    >
+                                        DELETE {dupSelected.size} SELECTED
+                                    </button>
+                                )}
+                            </div>
+                        )}
+                    </div>
 
                 {/* Footer */}
                 <div className="px-6 py-4 border-t border-gray-800 bg-black/40 flex items-center justify-between">

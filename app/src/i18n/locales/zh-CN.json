@@ -235,7 +235,19 @@
     "cc_extracting": "正在提取音频",
     "cc_transcribing": "转写中",
     "cc_status_error": "状态监控错误",
-    "cc_start_failed": "启动生成失败"
+    "cc_start_failed": "启动生成失败",
+    "sub_id_generate": "生成印尼语字幕",
+    "sub_id_starting": "正在准备翻译...",
+    "sub_id_progress_model": "正在下载翻译引擎/模型：{file}",
+    "sub_id_progress": "翻译中 {done}/{total}",
+    "sub_id_done": "印尼语字幕生成成功（{count}行）！",
+    "sub_id_failed": "生成印尼语字幕失败",
+    "sub_id_no_source": "没有源字幕 — 请先生成或附加",
+    "sub_id_cancelled": "印尼语字幕生成已取消。",
+    "dup_button": "查找重复文件",
+    "dup_scanning": "扫描中...",
+    "dup_none": "未发现重复文件。",
+    "dup_deleted": "已删除 {count} 个重复文件。"
   },
   "archive": {
     "archive_viewer": "压缩包查看器",

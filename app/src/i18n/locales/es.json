@@ -235,7 +235,19 @@
     "cc_extracting": "Extrayendo audio",
     "cc_transcribing": "Transcribiendo",
     "cc_status_error": "Error de monitoreo de estado",
-    "cc_start_failed": "Error al iniciar la generación"
+    "cc_start_failed": "Error al iniciar la generación",
+    "sub_id_generate": "Generar subtítulo en indonesio",
+    "sub_id_starting": "Preparando traducción...",
+    "sub_id_progress_model": "Descargando motor/modelo de traducción: {file}",
+    "sub_id_progress": "Traduciendo {done}/{total}",
+    "sub_id_done": "¡Subtítulo en indonesio generado ({count} líneas)!",
+    "sub_id_failed": "Error al generar el subtítulo en indonesio",
+    "sub_id_no_source": "No hay subtítulo de origen: genera o adjunta uno primero",
+    "sub_id_cancelled": "Generación de subtítulo en indonesio cancelada.",
+    "dup_button": "BUSCAR DUPLICADOS",
+    "dup_scanning": "ESCANEANDO...",
+    "dup_none": "No se encontraron duplicados.",
+    "dup_deleted": "{count} archivos duplicados eliminados."
   },
   "archive": {
     "archive_viewer": "Visor de archivos",

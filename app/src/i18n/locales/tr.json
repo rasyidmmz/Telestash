@@ -235,7 +235,19 @@
     "cc_extracting": "Ses çıkarılıyor",
     "cc_transcribing": "Transkribe ediliyor",
     "cc_status_error": "Durum izleme hatası",
-    "cc_start_failed": "Oluşturma başlatılamadı"
+    "cc_start_failed": "Oluşturma başlatılamadı",
+    "sub_id_generate": "Endonezce Altyazı Oluştur",
+    "sub_id_starting": "Çeviri hazırlanıyor...",
+    "sub_id_progress_model": "Çeviri motoru/modeli indiriliyor: {file}",
+    "sub_id_progress": "Çevriliyor {done}/{total}",
+    "sub_id_done": "Endonezce altyazı oluşturuldu ({count} satır)!",
+    "sub_id_failed": "Endonezce altyazı oluşturulamadı",
+    "sub_id_no_source": "Kaynak altyazı yok — önce oluşturun veya ekleyin",
+    "sub_id_cancelled": "Endonezce altyazı oluşturma iptal edildi.",
+    "dup_button": "DUPLİKATLERİ BUL",
+    "dup_scanning": "TARANIYOR...",
+    "dup_none": "Duplikat bulunamadı.",
+    "dup_deleted": "{count} duplikat dosya silindi."
   },
   "archive": {
     "archive_viewer": "Arşiv Görüntüleyici",

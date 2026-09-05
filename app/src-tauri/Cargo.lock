@@ -5792,6 +5792,7 @@ dependencies = [
  "chrono",
  "constant_time_eq",
  "env_logger",
+ "flate2",
  "futures",
  "grammers-client",
  "grammers-mtsender",

@@ -247,7 +247,19 @@
     "cc_extracting": "Extracting audio",
     "cc_transcribing": "Transcribing",
     "cc_status_error": "Status monitoring error",
-    "cc_start_failed": "Failed to start generation"
+    "cc_start_failed": "Failed to start generation",
+    "sub_id_generate": "Generate Indonesian Subtitle",
+    "sub_id_starting": "Preparing translation...",
+    "sub_id_progress_model": "Downloading translation engine/model: {file}",
+    "sub_id_progress": "Translating {done}/{total}",
+    "sub_id_done": "Indonesian subtitle generated ({count} lines)!",
+    "sub_id_failed": "Failed to generate Indonesian subtitle",
+    "sub_id_no_source": "No source subtitle found — generate or attach one first",
+    "sub_id_cancelled": "Indonesian subtitle generation cancelled.",
+    "dup_button": "FIND DUPLICATES",
+    "dup_scanning": "SCANNING...",
+    "dup_none": "No duplicates found.",
+    "dup_deleted": "Deleted {count} duplicate file(s)."
   },
   "archive": {
     "archive_viewer": "Archive Viewer",
