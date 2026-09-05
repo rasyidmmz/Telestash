@@ -471,12 +471,43 @@ pub async fn cmd_generate_english_cc(
                                 let srt_len = srt_bytes.len();
                                 let mut cursor = std::io::Cursor::new(srt_bytes);
                                 if let Ok(uploaded) = client.upload_stream(&mut cursor, srt_len, srt_name.clone()).await {
-                                    let _ = client.send_message(peer, grammers_client::message::InputMessage::new().file(uploaded)).await;
-                                    crate::transfer_log::record_transfer_log(
-                                        "Subtitle Auto-Upload",
-                                        &format!("Subtitle {} uploaded successfully to Telegram folder.", srt_name),
-                                        None,
-                                    );
+                                    // Tag as a sidecar so it stays hidden from file listings,
+                                    // then register it in video_subtitles like any attached subtitle.
+                                    let caption = format!("#telestash_sub:{}:en:srt", message_id);
+                                    if let Ok(sent) = client.send_message(peer, grammers_client::message::InputMessage::new().file(uploaded).text(caption)).await {
+                                        let sub_msg_id = sent.id() as i64;
+                                        let sub_id = format!("{}_{}_{}_srt", folder_id.unwrap_or(0), message_id, sub_msg_id);
+                                        let now = chrono::Utc::now().timestamp();
+                                        let db = app_handle_clone.state::<crate::db::DbConnection>();
+                                        let conn = db.lock().map_err(|e| e.to_string());
+                                        if let Ok(conn) = conn {
+                                            if let Ok(mut stmt) = conn.prepare(
+                                                "INSERT OR REPLACE INTO video_subtitles \
+                                                 (id, folder_id, video_message_id, subtitle_message_id, format, language, label, original_filename, is_paired_vobsub, paired_message_id, created_at) \
+                                                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
+                                            ) {
+                                                let _ = stmt.bind((1, sub_id.as_str()));
+                                                let _ = stmt.bind((2, folder_id));
+                                                let _ = stmt.bind((3, message_id as i64));
+                                                let _ = stmt.bind((4, sub_msg_id));
+                                                let _ = stmt.bind((5, "srt"));
+                                                let _ = stmt.bind((6, "en"));
+                                                let label: Option<&str> = None;
+                                                let _ = stmt.bind((7, label));
+                                                let _ = stmt.bind((8, srt_name.as_str()));
+                                                let _ = stmt.bind((9, 0i64));
+                                                let paired: Option<i64> = None;
+                                                let _ = stmt.bind((10, paired));
+                                                let _ = stmt.bind((11, now));
+                                                let _ = stmt.next();
+                                            }
+                                        }
+                                        crate::transfer_log::record_transfer_log(
+                                            "Subtitle Auto-Upload",
+                                            &format!("Subtitle {} uploaded successfully to Telegram folder.", srt_name),
+                                            None,
+                                        );
+                                    }
                                 }
                             }
                         }

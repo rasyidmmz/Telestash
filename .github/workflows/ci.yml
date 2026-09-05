@@ -81,6 +81,18 @@ jobs:
             exit $LASTEXITCODE
           }
 
+      - name: Run Rust unit tests (cargo test --locked --lib)
+        working-directory: app/src-tauri
+        shell: pwsh
+        run: |
+          $logPath = Join-Path $env:RUNNER_TEMP 'rust-tests.log'
+          & cargo test --locked --lib 2>&1 | Tee-Object -FilePath $logPath
+          if ($LASTEXITCODE -ne 0) {
+            $details = (Get-Content $logPath | Select-Object -Last 30) -join '%0A'
+            Write-Output "::error title=Rust unit tests::$details"
+            exit $LASTEXITCODE
+          }
+
       - name: Upload validation diagnostics
         if: ${{ failure() }}
         uses: actions/upload-artifact@v7
@@ -90,4 +102,5 @@ jobs:
             ${{ runner.temp }}/frontend-validation.log
             ${{ runner.temp }}/unit-tests-validation.log
             ${{ runner.temp }}/rust-validation.log
+            ${{ runner.temp }}/rust-tests.log
           if-no-files-found: warn
