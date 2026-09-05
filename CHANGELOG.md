@@ -1,5 +1,11 @@
 # Changelog
 
+## [1.4.0]
+
+### Added
+
+- **Multilingual subtitle generation**: the bundled Whisper pipeline now uses the multilingual `base` model and auto-detects the audio language instead of assuming English. Generated SRTs are named by their detected language (`.en.srt`, `.id.srt`, `.es.srt`, …), uploaded with the matching `#telestash_sub:{msg}:{lang}:srt` sidecar tag, registered in `video_subtitles`, and automatically hidden from vault listings. English-only fallback installs that still carry `ggml-base.en.bin` keep working unchanged.
+
 ## [1.3.5]
 
 ### Added

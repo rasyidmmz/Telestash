@@ -16,7 +16,7 @@
 
 **TeleStash** is a native Windows 11 desktop application that organizes a personal media library in Telegram-backed folders and opens compatible video through a bundled MPV sidecar. It does not impose an application-level storage quota; available storage and file limits remain governed by the connected Telegram account and Telegram's service rules.
 
-Built with **Tauri v2, Rust, React, and an MPV sidecar**, TeleStash supports personal **HEVC/H.265, 10-bit HDR, MKV, and MP4** libraries through a direct Telegram connection, local Whisper English CC generation, persisted upload state, and detailed transfer diagnostics.
+Built with **Tauri v2, Rust, React, and an MPV sidecar**, TeleStash supports personal **HEVC/H.265, 10-bit HDR, MKV, and MP4** libraries through a direct Telegram connection, local Whisper CC generation with automatic language detection, persisted upload state, and detailed transfer diagnostics.
 
 [**Download Latest Release**](https://github.com/rasyidmmz/Telestash/releases/latest) · [**Why TeleStash**](#-why-telestash) · [**System Architecture**](#-system-architecture) · [**Brand Identity**](#-brand-identity--visual-system) · [**Build Instructions**](#-build-from-source)
 
@@ -39,7 +39,7 @@ Unlike a browser-only media workflow, TeleStash is a native 64-bit Rust/Tauri ap
 | **Codec Support** | Browser support varies by codec and container | **Native MPV Engine**: MP4 and MKV, including HEVC/H.265 libraries when locally supported |
 | **Disk Consumption** | May create browser caches | **Bounded media prefetch**: 16 MiB in-memory forward buffer per stream; app state, logs, and subtitle cache remain local |
 | **Binge-Watching** | Reopens player window per episode | **Native MPV Playlist**: Automatic episode-to-episode auto-play |
-| **Subtitle Generation** | Manual download and sync may be required | **Local Whisper English CC**: generate, cache, and upload SRT files to the active folder |
+| **Subtitle Generation** | Manual download and sync may be required | **Local Whisper CC (auto language)**: generate, cache, and upload SRT files to the active folder in the detected audio language |
 | **Upload Transfer** | Retry behavior varies | **Transfer integrity**: SQLite resumable checkpoints and validated large-file manifests |
 | **Connection Path** | Often routed through a provider service | **Direct Telegram MTProto**: no application proxy or VPN route |
 
@@ -59,7 +59,8 @@ Unlike a browser-only media workflow, TeleStash is a native 64-bit Rust/Tauri ap
 * **Automatic Large-File Splitting**: Files larger than `2_000_000_000` bytes are split into 512 MiB part messages with a validated `.tdmanifest.json` manifest and presented as one file in TeleStash.
 
 ### 🎙️ 4. Automated Whisper AI Subtitles
-* **Local Whisper Processing**: TeleStash uses the bundled Whisper CLI to generate English CC SRT files from compatible media.
+* **Local Whisper Processing**: TeleStash uses the bundled Whisper CLI to generate SRT files from compatible media, automatically detecting the audio language (English, Indonesian, Spanish, and 90+ others via the multilingual base model).
+* **Auto-Language Sidecars**: The generated `.xx.srt` is hidden from vault listings, registered to the video's subtitle languages, and auto-selected by MPV when available.
 * **System-Friendly Priority**: Whisper runs with Windows `BELOW_NORMAL_PRIORITY_CLASS` and a maximum of two CPU threads.
 * **Cloud Library Reuse**: Generated `.en.srt` subtitle files can be uploaded to the active Telegram folder for later playback.
 
@@ -75,7 +76,7 @@ The data path is intentionally short and deterministic: the Windows application 
 1. **Tauri v2 + Rust Core**: Manages high-performance native process execution, IPC command routing, system tray integration, and SQLite checkpoint state.
 2. **Direct MTProto Engine**: Multithreaded Grammers 0.10 client (crates.io, session-backed `PeerRef` identity with libsql storage) communicating directly with Telegram cloud infrastructure without intermediate proxy servers.
 3. **Bundled MPV Sidecar Engine**: Zero-copy 4K/10-bit HDR video rendering, multi-channel surround audio, embedded subtitle selection, and natural episode playlist auto-play.
-4. **Local Whisper AI Engine**: System-friendly `whisper-cli` background runner generating `.en.srt` subtitles with `BELOW_NORMAL_PRIORITY_CLASS` and 2-thread CPU cap.
+4. **Local Whisper AI Engine**: System-friendly `whisper-cli` background runner generating language-detected `.xx.srt` subtitles with `BELOW_NORMAL_PRIORITY_CLASS` and 2-thread CPU cap.
 
 ---
 

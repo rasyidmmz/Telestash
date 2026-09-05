@@ -225,7 +225,17 @@
     "destination_folder": "Hedef Klasör",
     "transfers_queue": "Transfer Sırası",
     "transfers_queue_desc": "İndirmeler ve yüklemeler arka planda güvenle sıraya alınır.",
-    "move_to_group": "Move to Group"
+    "move_to_group": "Move to Group",
+    "cc_generate": "Altyazı Oluştur (otomatik dil)",
+    "cc_regenerate": "{{language}} altyazısını yeniden oluştur",
+    "cc_starting": "Altyazı oluşturma başlatılıyor...",
+    "cc_generated": "{{language}} altyazısı başarıyla oluşturuldu!",
+    "cc_failed": "Altyazı oluşturulamadı",
+    "cc_cancelled": "Altyazı oluşturma iptal edildi.",
+    "cc_extracting": "Ses çıkarılıyor",
+    "cc_transcribing": "Transkribe ediliyor",
+    "cc_status_error": "Durum izleme hatası",
+    "cc_start_failed": "Oluşturma başlatılamadı"
   },
   "archive": {
     "archive_viewer": "Arşiv Görüntüleyici",

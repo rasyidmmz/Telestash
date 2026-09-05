@@ -11,8 +11,9 @@ const whisperDir = path.join(__dirname, 'src-tauri', 'resources', 'whisper');
 
 const ZIP_URL = 'https://github.com/ggml-org/whisper.cpp/releases/download/v1.9.1/whisper-bin-x64.zip';
 const ZIP_HASH = '7d8be46ecd31828e1eb7a2ecdd0d6b314feafd82163038ab6092594b0a063539';
-const MODEL_URL = 'https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-base.en.bin';
-const MODEL_HASH = 'a03779c86df3323075f5e796cb2ce5029f00ec8869eee3fdfb897afe36c6d002';
+// Multilingual model: auto-detects the audio language (English, Indonesian, Spanish, ...).
+const MODEL_URL = 'https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-base.bin';
+const MODEL_HASH = '60ed5bc3dd14eea856493d334349b405782ddcaf0028d4b5df4088345fba2efe';
 
 function sha256(filePath) {
     const fileBuffer = fs.readFileSync(filePath);
@@ -95,7 +96,7 @@ async function downloadWithRetry(url, dest, maxRetries = 5) {
 async function run() {
     fs.mkdirSync(whisperDir, { recursive: true });
     const zipPath = path.join(whisperDir, 'whisper-bin.zip');
-    const modelPath = path.join(whisperDir, 'ggml-base.en.bin');
+    const modelPath = path.join(whisperDir, 'ggml-base.bin');
 
     console.log('Downloading Whisper CLI...');
     await downloadWithRetry(ZIP_URL, zipPath);

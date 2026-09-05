@@ -225,7 +225,17 @@
     "destination_folder": "Carpeta de destino",
     "transfers_queue": "Cola de transferencias",
     "transfers_queue_desc": "Las descargas y subidas se administran de forma segura en segundo plano.",
-    "move_to_group": "Move to Group"
+    "move_to_group": "Move to Group",
+    "cc_generate": "Generar subtítulo (idioma automático)",
+    "cc_regenerate": "Regenerar subtítulo en {{language}}",
+    "cc_starting": "Iniciando generación de subtítulo...",
+    "cc_generated": "¡Subtítulo en {{language}} generado con éxito!",
+    "cc_failed": "Error al generar el subtítulo",
+    "cc_cancelled": "Generación de subtítulo cancelada.",
+    "cc_extracting": "Extrayendo audio",
+    "cc_transcribing": "Transcribiendo",
+    "cc_status_error": "Error de monitoreo de estado",
+    "cc_start_failed": "Error al iniciar la generación"
   },
   "archive": {
     "archive_viewer": "Visor de archivos",

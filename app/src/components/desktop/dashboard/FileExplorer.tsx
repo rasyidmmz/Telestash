@@ -14,6 +14,7 @@ import { toast } from 'sonner';
 import { analyzeSeriesFolder, parseEpisodeInfo, getNextEpisode } from '../../../utils/seriesParser';
 import { WatchHistoryEntry } from '../../../utils/watchHistory';
 import { formatBytes } from '../../../utils';
+import { getLanguageLabel } from '../../../utils/subtitleMatcher';
 
 type SortField = 'name' | 'size' | 'date';
 type SortDirection = 'asc' | 'desc';
@@ -86,7 +87,7 @@ export function FileExplorer({
 }: FileExplorerProps) {
     const [sortField, setSortField] = useState<SortField>('name');
     const [sortDirection, setSortDirection] = useState<SortDirection>('asc');
-    const [contextMenu, setContextMenu] = useState<{ x: number; y: number; file: TelegramFile; hasCc?: boolean } | null>(null);
+    const [contextMenu, setContextMenu] = useState<{ x: number; y: number; file: TelegramFile; hasCc?: boolean; ccLanguage?: string | null } | null>(null);
     const { t } = useTranslation();
     const { settings } = useSettings();
 
@@ -104,64 +105,66 @@ export function FileExplorer({
         e.preventDefault();
         e.stopPropagation();
         let hasCc = false;
+        let ccLanguage: string | null = null;
         if (file.type !== 'folder') {
             try {
-                const status: any = await invoke('cmd_get_english_cc_status', { messageId: file.id, folderId: file.folder_id });
+                const status: any = await invoke('cmd_get_cc_status', { messageId: file.id, folderId: file.folder_id });
                 if (status.phase === 'ready' || status.cached) {
                     hasCc = true;
+                    ccLanguage = getLanguageLabel(status.language ?? 'en');
                 }
             } catch (err) {
                 console.error(err);
             }
         }
-        setContextMenu({ x: e.clientX, y: e.clientY, file, hasCc });
+        setContextMenu({ x: e.clientX, y: e.clientY, file, hasCc, ccLanguage });
     }, []);
 
     const handleGenerateCc = async (file: TelegramFile) => {
-        let toastId = toast.loading("Starting subtitle generation...", {
+        let toastId = toast.loading(t('files.cc_starting'), {
             action: {
-                label: "Cancel",
+                label: t('common.cancel'),
                 onClick: () => {
-                    invoke('cmd_cancel_english_cc', { messageId: file.id, folderId: file.folder_id });
+                    invoke('cmd_cancel_cc', { messageId: file.id, folderId: file.folder_id });
                 }
             }
         });
 
         try {
-            await invoke('cmd_generate_english_cc', { messageId: file.id, folderId: file.folder_id, force: true });
-            
+            await invoke('cmd_generate_cc', { messageId: file.id, folderId: file.folder_id, force: true });
+
             // Poll every 750ms
             const interval = setInterval(async () => {
                 try {
-                    const status: any = await invoke('cmd_get_english_cc_status', { messageId: file.id, folderId: file.folder_id });
+                    const status: any = await invoke('cmd_get_cc_status', { messageId: file.id, folderId: file.folder_id });
                     if (status.phase === 'ready') {
                         clearInterval(interval);
-                        toast.success("English CC Subtitles generated successfully!", { id: toastId });
+                        toast.success(t('files.cc_generated', { language: getLanguageLabel(status.language ?? 'en') }), { id: toastId });
                     } else if (status.phase === 'error') {
                         clearInterval(interval);
-                        toast.error(`Failed to generate subtitle: ${status.error}`, { id: toastId });
+                        toast.error(`${t('files.cc_failed')}: ${status.error}`, { id: toastId });
                     } else if (status.phase === 'cancelled') {
                         clearInterval(interval);
-                        toast.info("Subtitle generation cancelled.", { id: toastId });
+                        toast.info(t('files.cc_cancelled'), { id: toastId });
                     } else {
-                        const phaseText = status.phase === 'extracting' ? 'Extracting audio' : 'Transcribing';
+                        const phaseText = status.phase === 'extracting' ? t('files.cc_extracting') : t('files.cc_transcribing');
                         toast.loading(`${phaseText}: ${Math.round(status.progress || 0)}%`, {
                             id: toastId,
                             action: {
-                                label: "Cancel",
+                                label: t('common.cancel'),
                                 onClick: () => {
-                                    invoke('cmd_cancel_english_cc', { messageId: file.id, folderId: file.folder_id });
+                                    invoke('cmd_cancel_cc', { messageId: file.id, folderId: file.folder_id });
                                 }
                             }
                         });
                     }
                 } catch (err) {
                     clearInterval(interval);
-                    toast.error(`Status monitoring error: ${err}`, { id: toastId });
+                    toast.error(`${t('files.cc_status_error')}: ${err}`, { id: toastId });
                 }
             }, 750);
         } catch (err) {
-            toast.error(`Failed to start: ${err}`, { id: toastId });
+            toast.error(`${t('files.cc_start_failed')}: ${err}`, { id: toastId });
         }
     };
 
@@ -696,6 +699,7 @@ export function FileExplorer({
                     activeFolderId={activeFolderId}
                     onGenerateCc={() => handleGenerateCc(contextMenu.file)}
                     hasCc={contextMenu.hasCc}
+                    ccLanguage={contextMenu.ccLanguage}
                 />
             )}
 

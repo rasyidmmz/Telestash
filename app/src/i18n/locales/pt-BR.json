@@ -225,7 +225,17 @@
     "destination_folder": "Pasta de Destino",
     "transfers_queue": "Fila de Transferências",
     "transfers_queue_desc": "Downloads e uploads são gerenciados com segurança em segundo plano.",
-    "move_to_group": "Move to Group"
+    "move_to_group": "Move to Group",
+    "cc_generate": "Gerar legenda (idioma automático)",
+    "cc_regenerate": "Regenerar legenda em {{language}}",
+    "cc_starting": "Iniciando geração de legenda...",
+    "cc_generated": "Legenda em {{language}} gerada com sucesso!",
+    "cc_failed": "Falha ao gerar legenda",
+    "cc_cancelled": "Geração de legenda cancelada.",
+    "cc_extracting": "Extraindo áudio",
+    "cc_transcribing": "Transcrevendo",
+    "cc_status_error": "Erro no monitoramento de status",
+    "cc_start_failed": "Falha ao iniciar a geração"
   },
   "archive": {
     "archive_viewer": "Visualizador de arquivos compactados",

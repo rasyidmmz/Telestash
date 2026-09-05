@@ -225,7 +225,17 @@
     "destination_folder": "Dossier de destination",
     "transfers_queue": "File d'attente des transferts",
     "transfers_queue_desc": "Les téléchargements et envois sont gérés en arrière-plan.",
-    "move_to_group": "Move to Group"
+    "move_to_group": "Move to Group",
+    "cc_generate": "Générer des sous-titres (langue auto)",
+    "cc_regenerate": "Régénérer le sous-titre {{language}}",
+    "cc_starting": "Démarrage de la génération des sous-titres...",
+    "cc_generated": "Sous-titres {{language}} générés avec succès !",
+    "cc_failed": "Échec de la génération des sous-titres",
+    "cc_cancelled": "Génération des sous-titres annulée.",
+    "cc_extracting": "Extraction de l'audio",
+    "cc_transcribing": "Transcription",
+    "cc_status_error": "Erreur de surveillance de l'état",
+    "cc_start_failed": "Échec du démarrage de la génération"
   },
   "archive": {
     "archive_viewer": "Lecteur d'archive",

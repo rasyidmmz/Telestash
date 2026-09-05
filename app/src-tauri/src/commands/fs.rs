@@ -1857,9 +1857,15 @@ pub async fn cmd_delete_file(
     delete_message_ids(&client, peer, &ids, "Delete").await?;
 
     if let Ok(app_dir) = app_handle.path().app_data_dir() {
-        let srt_path = app_dir.join("streaming").join("captions").join(format!("{}_{}.en.srt", folder_id.unwrap_or(0), message_id));
-        if srt_path.exists() {
-            let _ = std::fs::remove_file(srt_path);
+        // Remove every transcription variant ({folder}_{msg}.{lang}.srt)
+        let prefix = format!("{}_{}.", folder_id.unwrap_or(0), message_id);
+        if let Ok(entries) = std::fs::read_dir(app_dir.join("streaming").join("captions")) {
+            for entry in entries.flatten() {
+                let name = entry.file_name().to_string_lossy().to_string();
+                if name.starts_with(&prefix) && name.ends_with(".srt") {
+                    let _ = std::fs::remove_file(entry.path());
+                }
+            }
         }
     }
 

@@ -225,7 +225,17 @@
     "destination_folder": "目标文件夹",
     "transfers_queue": "传输队列",
     "transfers_queue_desc": "下载和上传在后台安全地排队与管理。",
-    "move_to_group": "Move to Group"
+    "move_to_group": "Move to Group",
+    "cc_generate": "生成字幕（自动语言）",
+    "cc_regenerate": "重新生成{{language}}字幕",
+    "cc_starting": "正在开始字幕生成...",
+    "cc_generated": "{{language}}字幕生成成功！",
+    "cc_failed": "生成字幕失败",
+    "cc_cancelled": "字幕生成已取消。",
+    "cc_extracting": "正在提取音频",
+    "cc_transcribing": "转写中",
+    "cc_status_error": "状态监控错误",
+    "cc_start_failed": "启动生成失败"
   },
   "archive": {
     "archive_viewer": "压缩包查看器",

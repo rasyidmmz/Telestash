@@ -225,7 +225,17 @@
     "destination_folder": "Zielordner",
     "transfers_queue": "Übertragungswarteschlange",
     "transfers_queue_desc": "Downloads und Uploads werden im Hintergrund verwaltet.",
-    "move_to_group": "Move to Group"
+    "move_to_group": "Move to Group",
+    "cc_generate": "Untertitel generieren (Sprache automatisch)",
+    "cc_regenerate": "{{language}}-Untertitel neu generieren",
+    "cc_starting": "Untertitelgenerierung wird gestartet...",
+    "cc_generated": "{{language}}-Untertitel erfolgreich generiert!",
+    "cc_failed": "Untertitelgenerierung fehlgeschlagen",
+    "cc_cancelled": "Untertitelgenerierung abgebrochen.",
+    "cc_extracting": "Audio wird extrahiert",
+    "cc_transcribing": "Transkribiere",
+    "cc_status_error": "Statusüberwachungsfehler",
+    "cc_start_failed": "Generierung konnte nicht gestartet werden"
   },
   "archive": {
     "archive_viewer": "Archiv-Viewer",

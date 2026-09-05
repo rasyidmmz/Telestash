@@ -237,7 +237,17 @@
     "destination_folder": "Folder Tujuan",
     "transfers_queue": "Antrean Transfer",
     "transfers_queue_desc": "Unduhan dan unggahan diantrekan secara aman di latar belakang.",
-    "move_to_group": "Move to Group"
+    "move_to_group": "Move to Group",
+    "cc_generate": "Buat Subtitel (bahasa otomatis)",
+    "cc_regenerate": "Buat ulang subtitel {{language}}",
+    "cc_starting": "Memulai pembuatan subtitel...",
+    "cc_generated": "Subtitel {{language}} berhasil dibuat!",
+    "cc_failed": "Gagal membuat subtitel",
+    "cc_cancelled": "Pembuatan subtitel dibatalkan.",
+    "cc_extracting": "Mengekstrak audio",
+    "cc_transcribing": "Mentranskripsi",
+    "cc_status_error": "Kesalahan pemantauan status",
+    "cc_start_failed": "Gagal memulai pembuatan"
   },
   "archive": {
     "archive_viewer": "Penampil Arsip",

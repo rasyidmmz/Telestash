@@ -26,6 +26,7 @@ pub struct EnglishCcStatus {
     pub phase: EnglishCcPhase,
     pub progress: Option<f32>,
     pub cached: bool,
+    pub language: Option<String>,
     pub error: Option<String>,
 }
 
@@ -34,6 +35,7 @@ pub struct ActiveJob {
     pub folder_id: Option<i64>,
     pub phase: EnglishCcPhase,
     pub progress: Option<f32>,
+    pub language: Option<String>,
     pub error: Option<String>,
     pub cancel_tx: Option<oneshot::Sender<()>>,
 }
@@ -54,7 +56,11 @@ impl EnglishCcManager {
     }
 }
 
-pub fn get_srt_path(app_handle: &tauri::AppHandle, message_id: i32, folder_id: Option<i64>) -> PathBuf {
+pub fn get_srt_path(app_handle: &tauri::AppHandle, message_id: i32, folder_id: Option<i64>, lang: &str) -> PathBuf {
+    captions_dir(app_handle).join(format!("{}_{}.{}.srt", folder_id.unwrap_or(0), message_id, lang))
+}
+
+fn captions_dir(app_handle: &tauri::AppHandle) -> PathBuf {
     let parent = app_handle
         .path()
         .app_data_dir()
@@ -62,7 +68,25 @@ pub fn get_srt_path(app_handle: &tauri::AppHandle, message_id: i32, folder_id: O
         .join("streaming")
         .join("captions");
     let _ = std::fs::create_dir_all(&parent);
-    parent.join(format!("{}_{}.en.srt", folder_id.unwrap_or(0), message_id))
+    parent
+}
+
+/// Find any cached transcription for this video, returning its path and
+/// detected language code (e.g. `{folder}_{msg}.en.srt` -> ("...", "en")).
+fn find_cached_srt(app_handle: &tauri::AppHandle, message_id: i32, folder_id: Option<i64>) -> Option<(PathBuf, String)> {
+    let prefix = format!("{}_{}.", folder_id.unwrap_or(0), message_id);
+    let dir = captions_dir(app_handle);
+    for entry in std::fs::read_dir(&dir).ok()?.flatten() {
+        let name = entry.file_name().to_string_lossy().to_string();
+        if let Some(rest) = name.strip_prefix(&prefix) {
+            if let Some(lang) = rest.strip_suffix(".srt") {
+                if !lang.is_empty() && lang.chars().all(|c| c.is_ascii_alphanumeric()) {
+                    return Some((entry.path(), lang.to_string()));
+                }
+            }
+        }
+    }
+    None
 }
 
 async fn get_video_duration(
@@ -293,12 +317,17 @@ async fn run_whisper_transcription(
     duration_secs: f32,
     manager_state: Arc<Mutex<CcManagerState>>,
     cancel_rx: &mut oneshot::Receiver<()>,
-) -> Result<(), String> {
+) -> Result<String, String> {
     let whisper_cli = resolve_whisper_binary(app_handle, "whisper-cli.exe")
         .ok_or_else(|| "whisper-cli.exe was not found in application directory.".to_string())?;
 
-    let model_path = resolve_whisper_binary(app_handle, "ggml-base.en.bin")
-        .ok_or_else(|| "ggml-base.en.bin model was not found in application directory.".to_string())?;
+    // Multilingual model auto-detects the audio language; the English-only
+    // model is the fallback for installs that shipped before v1.4.0.
+    let (model_path, model_is_multilingual) =
+        resolve_whisper_binary(app_handle, "ggml-base.bin")
+            .map(|p| (p, true))
+            .or_else(|| resolve_whisper_binary(app_handle, "ggml-base.en.bin").map(|p| (p, false)))
+            .ok_or_else(|| "Whisper model was not found in application directory.".to_string())?;
 
     let threads = (std::thread::available_parallelism().map(|n| n.get()).unwrap_or(4) / 2)
         .max(1)
@@ -326,7 +355,13 @@ async fn run_whisper_transcription(
     let mut reader = tokio::io::BufReader::new(stderr).lines();
 
     let monitor_fut = async {
+        let mut detected_lang = if model_is_multilingual { None } else { Some("en".to_string()) };
         while let Ok(Some(line)) = reader.next_line().await {
+            if detected_lang.is_none() {
+                if let Some(code) = parse_whisper_detected_language(&line) {
+                    detected_lang = Some(code);
+                }
+            }
             if let Some(secs) = parse_whisper_timestamp(&line) {
                 if duration_secs > 0.0 {
                     let progress = ((secs / duration_secs) * 100.0).min(100.0);
@@ -339,7 +374,7 @@ async fn run_whisper_transcription(
         }
         let status = child.wait().await.map_err(|e| format!("whisper-cli join failed: {}", e))?;
         if status.success() {
-            Ok(())
+            Ok(detected_lang.unwrap_or_else(|| "en".to_string()))
         } else {
             Err("whisper-cli exited with non-zero code".to_string())
         }
@@ -354,8 +389,21 @@ async fn run_whisper_transcription(
     }
 }
 
+/// whisper.cpp logs `auto-detected language: en (p = 0.99)` on stderr.
+fn parse_whisper_detected_language(line: &str) -> Option<String> {
+    let idx = line.find("auto-detected language:").or_else(|| line.find("Detected language:"))?;
+    let after = line[idx..].split(':').nth(1)?.trim();
+    let code = after.split([' ', '(', ')']).find(|t| !t.is_empty())?;
+    let code = code.to_lowercase();
+    if code.len() == 2 && code.chars().all(|c| c.is_ascii_alphabetic()) {
+        Some(code)
+    } else {
+        None
+    }
+}
+
 #[tauri::command]
-pub async fn cmd_generate_english_cc(
+pub async fn cmd_generate_cc(
     message_id: i32,
     folder_id: Option<i64>,
     force: bool,
@@ -363,16 +411,18 @@ pub async fn cmd_generate_english_cc(
     app_handle: tauri::AppHandle,
 ) -> Result<EnglishCcStatus, String> {
     let file_key = format!("{}_{}", folder_id.unwrap_or(0), message_id);
-    let srt_path = get_srt_path(&app_handle, message_id, folder_id);
 
-    if !force && srt_path.exists() {
-        return Ok(EnglishCcStatus {
-            file_key,
-            phase: EnglishCcPhase::Ready,
-            progress: Some(100.0),
-            cached: true,
-            error: None,
-        });
+    if !force {
+        if let Some((_, lang)) = find_cached_srt(&app_handle, message_id, folder_id) {
+            return Ok(EnglishCcStatus {
+                file_key,
+                phase: EnglishCcPhase::Ready,
+                progress: Some(100.0),
+                cached: true,
+                language: Some(lang),
+                error: None,
+            });
+        }
     }
 
     let mut state = manager.state.lock().await;
@@ -387,6 +437,7 @@ pub async fn cmd_generate_english_cc(
         folder_id,
         phase: EnglishCcPhase::Extracting,
         progress: Some(0.0),
+        language: None,
         error: None,
         cancel_tx: Some(cancel_tx),
     });
@@ -438,7 +489,7 @@ pub async fn cmd_generate_english_cc(
                 }
             }
 
-            run_whisper_transcription(
+            let detected_lang = run_whisper_transcription(
                 &app_handle_clone,
                 &wav_path,
                 &srt_temp_base,
@@ -447,8 +498,15 @@ pub async fn cmd_generate_english_cc(
                 &mut cancel_rx,
             ).await?;
 
-            // Save atomic file locally and auto-upload to Telegram folder
+            // Save final srt under the detected language suffix and auto-upload
             if srt_temp_file.exists() {
+                {
+                    let mut state = manager_state_clone.lock().await;
+                    if let Some(ref mut job) = state.active_job {
+                        job.language = Some(detected_lang.clone());
+                    }
+                }
+                let srt_path = get_srt_path(&app_handle_clone, message_id, folder_id, &detected_lang);
                 let _ = std::fs::create_dir_all(srt_path.parent().unwrap());
                 std::fs::copy(&srt_temp_file, &srt_path)
                     .map_err(|e| format!("Failed to save final subtitle: {}", e))?;
@@ -465,7 +523,7 @@ pub async fn cmd_generate_english_cc(
                                 .file_stem()
                                 .unwrap_or_default()
                                 .to_string_lossy();
-                            let srt_name = format!("{}.en.srt", stem);
+                            let srt_name = format!("{}.{}.srt", stem, detected_lang);
 
                             if let Ok(srt_bytes) = std::fs::read(&srt_temp_file) {
                                 let srt_len = srt_bytes.len();
@@ -473,7 +531,7 @@ pub async fn cmd_generate_english_cc(
                                 if let Ok(uploaded) = client.upload_stream(&mut cursor, srt_len, srt_name.clone()).await {
                                     // Tag as a sidecar so it stays hidden from file listings,
                                     // then register it in video_subtitles like any attached subtitle.
-                                    let caption = format!("#telestash_sub:{}:en:srt", message_id);
+                                    let caption = format!("#telestash_sub:{}:{}:srt", message_id, detected_lang);
                                     if let Ok(sent) = client.send_message(peer, grammers_client::message::InputMessage::new().file(uploaded).text(caption)).await {
                                         let sub_msg_id = sent.id() as i64;
                                         let sub_id = format!("{}_{}_{}_srt", folder_id.unwrap_or(0), message_id, sub_msg_id);
@@ -491,7 +549,7 @@ pub async fn cmd_generate_english_cc(
                                                 let _ = stmt.bind((3, message_id as i64));
                                                 let _ = stmt.bind((4, sub_msg_id));
                                                 let _ = stmt.bind((5, "srt"));
-                                                let _ = stmt.bind((6, "en"));
+                                                let _ = stmt.bind((6, detected_lang.as_str()));
                                                 let label: Option<&str> = None;
                                                 let _ = stmt.bind((7, label));
                                                 let _ = stmt.bind((8, srt_name.as_str()));
@@ -547,15 +605,17 @@ pub async fn cmd_generate_english_cc(
         phase: EnglishCcPhase::Extracting,
         progress: Some(0.0),
         cached: false,
+        language: None,
         error: None,
     })
 }
 
 #[tauri::command]
-pub async fn cmd_get_english_cc_status(
+pub async fn cmd_get_cc_status(
     message_id: i32,
     folder_id: Option<i64>,
     manager: State<'_, EnglishCcManager>,
+    app_handle: tauri::AppHandle,
 ) -> Result<EnglishCcStatus, String> {
     let mut state = manager.state.lock().await;
     let file_key = format!("{}_{}", folder_id.unwrap_or(0), message_id);
@@ -574,6 +634,7 @@ pub async fn cmd_get_english_cc_status(
             phase: job.phase.clone(),
             progress: job.progress,
             cached: false,
+            language: job.language.clone(),
             error: job.error.clone(),
         };
         // Reset state back to None if done/error/cancelled so new jobs can be run
@@ -583,17 +644,19 @@ pub async fn cmd_get_english_cc_status(
         return Ok(status);
     }
 
+    let cached = find_cached_srt(&app_handle, message_id, folder_id);
     Ok(EnglishCcStatus {
         file_key,
         phase: EnglishCcPhase::Idle,
         progress: None,
-        cached: false,
+        cached: cached.is_some(),
+        language: cached.map(|(_, lang)| lang),
         error: None,
     })
 }
 
 #[tauri::command]
-pub async fn cmd_cancel_english_cc(
+pub async fn cmd_cancel_cc(
     message_id: i32,
     folder_id: Option<i64>,
     manager: State<'_, EnglishCcManager>,

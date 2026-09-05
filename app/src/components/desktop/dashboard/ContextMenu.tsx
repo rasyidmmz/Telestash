@@ -20,6 +20,7 @@ interface ContextMenuProps {
     activeFolderId?: number | null;
     onGenerateCc?: () => void;
     hasCc?: boolean;
+    ccLanguage?: string | null;
 }
 
 export function ContextMenu({
@@ -36,7 +37,8 @@ export function ContextMenu({
     folders,
     activeFolderId,
     onGenerateCc,
-    hasCc
+    hasCc,
+    ccLanguage
 }: ContextMenuProps) {
     const [adjustedPos, setAdjustedPos] = useState({ x, y });
     const menuRef = useRef<HTMLDivElement>(null);
@@ -203,7 +205,7 @@ export function ContextMenu({
                     className="flex items-center gap-2 px-2 py-1.5 text-sm text-stash-text hover:bg-stash-hover rounded transition-colors text-left w-full"
                 >
                     <Play className="w-4 h-4 text-purple-400 rotate-90" />
-                    {hasCc ? "Regenerate English CC" : "Generate English CC"}
+                    {hasCc ? t('files.cc_regenerate', { language: ccLanguage ?? 'en' }) : t('files.cc_generate')}
                 </button>
             )}
 

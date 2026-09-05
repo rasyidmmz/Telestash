@@ -225,7 +225,17 @@
     "destination_folder": "Папка назначения",
     "transfers_queue": "Очередь передач",
     "transfers_queue_desc": "Загрузки и отправки безопасно распределены в фоновом режиме.",
-    "move_to_group": "Move to Group"
+    "move_to_group": "Move to Group",
+    "cc_generate": "Создать субтитры (язык автоматически)",
+    "cc_regenerate": "Пересоздать субтитры ({{language}})",
+    "cc_starting": "Запуск создания субтитров...",
+    "cc_generated": "Субтитры ({{language}}) успешно созданы!",
+    "cc_failed": "Не удалось создать субтитры",
+    "cc_cancelled": "Создание субтитров отменено.",
+    "cc_extracting": "Извлечение аудио",
+    "cc_transcribing": "Транскрибация",
+    "cc_status_error": "Ошибка отслеживания состояния",
+    "cc_start_failed": "Не удалось запустить создание"
   },
   "archive": {
     "archive_viewer": "Просмотр архива",

@@ -225,7 +225,17 @@
     "destination_folder": "गंतव्य फ़ोल्डर",
     "transfers_queue": "स्थानांतरण कतार",
     "transfers_queue_desc": "डाउनलोड और अपलोड पृष्ठभूमि में सुरक्षित रूप से कतारबद्ध हैं।",
-    "move_to_group": "Move to Group"
+    "move_to_group": "Move to Group",
+    "cc_generate": "सबटाइटल बनाएं (स्वतः भाषा)",
+    "cc_regenerate": "{{language}} सबटाइटल पुनः बनाएं",
+    "cc_starting": "सबटाइटल जनरेशन शुरू हो रहा है...",
+    "cc_generated": "{{language}} सबटाइटल सफलतापूर्वक बनाया गया!",
+    "cc_failed": "सबटाइटल बनाने में विफल",
+    "cc_cancelled": "सबटाइटल जनरेशन रद्द किया गया।",
+    "cc_extracting": "ऑडियो निकाला जा रहा है",
+    "cc_transcribing": "ट्रांसक्राइब हो रहा है",
+    "cc_status_error": "स्थिति निगरानी त्रुटि",
+    "cc_start_failed": "जनरेशन शुरू करने में विफल"
   },
   "archive": {
     "archive_viewer": "संग्रह व्यूअर",
