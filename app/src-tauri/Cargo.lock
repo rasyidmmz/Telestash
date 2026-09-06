@@ -5787,7 +5787,7 @@ dependencies = [
  "actix-rt",
  "actix-web",
  "async-stream",
- "base64 0.22.1",
+ "base64 0.23.1",
  "bcrypt",
  "chrono",
  "constant_time_eq",
