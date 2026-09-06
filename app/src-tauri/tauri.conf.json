@@ -5,16 +5,18 @@
       "open": true
     },
     "updater": {
-      "endpoints": [],
+      "endpoints": [
+        "https://github.com/rasyidmmz/Telestash/releases/latest/download/latest.json"
+      ],
       "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDUzNEZFRDE2RjA4MDA3RUYKUldUdkI0RHdGdTFQVTRSSkU1MUVGR0ZmSWJocXdSSzBaSXNlUjdFZWRJV0JVNy92K2IzOGVBbUkK",
       "windows": {
         "installMode": "passive"
       }
     }
   },
-  "productName": "TeleStash Beta",
+  "productName": "TeleStash",
   "version": "1.4.0",
-  "identifier": "com.rasyidmmz.telestashbeta",
+  "identifier": "com.rasyidmmz.telestash",
   "build": {
     "beforeDevCommand": "npm run dev",
     "devUrl": "http://localhost:1420",
