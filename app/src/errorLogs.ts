@@ -7,6 +7,7 @@ export interface ErrorLogEntry {
     category?: string;
     message: string;
     details?: string;
+    level?: 'error' | 'info';
 }
 
 const STORAGE_KEY = 'telestash.errorLogs';

@@ -225,7 +225,16 @@
     "destination_folder": "Dossier de destination",
     "transfers_queue": "File d'attente des transferts",
     "transfers_queue_desc": "Les téléchargements et envois sont gérés en arrière-plan.",
-    "move_to_group": "Move to Group"
+    "move_to_group": "Move to Group",
+    "dup_button": "TROUVER LES DOUBLONS",
+    "dup_scanning": "ANALYSE...",
+    "dup_none": "Aucun doublon trouvé.",
+    "dup_deleted": "{count} fichiers en double supprimés.",
+    "subtitles_remove": "Retirer le sous-titre ({{count}})",
+    "subtitles_manage": "Gérer les sous-titres",
+    "subtitles_delete_confirm": "Cliquez à nouveau pour retirer de Telegram",
+    "subtitles_deleted": "Sous-titre {{language}} retiré",
+    "subtitles_delete_failed": "Échec de la suppression du sous-titre"
   },
   "archive": {
     "archive_viewer": "Lecteur d'archive",

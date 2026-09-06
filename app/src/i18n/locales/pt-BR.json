@@ -225,7 +225,16 @@
     "destination_folder": "Pasta de Destino",
     "transfers_queue": "Fila de Transferências",
     "transfers_queue_desc": "Downloads e uploads são gerenciados com segurança em segundo plano.",
-    "move_to_group": "Move to Group"
+    "move_to_group": "Move to Group",
+    "dup_button": "ENCONTRAR DUPLICATAS",
+    "dup_scanning": "ESCANEANDO...",
+    "dup_none": "Nenhuma duplicata encontrada.",
+    "dup_deleted": "{count} arquivos duplicados excluídos.",
+    "subtitles_remove": "Remover legenda ({{count}})",
+    "subtitles_manage": "Gerenciar legendas",
+    "subtitles_delete_confirm": "Clique novamente para remover do Telegram",
+    "subtitles_deleted": "Legenda {{language}} removida",
+    "subtitles_delete_failed": "Falha ao remover a legenda"
   },
   "archive": {
     "archive_viewer": "Visualizador de arquivos compactados",

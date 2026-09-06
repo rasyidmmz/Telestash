@@ -9,11 +9,13 @@ import { TelegramFile, TelegramFolder } from '../../../types';
 import { ContextMenu } from './ContextMenu';
 import { FileListItem } from './FileListItem';
 import { AttachSubtitlesModal } from './AttachSubtitlesModal';
+import { ManageSubtitlesModal } from './ManageSubtitlesModal';
 import { invoke } from '@tauri-apps/api/core';
 import { toast } from 'sonner';
 import { analyzeSeriesFolder, parseEpisodeInfo, getNextEpisode } from '../../../utils/seriesParser';
 import { WatchHistoryEntry } from '../../../utils/watchHistory';
 import { formatBytes } from '../../../utils';
+import { VideoSubtitleInfo } from '../../../types';
 
 type SortField = 'name' | 'size' | 'date';
 type SortDirection = 'asc' | 'desc';
@@ -86,7 +88,8 @@ export function FileExplorer({
 }: FileExplorerProps) {
     const [sortField, setSortField] = useState<SortField>('name');
     const [sortDirection, setSortDirection] = useState<SortDirection>('asc');
-    const [contextMenu, setContextMenu] = useState<{ x: number; y: number; file: TelegramFile; hasCc?: boolean } | null>(null);
+    const [contextMenu, setContextMenu] = useState<{ x: number; y: number; file: TelegramFile; subtitles?: VideoSubtitleInfo[] } | null>(null);
+    const [subtitlesTarget, setSubtitlesTarget] = useState<{ file: TelegramFile; subtitles: VideoSubtitleInfo[] } | null>(null);
     const { t } = useTranslation();
     const { settings } = useSettings();
 
@@ -103,67 +106,19 @@ export function FileExplorer({
     const handleContextMenu = useCallback(async (e: React.MouseEvent, file: TelegramFile) => {
         e.preventDefault();
         e.stopPropagation();
-        let hasCc = false;
+        let subtitles: VideoSubtitleInfo[] | undefined;
         if (file.type !== 'folder') {
             try {
-                const status: any = await invoke('cmd_get_english_cc_status', { messageId: file.id, folderId: file.folder_id });
-                if (status.phase === 'ready' || status.cached) {
-                    hasCc = true;
-                }
+                subtitles = await invoke<VideoSubtitleInfo[]>('cmd_get_video_subtitles', {
+                    folderId: file.folder_id ?? null,
+                    videoMessageId: file.id,
+                });
             } catch (err) {
                 console.error(err);
             }
         }
-        setContextMenu({ x: e.clientX, y: e.clientY, file, hasCc });
+        setContextMenu({ x: e.clientX, y: e.clientY, file, subtitles });
     }, []);
-
-    const handleGenerateCc = async (file: TelegramFile) => {
-        let toastId = toast.loading("Starting subtitle generation...", {
-            action: {
-                label: "Cancel",
-                onClick: () => {
-                    invoke('cmd_cancel_english_cc', { messageId: file.id, folderId: file.folder_id });
-                }
-            }
-        });
-
-        try {
-            await invoke('cmd_generate_english_cc', { messageId: file.id, folderId: file.folder_id, force: true });
-            
-            // Poll every 750ms
-            const interval = setInterval(async () => {
-                try {
-                    const status: any = await invoke('cmd_get_english_cc_status', { messageId: file.id, folderId: file.folder_id });
-                    if (status.phase === 'ready') {
-                        clearInterval(interval);
-                        toast.success("English CC Subtitles generated successfully!", { id: toastId });
-                    } else if (status.phase === 'error') {
-                        clearInterval(interval);
-                        toast.error(`Failed to generate subtitle: ${status.error}`, { id: toastId });
-                    } else if (status.phase === 'cancelled') {
-                        clearInterval(interval);
-                        toast.info("Subtitle generation cancelled.", { id: toastId });
-                    } else {
-                        const phaseText = status.phase === 'extracting' ? 'Extracting audio' : 'Transcribing';
-                        toast.loading(`${phaseText}: ${Math.round(status.progress || 0)}%`, {
-                            id: toastId,
-                            action: {
-                                label: "Cancel",
-                                onClick: () => {
-                                    invoke('cmd_cancel_english_cc', { messageId: file.id, folderId: file.folder_id });
-                                }
-                            }
-                        });
-                    }
-                } catch (err) {
-                    clearInterval(interval);
-                    toast.error(`Status monitoring error: ${err}`, { id: toastId });
-                }
-            }, 750);
-        } catch (err) {
-            toast.error(`Failed to start: ${err}`, { id: toastId });
-        }
-    };
 
     const [selectedSeasonKey, setSelectedSeasonKey] = useState<string>('all');
     const [isAttachSubtitlesOpen, setIsAttachSubtitlesOpen] = useState(false);
@@ -694,9 +649,16 @@ export function FileExplorer({
                     } : undefined}
                     folders={folders}
                     activeFolderId={activeFolderId}
-                    onGenerateCc={() => handleGenerateCc(contextMenu.file)}
-                    hasCc={contextMenu.hasCc}
+                    subtitleCount={contextMenu.subtitles?.length ?? 0}
+                    onRemoveSubtitles={contextMenu.subtitles?.length ? () => {
+                        setSubtitlesTarget({ file: contextMenu.file, subtitles: contextMenu.subtitles ?? [] });
+                        setContextMenu(null);
+                    } : undefined}
                 />
+            )}
+
+            {subtitlesTarget && (
+                <ManageSubtitlesModal target={subtitlesTarget} onClose={() => setSubtitlesTarget(null)} />
             )}
 
             <AttachSubtitlesModal

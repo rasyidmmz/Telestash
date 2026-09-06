@@ -1,5 +1,17 @@
 # Changelog
 
+## [1.4.0]
+
+### Added
+
+- **Subtitle removal**: right-clicking a video now offers "Remove Subtitle" when sidecars are attached. A small management modal lists every attached subtitle (language, format, filename) and deleting one removes the Telegram sidecar message(s), all cached caption copies, and the registry row — the `SUB:` badge updates immediately. Deleting a video now also removes its subtitle sidecars so they no longer linger as hidden orphans.
+- **Duplicate file finder**: new "Find Duplicates" scan in Storage Analytics — groups files by exact size across all folders, confirms with a content hash of each file's first 256 KiB, and lets you manually multi-select and delete duplicates.
+- **MPV-accurate "Continue Watching"**: the Recent Watch bar now reads MPV's watch-later positions, shows a real progress bar per card, and resumes from the exact playback position.
+
+### Fixed
+
+- **Transfer log no longer labels successful operations as errors**: the log stream hardcoded an `[ERROR]` badge on every entry and classified success messages (e.g. subtitle uploads containing the word "Telegram") as server failures. Successful operations — subtitle attach, subtitle delete — are now recorded as `[INFO]` success entries, and the badge/color follows the entry level.
+
 ## [1.3.5]
 
 ### Added

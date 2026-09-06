@@ -5,18 +5,16 @@
       "open": true
     },
     "updater": {
-      "endpoints": [
-        "https://github.com/rasyidmmz/Telestash/releases/latest/download/latest.json"
-      ],
+      "endpoints": [],
       "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDUzNEZFRDE2RjA4MDA3RUYKUldUdkI0RHdGdTFQVTRSSkU1MUVGR0ZmSWJocXdSSzBaSXNlUjdFZWRJV0JVNy92K2IzOGVBbUkK",
       "windows": {
         "installMode": "passive"
       }
     }
   },
-  "productName": "TeleStash",
-  "version": "1.3.5",
-  "identifier": "com.rasyidmmz.telestash",
+  "productName": "TeleStash Beta",
+  "version": "1.4.0",
+  "identifier": "com.rasyidmmz.telestashbeta",
   "build": {
     "beforeDevCommand": "npm run dev",
     "devUrl": "http://localhost:1420",
@@ -50,9 +48,7 @@
     "externalBin": [
       "bin/mpv"
     ],
-    "resources": [
-      "resources/whisper/**/*"
-    ],
+    "resources": [],
     "windows": {
       "nsis": {
         "installMode": "currentUser",

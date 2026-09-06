@@ -237,7 +237,16 @@
     "destination_folder": "Destination Folder",
     "transfers_queue": "Transfers Queue",
     "transfers_queue_desc": "Downloads and uploads are safely queued and managed in the background.",
-    "move_to_group": "Move to Group"
+    "move_to_group": "Move to Group",
+    "dup_button": "FIND DUPLICATES",
+    "dup_scanning": "SCANNING...",
+    "dup_none": "No duplicates found.",
+    "dup_deleted": "Deleted {count} duplicate file(s).",
+    "subtitles_remove": "Remove Subtitle ({{count}})",
+    "subtitles_manage": "Manage Subtitles",
+    "subtitles_delete_confirm": "Click again to remove from Telegram",
+    "subtitles_deleted": "{{language}} subtitle removed",
+    "subtitles_delete_failed": "Failed to remove subtitle"
   },
   "archive": {
     "archive_viewer": "Archive Viewer",

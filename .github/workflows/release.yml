@@ -115,8 +115,6 @@ jobs:
         run: |
           New-Item -ItemType Directory -Force app/src-tauri/bin | Out-Null
           New-Item -ItemType File -Force app/src-tauri/bin/mpv-x86_64-pc-windows-msvc.exe | Out-Null
-          New-Item -ItemType Directory -Force app/src-tauri/resources/whisper | Out-Null
-          New-Item -ItemType File -Force app/src-tauri/resources/whisper/.gitkeep | Out-Null
 
       - name: Validate Rust source
         working-directory: app/src-tauri
@@ -190,10 +188,6 @@ jobs:
           7z e mpv.zip mpv.exe "-oapp/src-tauri/bin/"
           Move-Item -Force app/src-tauri/bin/mpv.exe app/src-tauri/bin/mpv-x86_64-pc-windows-msvc.exe
           Remove-Item mpv.zip
-
-      - name: Setup Whisper resources
-        working-directory: app
-        run: node setup-whisper.js
 
       - name: Prepare updater signing key
         shell: node {0}

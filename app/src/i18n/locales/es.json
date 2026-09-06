@@ -225,7 +225,16 @@
     "destination_folder": "Carpeta de destino",
     "transfers_queue": "Cola de transferencias",
     "transfers_queue_desc": "Las descargas y subidas se administran de forma segura en segundo plano.",
-    "move_to_group": "Move to Group"
+    "move_to_group": "Move to Group",
+    "dup_button": "BUSCAR DUPLICADOS",
+    "dup_scanning": "ESCANEANDO...",
+    "dup_none": "No se encontraron duplicados.",
+    "dup_deleted": "{count} archivos duplicados eliminados.",
+    "subtitles_remove": "Quitar subtítulo ({{count}})",
+    "subtitles_manage": "Administrar subtítulos",
+    "subtitles_delete_confirm": "Haz clic de nuevo para quitar de Telegram",
+    "subtitles_deleted": "Subtítulo {{language}} eliminado",
+    "subtitles_delete_failed": "Error al quitar el subtítulo"
   },
   "archive": {
     "archive_viewer": "Visor de archivos",

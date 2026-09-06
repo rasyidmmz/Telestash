@@ -225,7 +225,16 @@
     "destination_folder": "Zielordner",
     "transfers_queue": "Übertragungswarteschlange",
     "transfers_queue_desc": "Downloads und Uploads werden im Hintergrund verwaltet.",
-    "move_to_group": "Move to Group"
+    "move_to_group": "Move to Group",
+    "dup_button": "DUPLIKATE FINDEN",
+    "dup_scanning": "SCANNING...",
+    "dup_none": "Keine Duplikate gefunden.",
+    "dup_deleted": "{count} Duplikatdateien gelöscht.",
+    "subtitles_remove": "Untertitel entfernen ({{count}})",
+    "subtitles_manage": "Untertitel verwalten",
+    "subtitles_delete_confirm": "Erneut klicken, um aus Telegram zu entfernen",
+    "subtitles_deleted": "{{language}}-Untertitel entfernt",
+    "subtitles_delete_failed": "Entfernen des Untertitels fehlgeschlagen"
   },
   "archive": {
     "archive_viewer": "Archiv-Viewer",

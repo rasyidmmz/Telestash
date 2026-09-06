@@ -225,7 +225,16 @@
     "destination_folder": "Hedef Klasör",
     "transfers_queue": "Transfer Sırası",
     "transfers_queue_desc": "İndirmeler ve yüklemeler arka planda güvenle sıraya alınır.",
-    "move_to_group": "Move to Group"
+    "move_to_group": "Move to Group",
+    "dup_button": "DUPLİKATLERİ BUL",
+    "dup_scanning": "TARANIYOR...",
+    "dup_none": "Duplikat bulunamadı.",
+    "dup_deleted": "{count} duplikat dosya silindi.",
+    "subtitles_remove": "Altyazıyı Kaldır ({{count}})",
+    "subtitles_manage": "Altyazıları Yönet",
+    "subtitles_delete_confirm": "Telegram'dan kaldırmak için tekrar tıklayın",
+    "subtitles_deleted": "{{language}} altyazı kaldırıldı",
+    "subtitles_delete_failed": "Altyazı kaldırılamadı"
   },
   "archive": {
     "archive_viewer": "Arşiv Görüntüleyici",

@@ -16,7 +16,7 @@
 
 **TeleStash** is a native Windows 11 desktop application that organizes a personal media library in Telegram-backed folders and opens compatible video through a bundled MPV sidecar. It does not impose an application-level storage quota; available storage and file limits remain governed by the connected Telegram account and Telegram's service rules.
 
-Built with **Tauri v2, Rust, React, and an MPV sidecar**, TeleStash supports personal **HEVC/H.265, 10-bit HDR, MKV, and MP4** libraries through a direct Telegram connection, local Whisper English CC generation, persisted upload state, and detailed transfer diagnostics.
+Built with **Tauri v2, Rust, React, and an MPV sidecar**, TeleStash supports personal **HEVC/H.265, 10-bit HDR, MKV, and MP4** libraries through a direct Telegram connection, subtitle sidecar management, persisted upload state, and detailed transfer diagnostics.
 
 [**Download Latest Release**](https://github.com/rasyidmmz/Telestash/releases/latest) · [**Why TeleStash**](#-why-telestash) · [**System Architecture**](#-system-architecture) · [**Brand Identity**](#-brand-identity--visual-system) · [**Build Instructions**](#-build-from-source)
 
@@ -39,7 +39,7 @@ Unlike a browser-only media workflow, TeleStash is a native 64-bit Rust/Tauri ap
 | **Codec Support** | Browser support varies by codec and container | **Native MPV Engine**: MP4 and MKV, including HEVC/H.265 libraries when locally supported |
 | **Disk Consumption** | May create browser caches | **Bounded media prefetch**: 16 MiB in-memory forward buffer per stream; app state, logs, and subtitle cache remain local |
 | **Binge-Watching** | Reopens player window per episode | **Native MPV Playlist**: Automatic episode-to-episode auto-play |
-| **Subtitle Generation** | Manual download and sync may be required | **Local Whisper English CC**: generate, cache, and upload SRT files to the active folder |
+| **Subtitles** | Manual download and sync may be required | **Attach & manage sidecars**: SRT/ASS/SSA/VTT/VobSub files attach to videos as hidden Telegram sidecars, cached locally, auto-selected by MPV, and removable in-app |
 | **Upload Transfer** | Retry behavior varies | **Transfer integrity**: SQLite resumable checkpoints and validated large-file manifests |
 | **Connection Path** | Often routed through a provider service | **Direct Telegram MTProto**: no application proxy or VPN route |
 
@@ -58,10 +58,9 @@ Unlike a browser-only media workflow, TeleStash is a native 64-bit Rust/Tauri ap
 * **SQLite Resumable Uploads**: Tracks upload progress in the local `upload_checkpoints` database so an interrupted eligible transfer can continue from its saved state.
 * **Automatic Large-File Splitting**: Files larger than `2_000_000_000` bytes are split into 512 MiB part messages with a validated `.tdmanifest.json` manifest and presented as one file in TeleStash.
 
-### 🎙️ 4. Automated Whisper AI Subtitles
-* **Local Whisper Processing**: TeleStash uses the bundled Whisper CLI to generate English CC SRT files from compatible media.
-* **System-Friendly Priority**: Whisper runs with Windows `BELOW_NORMAL_PRIORITY_CLASS` and a maximum of two CPU threads.
-* **Cloud Library Reuse**: Generated `.en.srt` subtitle files can be uploaded to the active Telegram folder for later playback.
+### 🎬 4. Subtitle Sidecars
+* **Attach Subtitles**: upload SRT/ASS/SSA/VTT/VobSub files (matched to videos by filename) as hidden sidecar messages in the same Telegram folder, cached locally and auto-selected by MPV.
+* **Manage & Remove**: right-click any video to review its attached subtitles (language, format, filename) and remove them — the Telegram sidecar, cached copies, and registry entry are cleaned up together.
 
 ---
 
@@ -75,7 +74,6 @@ The data path is intentionally short and deterministic: the Windows application 
 1. **Tauri v2 + Rust Core**: Manages high-performance native process execution, IPC command routing, system tray integration, and SQLite checkpoint state.
 2. **Direct MTProto Engine**: Multithreaded Grammers 0.10 client (crates.io, session-backed `PeerRef` identity with libsql storage) communicating directly with Telegram cloud infrastructure without intermediate proxy servers.
 3. **Bundled MPV Sidecar Engine**: Zero-copy 4K/10-bit HDR video rendering, multi-channel surround audio, embedded subtitle selection, and natural episode playlist auto-play.
-4. **Local Whisper AI Engine**: System-friendly `whisper-cli` background runner generating `.en.srt` subtitles with `BELOW_NORMAL_PRIORITY_CLASS` and 2-thread CPU cap.
 
 ---
 
@@ -93,9 +91,11 @@ The data path is intentionally short and deterministic: the Windows application 
 * 🍿 **Recent Watch Bar & Dedicated Watch Logs**: Continue watching strip with instant playback resume and separate activity logs.
 * ⚡ **Direct Telegram Transfer Engine**: Shared retry classification, protocol backoff, and diagnostic logs for uploads and downloads.
 * 💾 **SQLite Resumable Uploads**: Persisted checkpoints support eligible interrupted transfers.
-* 🎙️ **Automated Whisper AI Subtitles**: Local English CC generation, SRT caching, and active-folder upload.
+* 🎬 **Subtitle Sidecar Manager**: Attach SRT/ASS/SSA/VTT/VobSub to videos as hidden sidecars, with in-app review and removal.
 * 🛡️ **Bounded Streaming Prefetch**: 16 MiB in-memory forward buffer per active stream; no full media download is retained by the stream path.
 * 📁 **Folder & Channel Storage**: Organize movies and TV series using Saved Messages and private channels as folders.
+* 🔍 **Duplicate Finder**: Detects duplicate files across folders by exact size + content hash, with manual multi-select cleanup.
+* ⏱️ **MPV-accurate Resume**: Continue Watching reads MPV watch-later positions for true playback progress.
 * 📤 **Single-Path Upload Console**: One file-picker upload flow into the active folder, always visible as the first item in the file grid/list — no drag-drop, folder, or URL ingestion paths.
 * 📊 **Transfer Diagnostics**: Detailed error classification, attempt history, part indexes, and retry decisions in the desktop logs view.
 * 🖥️ **Windows 11 System Integration**: Autostart toggle via `HKCU\Software\Microsoft\Windows\CurrentVersion\Run`.

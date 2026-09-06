@@ -225,7 +225,16 @@
     "destination_folder": "目标文件夹",
     "transfers_queue": "传输队列",
     "transfers_queue_desc": "下载和上传在后台安全地排队与管理。",
-    "move_to_group": "Move to Group"
+    "move_to_group": "Move to Group",
+    "dup_button": "查找重复文件",
+    "dup_scanning": "扫描中...",
+    "dup_none": "未发现重复文件。",
+    "dup_deleted": "已删除 {count} 个重复文件。",
+    "subtitles_remove": "移除字幕 ({{count}})",
+    "subtitles_manage": "管理字幕",
+    "subtitles_delete_confirm": "再次点击以从 Telegram 移除",
+    "subtitles_deleted": "已移除 {{language}} 字幕",
+    "subtitles_delete_failed": "移除字幕失败"
   },
   "archive": {
     "archive_viewer": "压缩包查看器",

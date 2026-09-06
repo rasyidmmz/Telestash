@@ -225,7 +225,16 @@
     "destination_folder": "대상 폴더",
     "transfers_queue": "전송 대기열",
     "transfers_queue_desc": "다운로드 및 업로드가 백그라운드에서 안전하게 관리됩니다.",
-    "move_to_group": "Move to Group"
+    "move_to_group": "Move to Group",
+    "dup_button": "중복 찾기",
+    "dup_scanning": "스캔 중...",
+    "dup_none": "중복 항목이 없습니다.",
+    "dup_deleted": "중복 파일 {count}개를 삭제했습니다.",
+    "subtitles_remove": "자막 제거 ({{count}})",
+    "subtitles_manage": "자막 관리",
+    "subtitles_delete_confirm": "다시 클릭하면 텔레그램에서 제거됩니다",
+    "subtitles_deleted": "{{language}} 자막이 제거되었습니다",
+    "subtitles_delete_failed": "자막 제거 실패"
   },
   "archive": {
     "archive_viewer": "압축 파일 뷰어",

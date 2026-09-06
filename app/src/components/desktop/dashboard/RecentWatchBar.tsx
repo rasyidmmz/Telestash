@@ -1,3 +1,5 @@
+import { useEffect, useState } from 'react';
+import { invoke } from '@tauri-apps/api/core';
 import { Play, Clock, Trash2, History, Sparkles } from '../../shared/icons.tsx';
 import { WatchHistoryEntry, removeWatchEntry, clearWatchHistory } from '../../../utils/watchHistory';
 import { formatBytes } from '../../../utils';
@@ -14,6 +16,28 @@ interface RecentWatchBarProps {
 }
 
 export function RecentWatchBar({ entries, currentFiles, onPlay, onPlayFile, onRefresh }: RecentWatchBarProps) {
+    // Exact MPV watch-later positions (read once, on demand — no polling)
+    const [resumePositions, setResumePositions] = useState<Record<number, number>>({});
+    useEffect(() => {
+        let active = true;
+        invoke<{ folder_id: number | null; message_id: number; seconds: number }[]>('cmd_list_resume_positions')
+            .then((positions) => {
+                if (!active) return;
+                const map: Record<number, number> = {};
+                for (const p of positions) map[p.message_id] = p.seconds;
+                setResumePositions(map);
+            })
+            .catch(() => { /* watch-later unavailable — silent */ });
+        return () => { active = false; };
+    }, []);
+
+    const resolveSeconds = (entry: WatchHistoryEntry): number | null => {
+        const mpv = resumePositions[entry.file_id];
+        const stored = entry.last_position_secs ?? 0;
+        const candidate = Math.max(mpv ?? 0, stored);
+        return candidate > 5 ? candidate : null;
+    };
+
     if (!entries || entries.length === 0) return null;
 
     const handleRemove = (e: React.MouseEvent, fileId: number) => {
@@ -196,6 +220,29 @@ export function RecentWatchBar({ entries, currentFiles, onPlay, onPlayFile, onRe
                                     <span className="text-[10px] text-emerald-400">Finished</span>
                                 )}
                             </div>
+
+                            {(() => {
+                                const pos = resolveSeconds(entry);
+                                if (pos === null) return null;
+                                const pct = entry.total_duration_secs && entry.total_duration_secs > 0
+                                    ? Math.min(100, (pos / entry.total_duration_secs) * 100)
+                                    : null;
+                                return (
+                                    <div className="mb-2">
+                                        <div className="w-full h-1 rounded-full bg-slate-800 overflow-hidden">
+                                            <div
+                                                className="h-full rounded-full bg-cyan-400/90 transition-all duration-500"
+                                                style={{ width: pct !== null ? `${pct}%` : '100%' }}
+                                            />
+                                        </div>
+                                        {pct !== null && (
+                                            <div className="mt-1 text-[10px] font-mono text-slate-500">
+                                                {Math.round(pct)}% watched
+                                            </div>
+                                        )}
+                                    </div>
+                                );
+                            })()}
 
                             <div className="flex items-center justify-between pt-2 border-t border-slate-800/80">
                                 <MediaBadgesList filename={entry.file_name} maxBadges={2} />

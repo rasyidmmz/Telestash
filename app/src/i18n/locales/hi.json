@@ -225,7 +225,16 @@
     "destination_folder": "गंतव्य फ़ोल्डर",
     "transfers_queue": "स्थानांतरण कतार",
     "transfers_queue_desc": "डाउनलोड और अपलोड पृष्ठभूमि में सुरक्षित रूप से कतारबद्ध हैं।",
-    "move_to_group": "Move to Group"
+    "move_to_group": "Move to Group",
+    "dup_button": "डुप्लिकेट खोजें",
+    "dup_scanning": "स्कैन हो रहा है...",
+    "dup_none": "कोई डुप्लिकेट नहीं मिला।",
+    "dup_deleted": "{count} डुप्लिकेट फ़ाइलें हटाई गईं।",
+    "subtitles_remove": "सबटाइटल हटाएँ ({{count}})",
+    "subtitles_manage": "सबटाइटल प्रबंधित करें",
+    "subtitles_delete_confirm": "टेलीग्राम से हटाने के लिए फिर से क्लिक करें",
+    "subtitles_deleted": "{{language}} सबटाइटल हटाया गया",
+    "subtitles_delete_failed": "सबटाइटल हटाने में विफल"
   },
   "archive": {
     "archive_viewer": "संग्रह व्यूअर",

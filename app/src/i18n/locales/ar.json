@@ -225,7 +225,16 @@
     "destination_folder": "مجلد الوجهة",
     "transfers_queue": "طابور عمليات النقل",
     "transfers_queue_desc": "يتم تنظيم عمليات التنزيل والرفع بأمان في الخلفية.",
-    "move_to_group": "Move to Group"
+    "move_to_group": "Move to Group",
+    "dup_button": "البحث عن مكررات",
+    "dup_scanning": "جاري الفحص...",
+    "dup_none": "لا توجد مكررات.",
+    "dup_deleted": "تم حذف {count} ملف مكرر.",
+    "subtitles_remove": "إزالة الترجمة ({{count}})",
+    "subtitles_manage": "إدارة الترجمات",
+    "subtitles_delete_confirm": "انقر مرة أخرى للإزالة من تيليجرام",
+    "subtitles_deleted": "تمت إزالة ترجمة {{language}}",
+    "subtitles_delete_failed": "فشل في إزالة الترجمة"
   },
   "archive": {
     "archive_viewer": "عارض الأرشيف",

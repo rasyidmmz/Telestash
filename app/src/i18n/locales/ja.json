@@ -225,7 +225,16 @@
     "destination_folder": "保存先フォルダ",
     "transfers_queue": "転送キュー",
     "transfers_queue_desc": "ダウンロードとアップロードはバックグラウンドで安全にキュー管理されています。",
-    "move_to_group": "Move to Group"
+    "move_to_group": "Move to Group",
+    "dup_button": "重複を検索",
+    "dup_scanning": "スキャン中...",
+    "dup_none": "重複は見つかりませんでした。",
+    "dup_deleted": "重複ファイルを{count}件削除しました。",
+    "subtitles_remove": "字幕を削除 ({{count}})",
+    "subtitles_manage": "字幕の管理",
+    "subtitles_delete_confirm": "もう一度クリックでTelegramから削除",
+    "subtitles_deleted": "{{language}}字幕を削除しました",
+    "subtitles_delete_failed": "字幕の削除に失敗しました"
   },
   "archive": {
     "archive_viewer": "アーカイブビューアー",

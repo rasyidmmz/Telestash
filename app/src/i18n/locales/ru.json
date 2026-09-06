@@ -225,7 +225,16 @@
     "destination_folder": "Папка назначения",
     "transfers_queue": "Очередь передач",
     "transfers_queue_desc": "Загрузки и отправки безопасно распределены в фоновом режиме.",
-    "move_to_group": "Move to Group"
+    "move_to_group": "Move to Group",
+    "dup_button": "НАЙТИ ДУБЛИКАТЫ",
+    "dup_scanning": "СКНИРОВАНИЕ...",
+    "dup_none": "Дубликаты не найдены.",
+    "dup_deleted": "Удалено дубликатов: {count}.",
+    "subtitles_remove": "Удалить субтитры ({{count}})",
+    "subtitles_manage": "Управление субтитрами",
+    "subtitles_delete_confirm": "Нажмите ещё раз, чтобы удалить из Telegram",
+    "subtitles_deleted": "Субтитры ({{language}}) удалены",
+    "subtitles_delete_failed": "Не удалось удалить субтитры"
   },
   "archive": {
     "archive_viewer": "Просмотр архива",

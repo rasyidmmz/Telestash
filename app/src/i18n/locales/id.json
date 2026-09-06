@@ -237,7 +237,16 @@
     "destination_folder": "Folder Tujuan",
     "transfers_queue": "Antrean Transfer",
     "transfers_queue_desc": "Unduhan dan unggahan diantrekan secara aman di latar belakang.",
-    "move_to_group": "Move to Group"
+    "move_to_group": "Move to Group",
+    "dup_button": "CARI DUPLIKAT",
+    "dup_scanning": "MEMINDAI...",
+    "dup_none": "Tidak ada duplikat ditemukan.",
+    "dup_deleted": "{count} file duplikat dihapus.",
+    "subtitles_remove": "Hapus Subtitle ({{count}})",
+    "subtitles_manage": "Kelola Subtitle",
+    "subtitles_delete_confirm": "Klik sekali lagi untuk hapus dari Telegram",
+    "subtitles_deleted": "Subtitle {{language}} dihapus",
+    "subtitles_delete_failed": "Gagal menghapus subtitle"
   },
   "archive": {
     "archive_viewer": "Penampil Arsip",
