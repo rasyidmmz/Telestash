@@ -11,6 +11,7 @@ pub struct TransferLogEntry {
     pub category: String,
     pub message: String,
     pub details: Option<String>,
+    pub level: &'static str, // "error" | "info"
 }
 
 static TRANSFER_LOGS: OnceLock<Mutex<Vec<TransferLogEntry>>> = OnceLock::new();
@@ -29,6 +30,27 @@ pub(crate) fn record_transfer_log(
         category,
         message,
         details,
+        level: "error",
+    };
+    let mut logs = logs().lock().unwrap();
+    logs.insert(0, entry);
+    logs.truncate(MAX_TRANSFER_LOGS);
+}
+
+/// Success-path logging: skips failure classification so completed
+/// operations are shown as info instead of being styled as errors.
+pub(crate) fn record_transfer_success(
+    source: impl Into<String>,
+    message: impl Into<String>,
+    details: Option<String>,
+) {
+    let entry = TransferLogEntry {
+        time: chrono::Utc::now().to_rfc3339(),
+        source: source.into(),
+        category: "success".to_string(),
+        message: message.into(),
+        details,
+        level: "info",
     };
     let mut logs = logs().lock().unwrap();
     logs.insert(0, entry);
@@ -59,8 +81,13 @@ fn logs() -> &'static Mutex<Vec<TransferLogEntry>> {
 
 #[cfg(test)]
 mod tests {
+    // The log store is process-global; serialize the tests that touch it so
+    // parallel test threads cannot steal capped slots from each other.
+    static LOG_TEST_LOCK: std::sync::Mutex<()> = std::sync::Mutex::new(());
+
     #[test]
     fn keeps_newest_entries_first_and_caps_old_entries() {
+        let _guard = LOG_TEST_LOCK.lock().unwrap();
         super::clear_transfer_logs();
 
         for i in 0..105 {
@@ -75,11 +102,29 @@ mod tests {
 
     #[test]
     fn classifies_logged_transfer_errors() {
+        let _guard = LOG_TEST_LOCK.lock().unwrap();
         super::clear_transfer_logs();
 
         super::record_transfer_log("upload", "request error: read 0 bytes", None);
 
         let logs = super::transfer_logs();
         assert_eq!(logs[0].category, "network/transport");
+        assert_eq!(logs[0].level, "error");
+    }
+
+    #[test]
+    fn success_entries_skip_failure_classification() {
+        let _guard = LOG_TEST_LOCK.lock().unwrap();
+        super::clear_transfer_logs();
+
+        super::record_transfer_success(
+            "Subtitle Attach",
+            "Subtitle movie.en.srt attached to video message 42",
+            Some("folder_id: 7".to_string()),
+        );
+
+        let logs = super::transfer_logs();
+        assert_eq!(logs[0].level, "info");
+        assert_eq!(logs[0].category, "success");
     }
 }

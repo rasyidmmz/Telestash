@@ -205,8 +205,8 @@ pub async fn cmd_attach_video_subtitles(
         stmt.next().map_err(|e| e.to_string())?;
     }
 
-    crate::transfer_log::record_transfer_log(
-        "Subtitle Attached",
+    crate::transfer_log::record_transfer_success(
+        "Subtitle Attach",
         format!("Subtitle {} attached to video message {}", primary_file_name, video_message_id),
         folder_id.map(|id| format!("folder_id: {}", id)),
     );
@@ -229,12 +229,84 @@ pub async fn cmd_attach_video_subtitles(
 #[tauri::command]
 pub async fn cmd_delete_video_subtitle(
     subtitle_id: String,
+    folder_id: Option<i64>,
+    video_file_name: Option<String>,
+    app_handle: tauri::AppHandle,
+    state: State<'_, TelegramState>,
     db: State<'_, DbConnection>,
 ) -> Result<bool, String> {
-    let conn = db.lock().map_err(|e| e.to_string())?;
-    let mut stmt = conn.prepare("DELETE FROM video_subtitles WHERE id = ?").map_err(|e| e.to_string())?;
-    stmt.bind((1, subtitle_id.as_str())).map_err(|e| e.to_string())?;
-    stmt.next().map_err(|e| e.to_string())?;
+    // Read the row first so we know which Telegram sidecar messages to remove.
+    let (row_folder_id, video_message_id, subtitle_msg_id, paired_msg_id) = {
+        let conn = db.lock().map_err(|e| e.to_string())?;
+        let mut stmt = conn.prepare(
+            "SELECT folder_id, video_message_id, subtitle_message_id, paired_message_id \
+             FROM video_subtitles WHERE id = ?"
+        ).map_err(|e| e.to_string())?;
+        stmt.bind((1, subtitle_id.as_str())).map_err(|e| e.to_string())?;
+        if let Ok(sqlite::State::Row) = stmt.next() {
+            let f_id: Option<i64> = stmt.read(0).ok();
+            let v_id: i64 = stmt.read(1).unwrap_or_default();
+            let s_id: Option<i64> = stmt.read(2).ok();
+            let p_id: Option<i64> = stmt.read(3).ok();
+            (f_id, v_id, s_id, p_id)
+        } else {
+            return Ok(false);
+        }
+    };
+
+    // The sidecar messages live in the same folder channel as the video.
+    let effective_folder_id = folder_id.or(row_folder_id);
+    if subtitle_msg_id.is_some() || paired_msg_id.is_some() {
+        let client = { state.client.lock().await.clone() }.ok_or("Telegram client not initialized")?;
+        let peer = resolve_peer(&client, effective_folder_id, &state.peer_cache).await?;
+        let ids: Vec<i32> = [subtitle_msg_id, paired_msg_id]
+            .into_iter()
+            .flatten()
+            .map(|id| id as i32)
+            .collect();
+        if !ids.is_empty() {
+            crate::commands::fs::delete_message_ids(&client, peer, &ids, "Subtitle detach").await?;
+        }
+    }
+
+    // Remove every cached copy (3 key layouts, plus whisper-era .{lang}.srt variants).
+    let subtitle_exts = ["srt", "ass", "ssa", "vtt", "idx", "sub"];
+    if let Ok(app_dir) = app_handle.path().app_data_dir() {
+        if let Ok(entries) = std::fs::read_dir(app_dir.join("streaming").join("captions")) {
+            let mut prefixes = vec![format!("{}_{}.", effective_folder_id.unwrap_or(0), video_message_id), format!("{}.", video_message_id)];
+            if let Some(ref v_name) = video_file_name {
+                if let Some(stem) = Path::new(v_name).file_stem().and_then(|s| s.to_str()) {
+                    if !stem.is_empty() {
+                        prefixes.push(format!("{}.", stem));
+                    }
+                }
+            }
+            for entry in entries.flatten() {
+                let name = entry.file_name().to_string_lossy().to_string();
+                let ext = name.rsplit('.').next().unwrap_or("").to_lowercase();
+                if !subtitle_exts.contains(&ext.as_str()) {
+                    continue;
+                }
+                if prefixes.iter().any(|p| name.starts_with(p)) {
+                    let _ = std::fs::remove_file(entry.path());
+                }
+            }
+        }
+    }
+
+    {
+        let conn = db.lock().map_err(|e| e.to_string())?;
+        let mut stmt = conn.prepare("DELETE FROM video_subtitles WHERE id = ?").map_err(|e| e.to_string())?;
+        stmt.bind((1, subtitle_id.as_str())).map_err(|e| e.to_string())?;
+        stmt.next().map_err(|e| e.to_string())?;
+    }
+
+    crate::transfer_log::record_transfer_success(
+        "Subtitle Delete",
+        format!("Subtitle {} (message {}) removed from video message {}", subtitle_id, subtitle_msg_id.unwrap_or(0), video_message_id),
+        effective_folder_id.map(|id| format!("folder_id: {}", id)),
+    );
+
     Ok(true)
 }
 

@@ -227,7 +227,7 @@ export function StorageAnalyticsModal({ files, folders, onClose }: StorageAnalyt
                             <div className="flex items-center gap-3">
                                 <Zap className="w-4 h-4 text-amber-400" />
                                 <div>
-                                    <div className="text-sm font-semibold text-white">Whisper AI Subtitles</div>
+                                    <div className="text-sm font-semibold text-white">Subtitle Sidecar</div>
                                     <div className="text-xs text-gray-400">{analytics.subtitle.count} Teks SRT</div>
                                 </div>
                             </div>

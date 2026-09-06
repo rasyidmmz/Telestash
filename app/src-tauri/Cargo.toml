@@ -46,7 +46,6 @@ tauri-plugin-process = "2"
 tauri-plugin-clipboard-manager = "2"
 rand = "0.9"
 sha2 = "0.10"
-flate2 = "1"
 bcrypt = "0.19"
 constant_time_eq = "0.5"
 zip = { version = "4", default-features = false, features = ["deflate"] }
@@ -62,3 +61,6 @@ sysinfo = "0.39"
 # Embed the WebView2 bootstrapper so the app works on Windows systems
 # where the WebView2 runtime is not pre-installed (fresh installs, servers, etc.)
 webview-install-mode = "embeddir"
+
+[profile.release]
+debug = true

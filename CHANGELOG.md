@@ -4,13 +4,13 @@
 
 ### Added
 
-- **Multilingual subtitle generation**: the bundled Whisper pipeline now uses the multilingual `base` model and auto-detects the audio language instead of assuming English. Generated SRTs are named by their detected language (`.en.srt`, `.id.srt`, `.es.srt`, …), uploaded with the matching `#telestash_sub:{msg}:{lang}:srt` sidecar tag, registered in `video_subtitles`, and automatically hidden from vault listings. English-only fallback installs that still carry `ggml-base.en.bin` keep working unchanged.
-
-### Added (continued)
-
-- **Offline Indonesian subtitle translation**: one-click "Generate Indonesian Subtitle" on any video with a source sidecar (English CC or manually attached). Powered by Bergamot WASM (the Firefox Translations engine, en→id tiny model, ~15 MB downloaded once) running fully offline in the webview. The translated `.id.srt` follows the standard sidecar pipeline (upload + `#telestash_sub:` tag + cache + registry) and MPV now prefers Indonesian (`--slang` reordered) with automatic English fallback.
+- **Subtitle removal**: right-clicking a video now offers "Remove Subtitle" when sidecars are attached. A small management modal lists every attached subtitle (language, format, filename) and deleting one removes the Telegram sidecar message(s), all cached caption copies, and the registry row — the `SUB:` badge updates immediately. Deleting a video now also removes its subtitle sidecars so they no longer linger as hidden orphans.
 - **Duplicate file finder**: new "Find Duplicates" scan in Storage Analytics — groups files by exact size across all folders, confirms with a content hash of each file's first 256 KiB, and lets you manually multi-select and delete duplicates.
 - **MPV-accurate "Continue Watching"**: the Recent Watch bar now reads MPV's watch-later positions, shows a real progress bar per card, and resumes from the exact playback position.
+
+### Fixed
+
+- **Transfer log no longer labels successful operations as errors**: the log stream hardcoded an `[ERROR]` badge on every entry and classified success messages (e.g. subtitle uploads containing the word "Telegram") as server failures. Successful operations — subtitle attach, subtitle delete — are now recorded as `[INFO]` success entries, and the badge/color follows the entry level.
 
 ## [1.3.5]
 

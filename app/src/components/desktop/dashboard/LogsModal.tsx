@@ -119,7 +119,11 @@ export function LogsModal({ isOpen, onClose }: LogsModalProps) {
                                             <div className="flex items-start flex-wrap gap-x-2 text-[#e2e8f0]">
                                                 <span className="text-[#64748b]">{formatTimestamp(log.time)}</span>
                                                 <span className="text-emerald-400 font-semibold">[{log.source}{log.category ? `/${log.category}` : ''}]</span>
-                                                <span className="text-red-400 font-bold">[ERROR]</span>
+                                                {log.level === 'info' ? (
+                                                    <span className="text-sky-400 font-bold">[INFO]</span>
+                                                ) : (
+                                                    <span className="text-red-400 font-bold">[ERROR]</span>
+                                                )}
                                                 <span className="text-[#f8fafc] font-medium break-all">{log.message}</span>
                                             </div>
                                             {log.details && (
@@ -174,7 +178,7 @@ function formatTimestamp(isoTime: string): string {
 function formatLogLine(log: ErrorLogEntry): string {
     const timeStr = formatTimestamp(log.time);
     const sourceStr = `[${log.source}${log.category ? `/${log.category}` : ''}]`;
-    const line = `${timeStr} ${sourceStr} [ERROR] ${log.message}`;
+    const line = `${timeStr} ${sourceStr} ${log.level === 'info' ? '[INFO]' : '[ERROR]'} ${log.message}`;
     if (!log.details) return line;
 
     const detailsIndented = log.details
