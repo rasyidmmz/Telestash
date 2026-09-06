@@ -236,10 +236,10 @@ pub async fn cmd_delete_video_subtitle(
     db: State<'_, DbConnection>,
 ) -> Result<bool, String> {
     // Read the row first so we know which Telegram sidecar messages to remove.
-    let (row_folder_id, video_message_id, subtitle_msg_id, paired_msg_id) = {
+    let (row_folder_id, video_message_id, subtitle_msg_id, paired_msg_id, row_format) = {
         let conn = db.lock().map_err(|e| e.to_string())?;
         let mut stmt = conn.prepare(
-            "SELECT folder_id, video_message_id, subtitle_message_id, paired_message_id \
+            "SELECT folder_id, video_message_id, subtitle_message_id, paired_message_id, format \
              FROM video_subtitles WHERE id = ?"
         ).map_err(|e| e.to_string())?;
         stmt.bind((1, subtitle_id.as_str())).map_err(|e| e.to_string())?;
@@ -248,7 +248,8 @@ pub async fn cmd_delete_video_subtitle(
             let v_id: i64 = stmt.read(1).unwrap_or_default();
             let s_id: Option<i64> = stmt.read(2).ok();
             let p_id: Option<i64> = stmt.read(3).ok();
-            (f_id, v_id, s_id, p_id)
+            let fmt: String = stmt.read(4).unwrap_or_default();
+            (f_id, v_id, s_id, p_id, fmt)
         } else {
             return Ok(false);
         }
@@ -269,26 +270,67 @@ pub async fn cmd_delete_video_subtitle(
         }
     }
 
-    // Remove every cached copy (3 key layouts, plus whisper-era .{lang}.srt variants).
-    let subtitle_exts = ["srt", "ass", "ssa", "vtt", "idx", "sub"];
-    if let Ok(app_dir) = app_handle.path().app_data_dir() {
-        if let Ok(entries) = std::fs::read_dir(app_dir.join("streaming").join("captions")) {
-            let mut prefixes = vec![format!("{}_{}.", effective_folder_id.unwrap_or(0), video_message_id), format!("{}.", video_message_id)];
-            if let Some(ref v_name) = video_file_name {
-                if let Some(stem) = Path::new(v_name).file_stem().and_then(|s| s.to_str()) {
-                    if !stem.is_empty() {
-                        prefixes.push(format!("{}.", stem));
+    // Cache filenames carry no language ({folder}_{msg}.srt), so several
+    // attached subtitles of the same extension share one cache file — the last
+    // attach won. Only clear the cache when no remaining subtitle of the same
+    // extension still needs it; its registry row and Telegram sidecar survive.
+    let cache_ext = match row_format.as_str() {
+        "vobsub_idx" => "idx",
+        "vobsub_sub" => "sub",
+        other => other,
+    };
+    let sibling_shares_cache = {
+        let conn = db.lock().map_err(|e| e.to_string())?;
+        let sibling_format = if cache_ext == "idx" || cache_ext == "sub" { None } else { Some(cache_ext.to_string()) };
+        let mut stmt = conn.prepare(
+            "SELECT format FROM video_subtitles \
+             WHERE (folder_id IS ? OR folder_id = ?) AND video_message_id = ? AND id != ?"
+        ).map_err(|e| e.to_string())?;
+        stmt.bind((1, effective_folder_id)).map_err(|e| e.to_string())?;
+        stmt.bind((2, effective_folder_id.unwrap_or(0))).map_err(|e| e.to_string())?;
+        stmt.bind((3, video_message_id)).map_err(|e| e.to_string())?;
+        stmt.bind((4, subtitle_id.as_str())).map_err(|e| e.to_string())?;
+        let mut shares = false;
+        while let Ok(sqlite::State::Row) = stmt.next() {
+            let fmt: String = stmt.read(0).unwrap_or_default();
+            let sibling_ext = match fmt.as_str() {
+                "vobsub_idx" => "idx",
+                "vobsub_sub" => "sub",
+                other => other,
+            };
+            let same = match sibling_format {
+                Some(ref f) => sibling_ext == f.as_str(),
+                None => matches!((cache_ext, sibling_ext), ("idx", "sub") | ("sub", "idx")),
+            };
+            if same {
+                shares = true;
+                break;
+            }
+        }
+        shares
+    };
+
+    if !sibling_shares_cache {
+        let subtitle_exts = ["srt", "ass", "ssa", "vtt", "idx", "sub"];
+        if let Ok(app_dir) = app_handle.path().app_data_dir() {
+            if let Ok(entries) = std::fs::read_dir(app_dir.join("streaming").join("captions")) {
+                let mut prefixes = vec![format!("{}_{}.", effective_folder_id.unwrap_or(0), video_message_id), format!("{}.", video_message_id)];
+                if let Some(ref v_name) = video_file_name {
+                    if let Some(stem) = Path::new(v_name).file_stem().and_then(|s| s.to_str()) {
+                        if !stem.is_empty() {
+                            prefixes.push(format!("{}.", stem));
+                        }
                     }
                 }
-            }
-            for entry in entries.flatten() {
-                let name = entry.file_name().to_string_lossy().to_string();
-                let ext = name.rsplit('.').next().unwrap_or("").to_lowercase();
-                if !subtitle_exts.contains(&ext.as_str()) {
-                    continue;
-                }
-                if prefixes.iter().any(|p| name.starts_with(p)) {
-                    let _ = std::fs::remove_file(entry.path());
+                for entry in entries.flatten() {
+                    let name = entry.file_name().to_string_lossy().to_string();
+                    let ext = name.rsplit('.').next().unwrap_or("").to_lowercase();
+                    if !subtitle_exts.contains(&ext.as_str()) {
+                        continue;
+                    }
+                    if prefixes.iter().any(|p| name.starts_with(p)) {
+                        let _ = std::fs::remove_file(entry.path());
+                    }
                 }
             }
         }
