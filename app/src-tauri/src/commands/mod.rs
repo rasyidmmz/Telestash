@@ -48,7 +48,6 @@ pub mod sharing;
 pub mod video_metadata;
 pub mod archive;
 pub mod folder_groups;
-pub mod english_cc;
 pub mod subtitles;
 
 pub use auth::*;
@@ -63,10 +62,7 @@ pub use sharing::*;
 pub use video_metadata::*;
 pub use archive::*;
 pub use folder_groups::*;
-pub use english_cc::*;
 pub use subtitles::*;
-pub mod translation;
-pub use translation::*;
 pub mod duplicates;
 pub mod resume;
 pub use duplicates::*;

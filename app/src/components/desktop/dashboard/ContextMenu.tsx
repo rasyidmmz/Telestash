@@ -1,5 +1,5 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
-import { Eye, HardDrive, Trash2, FolderOpen, Pencil, Play, FileText, Link, Copy, ArrowRightLeft, Languages} from '../../shared/icons.tsx';
+import { Eye, HardDrive, Trash2, FolderOpen, Pencil, Play, FileText, Link, Copy, ArrowRightLeft, Subtitles} from '../../shared/icons.tsx';
 import { useTranslation } from 'react-i18next';
 import { TelegramFile, TelegramFolder } from '../../../types';
 import { isMediaFile, isPdfFile, isVideoFile } from '../../../utils';
@@ -18,10 +18,8 @@ interface ContextMenuProps {
     onMove?: () => void;
     folders?: TelegramFolder[];
     activeFolderId?: number | null;
-    onGenerateCc?: () => void;
-    hasCc?: boolean;
-    ccLanguage?: string | null;
-    onTranslateToId?: () => void;
+    onRemoveSubtitles?: () => void;
+    subtitleCount?: number;
 }
 
 export function ContextMenu({
@@ -37,10 +35,8 @@ export function ContextMenu({
     onMove,
     folders,
     activeFolderId,
-    onGenerateCc,
-    hasCc,
-    ccLanguage,
-    onTranslateToId
+    onRemoveSubtitles,
+    subtitleCount
 }: ContextMenuProps) {
     const [adjustedPos, setAdjustedPos] = useState({ x, y });
     const menuRef = useRef<HTMLDivElement>(null);
@@ -198,29 +194,16 @@ export function ContextMenu({
                 </button>
             )}
 
-            {file.type !== 'folder' && isVideoFile(file.name) && onGenerateCc && (
+            {file.type !== 'folder' && isVideoFile(file.name) && onRemoveSubtitles && (
                 <button
                     onClick={() => {
-                        onGenerateCc();
+                        onRemoveSubtitles();
                         onClose();
                     }}
                     className="flex items-center gap-2 px-2 py-1.5 text-sm text-stash-text hover:bg-stash-hover rounded transition-colors text-left w-full"
                 >
-                    <Play className="w-4 h-4 text-purple-400 rotate-90" />
-                    {hasCc ? t('files.cc_regenerate', { language: ccLanguage ?? 'en' }) : t('files.cc_generate')}
-                </button>
-            )}
-
-            {file.type !== 'folder' && isVideoFile(file.name) && onTranslateToId && (
-                <button
-                    onClick={() => {
-                        onTranslateToId();
-                        onClose();
-                    }}
-                    className="flex items-center gap-2 px-2 py-1.5 text-sm text-stash-text hover:bg-stash-hover rounded transition-colors text-left w-full"
-                >
-                    <Languages className="w-4 h-4 text-emerald-400" />
-                    {t('files.sub_id_generate')}
+                    <Subtitles className="w-4 h-4 text-amber-400" />
+                    {t('files.subtitles_remove', { count: subtitleCount ?? 0 })}
                 </button>
             )}
 

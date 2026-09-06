@@ -48,9 +48,7 @@
     "externalBin": [
       "bin/mpv"
     ],
-    "resources": [
-      "resources/whisper/**/*"
-    ],
+    "resources": [],
     "windows": {
       "nsis": {
         "installMode": "currentUser",

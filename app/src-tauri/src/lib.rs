@@ -223,6 +223,22 @@ fn cmd_get_system_diagnostics(
 pub fn run() {
     env_logger::init();
 
+    // The generated invoke handler chains every command (67 registered + plugin
+    // commands) through deeply inlined release-build wrappers, and each IPC
+    // resolution nests respond_async_serialized -> tokio::task::spawn frames on
+    // a worker thread. At the default 1 MB worker stack that overflows
+    // (0xC00000FD in __rust_probestack) seconds after login — tauri#14167.
+    // Give worker threads a generous stack instead of trimming commands.
+    // The runtime object must outlive the handle, so it lives in a static.
+    static ASYNC_RT: std::sync::OnceLock<tokio::runtime::Runtime> = std::sync::OnceLock::new();
+    let rt = tokio::runtime::Builder::new_multi_thread()
+        .thread_stack_size(16 * 1024 * 1024)
+        .enable_all()
+        .build()
+        .expect("failed to build tokio runtime");
+    tauri::async_runtime::set(rt.handle().clone());
+    let _ = ASYNC_RT.set(rt);
+
     // libsql (grammers-session's storage) asserts in its global init that
     // SQLITE_CONFIG_SERIALIZED can still be set; sqlite3_config returns
     // SQLITE_MISUSE once any SQLite in this process has been initialized,
@@ -277,8 +293,7 @@ pub fn run() {
 
             let net_config = Arc::new(transfer_policy::TransferPolicy::new());
             app.manage(net_config.clone());
-            app.manage(commands::english_cc::EnglishCcManager::new());
-            
+
             // Initialize SQLite Database
             let db_pool = db::init_db(app.handle()).map_err(|e| {
                 log::error!("Failed to initialize SQLite database: {}", e);
@@ -403,9 +418,6 @@ pub fn run() {
             commands::cmd_get_preview,
             commands::cmd_clean_preview_cache,
             commands::cmd_logout,
-            commands::cmd_generate_cc,
-            commands::cmd_get_cc_status,
-            commands::cmd_cancel_cc,
             commands::cmd_scan_folders,
             commands::cmd_search_global,
             commands::cmd_check_connection,
@@ -441,11 +453,6 @@ pub fn run() {
             commands::cmd_assign_folder_to_group,
             commands::cmd_update_group_order,
             commands::cmd_get_groups,
-            commands::cmd_download_translation_model,
-            commands::cmd_get_translation_model_status,
-            commands::cmd_read_translation_assets,
-            commands::cmd_get_subtitle_content,
-            commands::cmd_write_temp_srt,
             commands::cmd_find_duplicates,
             commands::cmd_list_resume_positions,
             commands::cmd_get_video_subtitles,

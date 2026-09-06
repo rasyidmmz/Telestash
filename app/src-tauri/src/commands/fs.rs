@@ -1856,13 +1856,56 @@ pub async fn cmd_delete_file(
 
     delete_message_ids(&client, peer, &ids, "Delete").await?;
 
+    // Remove attached subtitle sidecars so they don't become hidden orphans:
+    // their Telegram messages, video_subtitles rows, and all cached copies.
+    let subtitle_rows = {
+        let db = app_handle.state::<DbConnection>();
+        let conn = db.lock().map_err(|e| e.to_string())?;
+        let mut stmt = conn.prepare(
+            "SELECT subtitle_message_id, paired_message_id FROM video_subtitles \
+             WHERE (folder_id IS ? OR folder_id = ?) AND video_message_id = ?"
+        ).map_err(|e| e.to_string())?;
+        stmt.bind((1, folder_id)).map_err(|e| e.to_string())?;
+        stmt.bind((2, folder_id.unwrap_or(0))).map_err(|e| e.to_string())?;
+        stmt.bind((3, message_id as i64)).map_err(|e| e.to_string())?;
+        let mut rows = Vec::new();
+        while let Ok(sqlite::State::Row) = stmt.next() {
+            rows.push((stmt.read::<Option<i64>, _>(0).ok().flatten(), stmt.read::<Option<i64>, _>(1).ok().flatten()));
+        }
+        let mut stmt = conn.prepare(
+            "DELETE FROM video_subtitles WHERE (folder_id IS ? OR folder_id = ?) AND video_message_id = ?"
+        ).map_err(|e| e.to_string())?;
+        stmt.bind((1, folder_id)).map_err(|e| e.to_string())?;
+        stmt.bind((2, folder_id.unwrap_or(0))).map_err(|e| e.to_string())?;
+        stmt.bind((3, message_id as i64)).map_err(|e| e.to_string())?;
+        let _ = stmt.next();
+        rows
+    };
+    let sidecar_ids: Vec<i32> = subtitle_rows
+        .into_iter()
+        .flat_map(|(s, p)| [s, p])
+        .flatten()
+        .map(|id| id as i32)
+        .collect();
+    if !sidecar_ids.is_empty() {
+        delete_message_ids(&client, peer, &sidecar_ids, "Subtitle sidecar delete").await?;
+    }
+
     if let Ok(app_dir) = app_handle.path().app_data_dir() {
-        // Remove every transcription variant ({folder}_{msg}.{lang}.srt)
-        let prefix = format!("{}_{}.", folder_id.unwrap_or(0), message_id);
+        // Remove every cached caption variant ({folder}_{msg}.* and bare {msg}.*)
+        let prefixes = [
+            format!("{}_{}.", folder_id.unwrap_or(0), message_id),
+            format!("{}.", message_id),
+        ];
+        let caption_exts = ["srt", "ass", "ssa", "vtt", "idx", "sub"];
         if let Ok(entries) = std::fs::read_dir(app_dir.join("streaming").join("captions")) {
             for entry in entries.flatten() {
                 let name = entry.file_name().to_string_lossy().to_string();
-                if name.starts_with(&prefix) && name.ends_with(".srt") {
+                let ext = name.rsplit('.').next().unwrap_or("").to_lowercase();
+                if !caption_exts.contains(&ext.as_str()) {
+                    continue;
+                }
+                if prefixes.iter().any(|p| name.starts_with(p)) {
                     let _ = std::fs::remove_file(entry.path());
                 }
             }
