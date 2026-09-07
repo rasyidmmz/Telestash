@@ -25,7 +25,7 @@ export function useVideoThumbnail(
     telegramThumb: string | null,
 ): { generated: string | null; ref: (node: HTMLElement | null) => void } {
     const { settings } = useSettings();
-    const enabled = settings.videoThumbnails !== false;
+    const enabled = settings.videoThumbnails === true;
     const [generated, setGenerated] = useState<string | null>(null);
     const [visible, setVisible] = useState(false);
     const requestedRef = useRef(false);

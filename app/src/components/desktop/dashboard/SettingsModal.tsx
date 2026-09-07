@@ -413,10 +413,10 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                                     </div>
                                     <button
                                         onClick={() => updateSetting('videoThumbnails', !settings.videoThumbnails)}
-                                        className={`relative w-11 h-6 rounded-full transition-colors duration-200 ${settings.videoThumbnails !== false ? 'bg-stash-primary' : 'bg-stash-border'}`}
-                                        aria-pressed={settings.videoThumbnails !== false}
+                                        className={`relative w-11 h-6 rounded-full transition-colors duration-200 ${settings.videoThumbnails ? 'bg-stash-primary' : 'bg-stash-border'}`}
+                                        aria-pressed={settings.videoThumbnails}
                                     >
-                                        <span className={`absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white shadow transition-transform duration-200 ${settings.videoThumbnails !== false ? 'translate-x-5' : 'translate-x-0'}`} />
+                                        <span className={`absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white shadow transition-transform duration-200 ${settings.videoThumbnails ? 'translate-x-5' : 'translate-x-0'}`} />
                                     </button>
                                 </div>
 

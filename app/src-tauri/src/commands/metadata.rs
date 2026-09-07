@@ -298,7 +298,10 @@ async fn prune_posters(dir: &std::path::Path) {
 }
 
 #[tauri::command]
-pub fn cmd_watch_analytics(db_pool: State<'_, DbConnection>) -> Result<WatchAnalytics, String> {
+pub fn cmd_watch_analytics(
+    app_handle: tauri::AppHandle,
+    db_pool: State<'_, DbConnection>,
+) -> Result<WatchAnalytics, String> {
     let conn = db_pool.lock().map_err(|e| e.to_string())?;
 
     let unique_titles: i64 = conn
@@ -307,30 +310,47 @@ pub fn cmd_watch_analytics(db_pool: State<'_, DbConnection>) -> Result<WatchAnal
         .read::<i64, _>(0)
         .map_err(|e| e.to_string())?;
 
-    let total_watch_secs: f64 = conn
+    // MPV watch-later holds the accurate positions; history rows only carry
+    // them when a record call happened to pass one. Combine both sources.
+    let resume_secs: std::collections::HashMap<i32, f64> = crate::commands::resume::collect_resume_positions(&app_handle)
+        .into_iter()
+        .map(|p| (p.message_id, p.seconds))
+        .collect();
+
+    let mut total_watch_secs: f64 = 0.0;
+    let mut stmt = conn
         .prepare(
-            "SELECT COALESCE(SUM(CASE WHEN last_position_secs > 0 THEN last_position_secs ELSE total_duration_secs END), 0.0)
-             FROM watch_history;",
+            "SELECT message_id, last_position_secs, total_duration_secs FROM watch_history;",
         )
-        .map_err(|e| e.to_string())?
-        .read::<f64, _>(0)
         .map_err(|e| e.to_string())?;
+    while let sqlite::State::Row = stmt.next().map_err(|e| e.to_string())? {
+        let message_id = stmt.read::<i64, _>("message_id").unwrap_or(0) as i32;
+        let last_pos = stmt.read::<f64, _>("last_position_secs").unwrap_or(0.0);
+        let duration = stmt.read::<f64, _>("total_duration_secs").unwrap_or(0.0);
+        let mpv = resume_secs.get(&message_id).copied().unwrap_or(0.0);
+        total_watch_secs += mpv.max(last_pos).max(duration);
+    }
 
     let now = chrono::Utc::now();
     let today = now.date_naive();
-    let cutoff = (today - chrono::Duration::days(29)).and_hms_opt(0, 0, 0).unwrap().and_utc().timestamp();
+    // History timestamps are stored as epoch MILLIS (frontend Date.now()).
+    let cutoff = (today - chrono::Duration::days(29))
+        .and_hms_opt(0, 0, 0)
+        .unwrap()
+        .and_utc()
+        .timestamp_millis();
 
     let mut stmt = conn
         .prepare(&format!(
             "SELECT timestamp, COUNT(*) FROM watch_history
-             WHERE timestamp >= {cutoff} GROUP BY date(timestamp, 'unixepoch') ORDER BY date(timestamp, 'unixepoch');"
+             WHERE timestamp >= {cutoff} GROUP BY date(timestamp / 1000, 'unixepoch') ORDER BY date(timestamp / 1000, 'unixepoch');"
         ))
         .map_err(|e| e.to_string())?;
     let mut per_day: std::collections::HashMap<chrono::NaiveDate, i64> = std::collections::HashMap::new();
     while let sqlite::State::Row = stmt.next().map_err(|e| e.to_string())? {
         let ts = stmt.read::<i64, _>("timestamp").map_err(|e| e.to_string())?;
         let plays = stmt.read::<i64, _>(1).map_err(|e| e.to_string())?;
-        let date = chrono::DateTime::from_timestamp(ts, 0)
+        let date = chrono::DateTime::from_timestamp_millis(ts)
             .map(|d| d.date_naive())
             .unwrap_or(today);
         *per_day.entry(date).or_insert(0) += plays;
