@@ -84,13 +84,16 @@ The data path is intentionally short and deterministic: the Windows application 
 * 🍿 **"Binge Series / Play All" Mode**: 1-click header button to queue and play an entire season continuously from episode 1 in MPV.
 * 🏷️ **Auto-Badge Format & Media Tagging**: Automatic filename analysis displaying micro-badges for `4K UHD`, `1080p`, `HDR`, `10-bit`, `HEVC`, `AV1`, `Dual Audio`, and `Atmos`.
 * 🎥 **Native MPV Cinema Engine**: Playback for compatible HEVC/H.265, 10-bit HDR, MKV, MP4, and surround-audio media.
-* 🔔 **Windows 11 System Tray**: Background minimization with quick slim native context menu (Resume Video, Downloads, Upload, Check Updates, Settings, Open, Exit).
+* 🔔 **Windows 11 System Tray**: Background minimization with quick slim native context menu (Open, Check for Updates, Settings, Exit).
 * 🔄 **Live Update Experience**: The update banner appears while the app is running — no restart needed. "Check for Updates" offers **Download Now** or **Remind Me Later** (24-hour snooze), and tray "Check for Updates" runs a real check.
 * 🌙 **Cinema Low-Power Mode**: While you watch in MPV with TeleStash hidden in the tray, the webview performs zero scheduled work — only the MPV stream relay stays active.
 * 📊 **Folder Storage Analytics Dashboard**: Visual distribution charts for Video, Audio, Subtitle, and Document space allocation.
 * 🍿 **Recent Watch Bar & Dedicated Watch Logs**: Continue watching strip with instant playback resume and separate activity logs.
 * ⚡ **Direct Telegram Transfer Engine**: Shared retry classification, protocol backoff, and diagnostic logs for uploads and downloads.
 * 💾 **SQLite Resumable Uploads**: Persisted checkpoints support eligible interrupted transfers.
+* 🖼️ **Generated Video Thumbnails (Light Fallback)**: videos without a Telegram-native preview show a real extracted frame — one MPV job at a time, visibility-gated, cached under a bounded LRU cache; toggleable in Settings.
+* 💾 **Persistent Watch History (SQLite)**: Continue Watching entries survive webview storage clears, stored in a local `watch_history` table with automatic one-time migration.
+* 💬 **Humanized Error Messages**: failure toasts are classified (network, Telegram, local file, split manifest, rate-limit) and localized in 13 languages instead of raw error strings; raw details stay in Transfer Logs.
 * 🎬 **Subtitle Sidecar Manager**: Attach SRT/ASS/SSA/VTT/VobSub to videos as hidden sidecars, with in-app review and removal.
 * 🛡️ **Bounded Streaming Prefetch**: 16 MiB in-memory forward buffer per active stream; no full media download is retained by the stream path.
 * 📁 **Folder & Channel Storage**: Organize movies and TV series using Saved Messages and private channels as folders.

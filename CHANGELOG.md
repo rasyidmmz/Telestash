@@ -1,5 +1,19 @@
 # Changelog
 
+## [1.5.0]
+
+### Added
+
+- **Generated video thumbnails (light fallback)**: videos that Telegram did not thumbnail (large documents) now show a real frame in the grid instead of a generic icon. The frame is extracted through the already-bundled MPV engine (`--vo=image`, no new dependency), fed by the local streaming server (~1–5 MB per video, once, then cached as one small JPEG). Generation is visibility-gated (only cards on screen), queued one job at a time, skipped entirely while the app is hidden in tray, and served from an LRU-capped cache (100 MB / 2,000 files). Toggle in Settings → Vault ("Generate video thumbnails", default on).
+- **Persistent watch history**: Continue Watching now lives in SQLite (`watch_history` table) instead of webview localStorage, so recent-watch entries survive webview storage clears and form the foundation for the upcoming watch analytics. Existing entries are migrated automatically on first launch (one-time, re-run safe).
+- **Humanized error messages**: the hottest failure paths (upload, rename, delete, move, share, playback, logs, duplicate scan, cache clear, folder ops, subtitle removal) now show a classified, localized message — e.g. "the connection dropped or timed out. You can retry" — instead of raw Rust error strings. Classification mirrors the backend `failure_classifier` rules and is translated in all 13 languages; raw details remain visible in Transfer Logs and queue entries for diagnostics.
+- **Roadmap document**: `docs/ROADMAP.md` now records the Tier 1–4 product roadmap (foundation → personal cinema → library power → operations) with explicit Not-Doing decisions.
+
+### Fixed
+
+- **Documentation drift**: `AI_HANDOFF.md` no longer references the removed `PRD.md`/`setup-whisper.js`, now reflects the actual module layout (`commands/`, `server.rs`, `streaming.rs`) and the MSVC toolchain state; README's tray menu description matches the real tray (Open, Check for Updates, Settings, Exit).
+- **Duplicate CHANGELOG entries**: v1.2.0–v1.2.2 were each recorded twice with different content (two divergent release branches). Entries are now merged once per version.
+
 ## [1.4.0]
 
 ### Added
@@ -149,6 +163,7 @@
   - Automatically invalidates React Query cache so subtitle badges update immediately across the UI.
 - **Clean Global Search Results**:
   - Filtered out `[telestash-part]` chunk messages, `.tdmanifest.json` files, and `#telestash_sub:` metadata messages from global search results in both backend Rust and frontend UI.
+- **Instant Session Restoration**: Restored sessions in <5ms using local SQLite pre-authorization, eliminated MTProto runner deadlocks and connection hangs on login/session restore, enforced E.164 phone number validation, and standardized MTProto connection parameters for reliable Data Center handshakes.
 
 ## [1.2.1]
 
@@ -163,6 +178,11 @@
   - **Seamless MPV Playback**: Automatically downloads/caches attached subtitle sidecars and supplies `--sub-file` arguments during playback. Switch tracks instantly on-the-fly via the `c` key in MPV.
   - **Comprehensive CI/CD Unit Test Suite**: Integrated `npm test` covering `subtitle-matcher`, `series-parser`, `updater-signing-key`, and `versions` verification into the GitHub Actions release workflow.
 
+### Fixed
+
+- Prevented app startup freeze on "Restoring session..." splash screen by adding pre-authorization checks and timeouts.
+- Adjusted TopBar flex layout so search box dynamically scales without covering control menu buttons.
+
 ## [1.2.0]
 
 ### Added
@@ -174,6 +194,13 @@
   - **Persistent Cross-Session State**: Paused and pending items are persisted to Tauri Store. If the app is closed or the computer is powered off mid-transfer, reopening TeleStash preserves the exact progress and state so transfers resume without restarting from 0%.
   - **Zero-Resource Backend Suspension**: Async waker-based polling (`Poll::Pending`) in Rust streaming reader ensures paused uploads/downloads consume 0% bandwidth and 0% CPU without dropping stream connections.
   - **Download Checkpoints DB**: Added `download_checkpoints` SQLite table for persistent tracking.
+
+### Changed
+
+- Migrated Telegram API client to `grammers` crates.io v0.10.0.
+- Upgraded system metrics library `sysinfo` to v0.39.
+- Updated all frontend npm dependencies and pinned CI/CD GitHub Actions toolchain SHA.
+- Refactored Telegram peer resolution and media handling for grammers 0.10 compatibility.
 
 ### Fixed
 
@@ -275,31 +302,6 @@
 - Instant session restoration (<5ms) using local SQLite pre-authorization.
 - Restored v1.1.1 native auth pipeline, eliminating MTProto runner deadlocks and connection hangs.
 - Enforced E.164 international phone number format validation (`+` country code prefix).
-
-## [1.2.2]
-
-### Fixed
-
-- Instant session restoration (<5ms) using local SQLite pre-authorization.
-- Eliminated MTProto runner deadlocks and connection hangs on login and session restore.
-- Enforced E.164 international phone number format validation (`+` country code prefix).
-- Standardized MTProto connection parameters for reliable Data Center handshake.
-
-## [1.2.1]
-
-### Fixed
-
-- Prevented app startup freeze on "Restoring session..." splash screen by adding pre-authorization checks and timeouts.
-- Adjusted TopBar flex layout so search box dynamically scales without covering control menu buttons.
-
-## [1.2.0]
-
-### Changed
-
-- Migrated Telegram API client to `grammers` crates.io v0.10.0.
-- Upgraded system metrics library `sysinfo` to v0.39.
-- Updated all frontend npm dependencies and pinned CI/CD GitHub Actions toolchain SHA.
-- Refactored Telegram peer resolution and media handling for grammers 0.10 compatibility.
 
 ## [1.1.1]
 

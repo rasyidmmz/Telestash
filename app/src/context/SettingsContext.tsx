@@ -13,6 +13,10 @@ export interface Settings {
     sidebarCollapsed: boolean;
     hideGroups: boolean;
 
+    // ── Vault ───────────────────────────────────────────────
+    /** Generate fallback thumbnails for videos lacking a Telegram-native thumb (light: 1 MPV job, LRU-capped cache). */
+    videoThumbnails: boolean;
+
     windowsAutostart: boolean;       // Launch on Windows Startup
 }
 
@@ -26,6 +30,9 @@ const defaultSettings: Settings = {
     // Sidebar
     sidebarCollapsed: false,
     hideGroups: false,
+
+    // Vault
+    videoThumbnails: true,
 
     windowsAutostart: false,
 };

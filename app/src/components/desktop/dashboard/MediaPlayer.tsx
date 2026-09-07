@@ -5,6 +5,8 @@ import { TelegramFile } from '../../../types';
 import { isVideoFile, isAudioFile } from '../../../utils';
 import { toast } from 'sonner';
 import { recordWatchEvent } from '../../../utils/watchHistory';
+import { humanizeError } from '../../../utils/errorHumanizer';
+import i18n from '../../../i18n';
 
 interface StreamInfo {
     token: string;
@@ -89,7 +91,7 @@ export function MediaPlayer({ file, onClose, onNext, onPrev, currentIndex, total
                     console.error('Failed to play in MPV:', err);
                     const errMsg = err?.toString() || 'Failed to open MPV';
                     setMpvError(errMsg);
-                    toast.error(`Failed to play in MPV: ${errMsg}`);
+                    toast.error(`${humanizeError(err, i18n.t('errors.action_play'))} (${errMsg})`);
                 });
         }
     }, [isMedia, streamUrl, isPlayingInMpv, mpvError, file.id, file.folder_id, file.name, file, sortedPlaylistFiles, streamInfo, fileFolderParam]);
@@ -199,7 +201,7 @@ export function MediaPlayer({ file, onClose, onNext, onPrev, currentIndex, total
                                             playlist: playlistItems,
                                             startIndex: startIndex !== undefined && startIndex >= 0 ? startIndex : undefined
                                         }).catch(err => {
-                                            toast.error(`Failed to reopen MPV: ${err}`);
+                                            toast.error(humanizeError(err, i18n.t('errors.action_play')));
                                         });
                                     }
                                 }}

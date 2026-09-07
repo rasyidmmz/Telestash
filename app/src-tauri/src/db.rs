@@ -93,6 +93,17 @@ pub fn init_db(app: &AppHandle) -> Result<DbConnection, String> {
                     is_paired_vobsub INTEGER DEFAULT 0,
                     paired_message_id INTEGER,
                     created_at INTEGER NOT NULL
+                );
+                CREATE TABLE IF NOT EXISTS watch_history (
+                    file_id INTEGER PRIMARY KEY,
+                    file_name TEXT NOT NULL,
+                    folder_id INTEGER,
+                    file_size INTEGER NOT NULL DEFAULT 0,
+                    timestamp INTEGER NOT NULL,
+                    status TEXT NOT NULL DEFAULT 'started',
+                    quality_tag TEXT,
+                    last_position_secs REAL,
+                    total_duration_secs REAL
                 );"
             ) {
                 Ok(_) => {

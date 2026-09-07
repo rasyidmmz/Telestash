@@ -27,7 +27,9 @@ import { LogsModal } from './dashboard/LogsModal';
 import { RecentWatchBar } from './dashboard/RecentWatchBar';
 import { WatchLogsModal } from './dashboard/WatchLogsModal';
 import { StorageAnalyticsModal } from './dashboard/StorageAnalyticsModal';
-import { getRecentWatchHistory, recordWatchEvent, WatchHistoryEntry } from '../../utils/watchHistory';
+import { getRecentWatchHistory, recordWatchEvent, initWatchHistory, WatchHistoryEntry } from '../../utils/watchHistory';
+import { humanizeError } from '../../utils/errorHumanizer';
+import i18n from '../../i18n';
 import { isVideoFile, isAudioFile } from '../../utils';
 import { Link, Copy, Check, X, Loader2 } from '../shared/icons.tsx';
 
@@ -80,7 +82,9 @@ export function Dashboard({ onLogout }: { onLogout: () => void }) {
     }, []);
 
     useEffect(() => {
-        refreshWatchHistory();
+        // Load the SQLite-backed watch store (and migrate legacy localStorage
+        // entries) before the first render of the recent-watch bar.
+        initWatchHistory().then(refreshWatchHistory).catch(console.error);
     }, [refreshWatchHistory]);
     const [searchTerm, setSearchTerm] = useState("");
     const [searchResults, setSearchResults] = useState<TelegramFile[]>([]);
@@ -262,7 +266,7 @@ export function Dashboard({ onLogout }: { onLogout: () => void }) {
                         });
                         return { file, link: info.link };
                     } catch (e) {
-                        toast.error(`Failed to share ${file.name}: ${e}`);
+                        toast.error(humanizeError(e, i18n.t('errors.action_share')));
                         return null;
                     }
                 })
@@ -436,7 +440,7 @@ export function Dashboard({ onLogout }: { onLogout: () => void }) {
             queryClient.invalidateQueries({ queryKey: ['files', activeFolderId] });
             toast.success(`Renamed to "${newName}"`);
         } catch (e) {
-            toast.error(`Failed to rename: ${e}`);
+            toast.error(humanizeError(e, i18n.t('errors.action_rename')));
             throw e;
         }
     }, [renameFileTarget, activeFolderId, queryClient]);

@@ -186,7 +186,9 @@
     "color_primary": "Primary",
     "color_secondary": "Secondary",
     "color_text": "Text",
-    "color_subtext": "Subtext"
+    "color_subtext": "Subtext",
+    "video_thumbnails": "Gerar miniaturas de vídeo",
+    "video_thumbnails_desc": "Extrai um quadro de vídeos sem pré-visualização via MPV embutido. Leve: um trabalho por vez, em cache."
   },
   "files": {
     "download": "Baixar",
@@ -280,5 +282,30 @@
     "share_externally": "Share Externally (Tailscale / LAN)",
     "tailscale_help": "To share with someone else on your Tailscale network or local WiFi, enter your machine's IP address or hostname below:",
     "done": "Done"
+  },
+  "errors": {
+    "kind_local_file": "{{action}} falhou: não foi possível ler o arquivo do disco. Verifique se ele existe e não está bloqueado.",
+    "kind_manifest_split": "{{action}} falhou: partes divididas ausentes ou inconsistentes. Envie o arquivo novamente.",
+    "kind_telegram_server": "{{action}} falhou: o Telegram rejeitou ou limitou a solicitação. Aguarde um pouco e tente de novo.",
+    "kind_flood_wait": "{{action}} pausado: o Telegram está limitando esta conta. Aguarde o fim da contagem regressiva.",
+    "kind_network_transport": "{{action}} falhou: a conexão caiu ou expirou. Você pode tentar novamente.",
+    "kind_too_large": "{{action}} falhou: o arquivo excede o limite de tamanho do Telegram.",
+    "kind_cancelled": "{{action}} cancelado.",
+    "kind_unknown": "{{action}} falhou inesperadamente. Verifique os Registros de Transferência.",
+    "action_upload": "Envio",
+    "action_move": "Mover",
+    "action_rename": "Renomear",
+    "action_delete": "Excluir",
+    "action_share": "Compartilhar",
+    "action_play": "Reprodução",
+    "action_load_logs": "Carregar registros",
+    "action_clear_logs": "Limpar registros",
+    "action_delete_folder": "Excluir pasta",
+    "action_toggle_visibility": "Alterar visibilidade",
+    "action_invite_link": "Link de convite",
+    "action_clear_cache": "Limpar cache",
+    "action_duplicate_scan": "Varredura de duplicados",
+    "action_bulk_download": "Download em massa",
+    "action_subtitles_delete": "Remoção de legendas"
   }
 }

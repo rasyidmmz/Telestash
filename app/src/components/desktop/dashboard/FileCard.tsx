@@ -7,6 +7,7 @@ import { createDragGhost } from '../../../utils';
 import { FileTypeIcon } from '../../shared/FileTypeIcon';
 import { useVideoMetadata } from '../../../hooks/useVideoMetadata';
 import { useVideoSubtitles } from '../../../hooks/useVideoSubtitles';
+import { useVideoThumbnail } from '../../../hooks/useVideoThumbnail';
 import { VideoMetaBadge } from '../../shared/VideoMetaBadge';
 import { MediaBadgesList } from '../../shared/MediaBadgesList';
 
@@ -78,8 +79,18 @@ export function FileCard({ file, onDelete, onDownload, onPreview, onShare, isSel
         return () => { cancelled = true; };
     }, [file.id, file.name, activeFolderId, isFolder]);
 
+    // Fallback thumbnail for videos without a Telegram-native one (light
+    // single-frame MPV extraction, visibility-gated, queued 1-at-a-time).
+    const { generated: generatedThumb, ref: thumbRef } = useVideoThumbnail(
+        file.id,
+        file.name,
+        activeFolderId ?? null,
+        thumbnail,
+    );
+
     return (
         <div
+            ref={thumbRef}
             className="relative rounded-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-stash-primary"
             role="button"
             tabIndex={0}
@@ -141,10 +152,10 @@ export function FileCard({ file, onDelete, onDownload, onPreview, onShare, isSel
                 style={height ? { height: `${height}px` } : { aspectRatio: '4/3' }}
             >
                 {/* Thumbnail or Icon */}
-                {thumbnail ? (
+                {(thumbnail || generatedThumb) ? (
                     <div className="absolute inset-0">
                         <img
-                            src={thumbnail}
+                            src={thumbnail ?? generatedThumb ?? undefined}
                             alt={file.name}
                             className="w-full h-full object-contain"
                         />
@@ -178,10 +189,10 @@ export function FileCard({ file, onDelete, onDownload, onPreview, onShare, isSel
                 </button>
 
                 {/* File info overlay at bottom */}
-                <div className={`absolute bottom-0 left-0 right-0 p-3 ${thumbnail ? 'text-white' : 'text-stash-text'}`}>
+                <div className={`absolute bottom-0 left-0 right-0 p-3 ${(thumbnail || generatedThumb) ? 'text-white' : 'text-stash-text'}`}>
                     <h3 className="text-sm font-medium truncate w-full" title={file.name}>{file.name}</h3>
                     <div className="flex items-center gap-1.5 mt-1 flex-wrap">
-                        <p className={`text-xs ${thumbnail ? 'text-white/70' : 'text-stash-subtext'}`}>{file.sizeStr}</p>
+                        <p className={`text-xs ${(thumbnail || generatedThumb) ? 'text-white/70' : 'text-stash-subtext'}`}>{file.sizeStr}</p>
                         <MediaBadgesList filename={file.name} maxBadges={3} />
                         <VideoMetaBadge metadata={videoMeta} isLoading={videoMetaLoading} filename={file.name} />
                         {subtitles && subtitles.length > 0 && (

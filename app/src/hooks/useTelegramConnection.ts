@@ -6,6 +6,8 @@ import { toast } from 'sonner';
 import { useConfirm } from '../context/ConfirmContext';
 import { TelegramFolder, FolderInviteInfo, FolderGroup } from '../types';
 import { useNetworkStatus } from './useNetworkStatus';
+import { humanizeError } from '../utils/errorHumanizer';
+import i18n from '../i18n';
 
 export function useTelegramConnection(onLogoutParent: () => void) {
     const queryClient = useQueryClient();
@@ -199,7 +201,7 @@ export function useTelegramConnection(onLogoutParent: () => void) {
                     if (activeFolderId === folderId) setActiveFolderId(null);
                 }
             } else {
-                toast.error(`Failed to delete folder: ${e}`);
+                toast.error(humanizeError(e, i18n.t('errors.action_delete_folder')));
             }
         }
     };
@@ -218,7 +220,7 @@ export function useTelegramConnection(onLogoutParent: () => void) {
             }
             toast.success(`Folder renamed to "${newName}".`);
         } catch (e) {
-            toast.error("Failed to rename folder: " + e);
+            toast.error(humanizeError(e, i18n.t('errors.action_rename')));
         }
     };
 
@@ -249,7 +251,7 @@ export function useTelegramConnection(onLogoutParent: () => void) {
             toast.success(makePublic ? 'Channel is now public' : 'Channel is now private');
             return updated;
         } catch (e) {
-            toast.error(`Failed to toggle visibility: ${e}`);
+            toast.error(humanizeError(e, i18n.t('errors.action_toggle_visibility')));
             throw e;
         }
     };
@@ -261,7 +263,7 @@ export function useTelegramConnection(onLogoutParent: () => void) {
             });
             return info;
         } catch (e) {
-            toast.error(`Failed to get invite link: ${e}`);
+            toast.error(humanizeError(e, i18n.t('errors.action_invite_link')));
             throw e;
         }
     };

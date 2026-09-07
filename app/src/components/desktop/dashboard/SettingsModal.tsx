@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, RotateCcw, Download, Upload, Trash2, HardDrive, Globe, Key, Copy, Check, RefreshCw, ChevronDown, Link, Sparkles, Info, Clipboard, Monitor, Loader2, Languages, Palette, Plus, Tag } from '../../shared/icons.tsx';
+import { X, RotateCcw, Download, Upload, Trash2, HardDrive, Globe, Key, Copy, Check, RefreshCw, ChevronDown, Link, Sparkles, Info, Clipboard, Monitor, Loader2, Languages, Palette, Plus, Tag, Eye } from '../../shared/icons.tsx';
 import { invoke } from '@tauri-apps/api/core';
 import { open } from '@tauri-apps/plugin-shell';
 import { toast } from 'sonner';
@@ -394,6 +394,24 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                                         className={`relative w-11 h-6 rounded-full transition-colors duration-200 ${settings.hideGroups ? 'bg-stash-primary' : 'bg-stash-border'}`}
                                     >
                                         <span className={`absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white shadow transition-transform duration-200 ${settings.hideGroups ? 'translate-x-5' : 'translate-x-0'}`} />
+                                    </button>
+                                </div>
+
+                                {/* Video Thumbnail Generation */}
+                                <div className="flex items-center justify-between p-3 rounded-lg bg-stash-hover/50">
+                                    <div className="flex items-center gap-2">
+                                        <Eye className="w-4 h-4 text-stash-subtext" />
+                                        <div>
+                                            <p className="text-sm text-stash-text font-medium">{t('settings.video_thumbnails')}</p>
+                                            <p className="text-xs text-stash-subtext">{t('settings.video_thumbnails_desc')}</p>
+                                        </div>
+                                    </div>
+                                    <button
+                                        onClick={() => updateSetting('videoThumbnails', !settings.videoThumbnails)}
+                                        className={`relative w-11 h-6 rounded-full transition-colors duration-200 ${settings.videoThumbnails !== false ? 'bg-stash-primary' : 'bg-stash-border'}`}
+                                        aria-pressed={settings.videoThumbnails !== false}
+                                    >
+                                        <span className={`absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white shadow transition-transform duration-200 ${settings.videoThumbnails !== false ? 'translate-x-5' : 'translate-x-0'}`} />
                                     </button>
                                 </div>
 

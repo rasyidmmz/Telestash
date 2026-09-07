@@ -186,7 +186,9 @@
     "color_primary": "Primary",
     "color_secondary": "Secondary",
     "color_text": "Text",
-    "color_subtext": "Subtext"
+    "color_subtext": "Subtext",
+    "video_thumbnails": "동영상 썸네일 생성",
+    "video_thumbnails_desc": "미리보기 없는 동영상에서 내장 MPV로 프레임을 추출합니다. 가벼움: 한 번에 하나씩, 캐시됨."
   },
   "files": {
     "download": "다운로드",
@@ -280,5 +282,30 @@
     "share_externally": "Share Externally (Tailscale / LAN)",
     "tailscale_help": "To share with someone else on your Tailscale network or local WiFi, enter your machine's IP address or hostname below:",
     "done": "Done"
+  },
+  "errors": {
+    "kind_local_file": "{{action}} 실패: 디스크에서 파일을 읽을 수 없습니다. 파일이 존재하고 잠기지 않았는지 확인하세요.",
+    "kind_manifest_split": "{{action}} 실패: 분할 파트가 누락되었거나 불일치합니다. 파일을 다시 업로드하세요.",
+    "kind_telegram_server": "{{action}} 실패: 텔레그램이 요청을 거부하거나 제한했습니다. 잠시 후 다시 시도하세요.",
+    "kind_flood_wait": "{{action}} 일시 중지: 텔레그램이 이 계정을 일시적으로 제한합니다. 카운트다운이 끝날 때까지 기다리세요.",
+    "kind_network_transport": "{{action}} 실패: 연결이 끊기거나 시간 초과되었습니다. 재시도할 수 있습니다.",
+    "kind_too_large": "{{action}} 실패: 파일이 텔레그램 크기 제한을 초과합니다.",
+    "kind_cancelled": "{{action}} 취소됨.",
+    "kind_unknown": "{{action}}이(가) 예기치 않게 실패했습니다. 자세한 내용은 전송 로그를 확인하세요.",
+    "action_upload": "업로드",
+    "action_move": "이동",
+    "action_rename": "이름 변경",
+    "action_delete": "삭제",
+    "action_share": "공유",
+    "action_play": "재생",
+    "action_load_logs": "로그 불러오기",
+    "action_clear_logs": "로그 지우기",
+    "action_delete_folder": "폴더 삭제",
+    "action_toggle_visibility": "표시 변경",
+    "action_invite_link": "초대 링크",
+    "action_clear_cache": "캐시 지우기",
+    "action_duplicate_scan": "중복 스캔",
+    "action_bulk_download": "일괄 다운로드",
+    "action_subtitles_delete": "자막 삭제"
   }
 }

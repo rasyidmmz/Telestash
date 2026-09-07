@@ -5,6 +5,8 @@ import { TelegramFile, TelegramFolder } from '../../../types';
 import { formatBytes } from '../../../utils';
 import { toast } from 'sonner';
 import { invoke } from '@tauri-apps/api/core';
+import { humanizeError } from '../../../utils/errorHumanizer';
+import i18n from '../../../i18n';
 
 interface StorageAnalyticsModalProps {
     files: TelegramFile[];
@@ -33,7 +35,7 @@ export function StorageAnalyticsModal({ files, folders, onClose }: StorageAnalyt
             setDupGroups(groups);
             if (groups.length === 0) toast.success('No duplicates found.');
         } catch (err) {
-            toast.error(`Duplicate scan failed: ${err}`);
+            toast.error(humanizeError(err, i18n.t('errors.action_duplicate_scan')));
         } finally {
             setDupScanning(false);
         }
@@ -58,7 +60,7 @@ export function StorageAnalyticsModal({ files, folders, onClose }: StorageAnalyt
                 await invoke('cmd_delete_file', { messageId: Number(mid), folderId });
                 deleted += 1;
             } catch (err) {
-                toast.error(`Delete failed for message ${mid}: ${err}`);
+                toast.error(humanizeError(err, i18n.t('errors.action_delete')));
             }
         }
         setDupSelected(new Set());
@@ -116,7 +118,7 @@ export function StorageAnalyticsModal({ files, folders, onClose }: StorageAnalyt
             await invoke('cmd_clean_cache');
             toast.success('Preview & thumbnail cache cleared successfully!');
         } catch (err) {
-            toast.error(`Failed to clear cache: ${err}`);
+            toast.error(humanizeError(err, i18n.t('errors.action_clear_cache')));
         }
     };
 

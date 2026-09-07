@@ -186,7 +186,9 @@
     "color_primary": "Primary",
     "color_secondary": "Secondary",
     "color_text": "Text",
-    "color_subtext": "Subtext"
+    "color_subtext": "Subtext",
+    "video_thumbnails": "Générer les vignettes vidéo",
+    "video_thumbnails_desc": "Extrait une image des vidéos sans aperçu via MPV intégré. Léger : une tâche à la fois, mis en cache."
   },
   "files": {
     "download": "Télécharger",
@@ -280,5 +282,30 @@
     "share_externally": "Share Externally (Tailscale / LAN)",
     "tailscale_help": "To share with someone else on your Tailscale network or local WiFi, enter your machine's IP address or hostname below:",
     "done": "Done"
+  },
+  "errors": {
+    "kind_local_file": "{{action}} échoué : le fichier n'a pas pu être lu depuis le disque. Vérifiez qu'il existe et n'est pas verrouillé.",
+    "kind_manifest_split": "{{action}} échoué : parties divisées manquantes ou incohérentes. Rechargez ce fichier.",
+    "kind_telegram_server": "{{action}} échoué : Telegram a rejeté ou limité la requête. Patientez puis réessayez.",
+    "kind_flood_wait": "{{action}} en pause : Telegram limite temporairement ce compte. Attendez la fin du compte à rebours.",
+    "kind_network_transport": "{{action}} échoué : connexion perdue ou délai dépassé. Vous pouvez réessayer.",
+    "kind_too_large": "{{action}} échoué : le fichier dépasse la limite de taille de Telegram.",
+    "kind_cancelled": "{{action}} annulé.",
+    "kind_unknown": "{{action}} a échoué de manière inattendue. Consultez les Journaux de transfert.",
+    "action_upload": "Téléversement",
+    "action_move": "Déplacer",
+    "action_rename": "Renommer",
+    "action_delete": "Supprimer",
+    "action_share": "Partager",
+    "action_play": "Lecture",
+    "action_load_logs": "Chargement des journaux",
+    "action_clear_logs": "Effacement des journaux",
+    "action_delete_folder": "Suppression du dossier",
+    "action_toggle_visibility": "Changement de visibilité",
+    "action_invite_link": "Lien d'invitation",
+    "action_clear_cache": "Nettoyage du cache",
+    "action_duplicate_scan": "Analyse des doublons",
+    "action_bulk_download": "Téléchargement groupé",
+    "action_subtitles_delete": "Suppression des sous-titres"
   }
 }

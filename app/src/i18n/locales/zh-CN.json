@@ -186,7 +186,9 @@
     "color_primary": "Primary",
     "color_secondary": "Secondary",
     "color_text": "Text",
-    "color_subtext": "Subtext"
+    "color_subtext": "Subtext",
+    "video_thumbnails": "生成视频缩略图",
+    "video_thumbnails_desc": "通过内置 MPV 为无预览视频提取一帧。轻量：单任务队列，已缓存。"
   },
   "files": {
     "download": "下载",
@@ -280,5 +282,30 @@
     "share_externally": "Share Externally (Tailscale / LAN)",
     "tailscale_help": "To share with someone else on your Tailscale network or local WiFi, enter your machine's IP address or hostname below:",
     "done": "Done"
+  },
+  "errors": {
+    "kind_local_file": "{{action}}失败：无法从磁盘读取文件。请确认文件仍存在且未被占用。",
+    "kind_manifest_split": "{{action}}失败：分卷缺失或不一致。请重新上传该文件。",
+    "kind_telegram_server": "{{action}}失败：Telegram拒绝或限制了该请求。请稍候再试。",
+    "kind_flood_wait": "{{action}}已暂停：Telegram正在临时限流此账户。请等待倒计时结束。",
+    "kind_network_transport": "{{action}}失败：连接中断或超时。可以重试。",
+    "kind_too_large": "{{action}}失败：文件超过Telegram的大小限制。",
+    "kind_cancelled": "{{action}}已取消。",
+    "kind_unknown": "{{action}}意外失败。详情请查看传输日志。",
+    "action_upload": "上传",
+    "action_move": "移动",
+    "action_rename": "重命名",
+    "action_delete": "删除",
+    "action_share": "分享",
+    "action_play": "播放",
+    "action_load_logs": "加载日志",
+    "action_clear_logs": "清空日志",
+    "action_delete_folder": "删除文件夹",
+    "action_toggle_visibility": "更改可见性",
+    "action_invite_link": "邀请链接",
+    "action_clear_cache": "清理缓存",
+    "action_duplicate_scan": "重复扫描",
+    "action_bulk_download": "批量下载",
+    "action_subtitles_delete": "删除字幕"
   }
 }

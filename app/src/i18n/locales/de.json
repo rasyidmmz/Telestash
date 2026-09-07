@@ -186,7 +186,9 @@
     "color_primary": "Primary",
     "color_secondary": "Secondary",
     "color_text": "Text",
-    "color_subtext": "Subtext"
+    "color_subtext": "Subtext",
+    "video_thumbnails": "Video-Thumbnails erzeugen",
+    "video_thumbnails_desc": "Extrahiert ein Standbild aus Videos ohne Vorschau über das mitgelieferte MPV. Leicht: ein Auftrag gleichzeitig, zwischengespeichert."
   },
   "files": {
     "download": "Herunterladen",
@@ -280,5 +282,30 @@
     "share_externally": "Share Externally (Tailscale / LAN)",
     "tailscale_help": "To share with someone else on your Tailscale network or local WiFi, enter your machine's IP address or hostname below:",
     "done": "Done"
+  },
+  "errors": {
+    "kind_local_file": "{{action}} fehlgeschlagen: Die Datei konnte nicht gelesen werden. Prüfe, ob sie existiert und nicht gesperrt ist.",
+    "kind_manifest_split": "{{action}} fehlgeschlagen: Split-Teile fehlen oder sind inkonsistent. Lade die Datei neu hoch.",
+    "kind_telegram_server": "{{action}} fehlgeschlagen: Telegram hat die Anfrage abgelehnt oder gedrosselt. Warte kurz und versuche es erneut.",
+    "kind_flood_wait": "{{action}} pausiert: Telegram drosselt dieses Konto vorübergehend. Warte auf den Countdown.",
+    "kind_network_transport": "{{action}} fehlgeschlagen: Verbindung abgebrochen oder Timeout. Retry möglich.",
+    "kind_too_large": "{{action}} fehlgeschlagen: Die Datei übersteigt das Telegram-Größenlimit.",
+    "kind_cancelled": "{{action}} abgebrochen.",
+    "kind_unknown": "{{action}} unerwartet fehlgeschlagen. Details in den Transfer-Logs.",
+    "action_upload": "Hochladen",
+    "action_move": "Verschieben",
+    "action_rename": "Umbenennen",
+    "action_delete": "Löschen",
+    "action_share": "Teilen",
+    "action_play": "Wiedergabe",
+    "action_load_logs": "Logs laden",
+    "action_clear_logs": "Logs leeren",
+    "action_delete_folder": "Ordner löschen",
+    "action_toggle_visibility": "Sichtbarkeit ändern",
+    "action_invite_link": "Einladungslink",
+    "action_clear_cache": "Cache leeren",
+    "action_duplicate_scan": "Duplikat-Scan",
+    "action_bulk_download": "Massen-Download",
+    "action_subtitles_delete": "Untertitel entfernen"
   }
 }

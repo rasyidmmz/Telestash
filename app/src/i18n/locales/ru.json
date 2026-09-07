@@ -186,7 +186,9 @@
     "color_primary": "Primary",
     "color_secondary": "Secondary",
     "color_text": "Text",
-    "color_subtext": "Subtext"
+    "color_subtext": "Subtext",
+    "video_thumbnails": "Создавать миниатюры видео",
+    "video_thumbnails_desc": "Извлекает кадр из видео без предпросмотра через встроенный MPV. Легко: одна задача за раз, с кэшем."
   },
   "files": {
     "download": "Скачать",
@@ -292,5 +294,30 @@
     "share_externally": "Share Externally (Tailscale / LAN)",
     "tailscale_help": "To share with someone else on your Tailscale network or local WiFi, enter your machine's IP address or hostname below:",
     "done": "Done"
+  },
+  "errors": {
+    "kind_local_file": "{{action}} не удалось: файл не читается с диска. Убедитесь, что он существует и не занят.",
+    "kind_manifest_split": "{{action}} не удалось: части раздела отсутствуют или несовместимы. Загрузите файл заново.",
+    "kind_telegram_server": "{{action}} не удалось: Telegram отклонил или ограничил запрос. Подождите и повторите.",
+    "kind_flood_wait": "{{action}} приостановлено: Telegram временно ограничивает аккаунт. Дождитесь окончания отсчёта.",
+    "kind_network_transport": "{{action}} не удалось: соединение прервано или истёк таймаут. Можно повторить.",
+    "kind_too_large": "{{action}} не удалось: файл превышает лимит размера Telegram.",
+    "kind_cancelled": "{{action}} отменено.",
+    "kind_unknown": "{{action}} неожиданно завершилось ошибкой. Подробности в журналах передачи.",
+    "action_upload": "Загрузка",
+    "action_move": "Перемещение",
+    "action_rename": "Переименование",
+    "action_delete": "Удаление",
+    "action_share": "Общий доступ",
+    "action_play": "Воспроизведение",
+    "action_load_logs": "Загрузка журналов",
+    "action_clear_logs": "Очистка журналов",
+    "action_delete_folder": "Удаление папки",
+    "action_toggle_visibility": "Изменение видимости",
+    "action_invite_link": "Ссылка-приглашение",
+    "action_clear_cache": "Очистка кэша",
+    "action_duplicate_scan": "Поиск дубликатов",
+    "action_bulk_download": "Массовая загрузка",
+    "action_subtitles_delete": "Удаление субтитров"
   }
 }

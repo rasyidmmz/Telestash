@@ -186,7 +186,9 @@
     "color_primary": "Primary",
     "color_secondary": "Secondary",
     "color_text": "Text",
-    "color_subtext": "Subtext"
+    "color_subtext": "Subtext",
+    "video_thumbnails": "動画サムネイルを生成",
+    "video_thumbnails_desc": "プレビューのない動画から同梱MPVでフレームを抽出します。軽量：同時に1件、キャッシュ済み。"
   },
   "files": {
     "download": "ダウンロード",
@@ -280,5 +282,30 @@
     "share_externally": "Share Externally (Tailscale / LAN)",
     "tailscale_help": "To share with someone else on your Tailscale network or local WiFi, enter your machine's IP address or hostname below:",
     "done": "Done"
+  },
+  "errors": {
+    "kind_local_file": "{{action}}に失敗：ディスクからファイルを読み取れませんでした。存在し、ロックされていないか確認してください。",
+    "kind_manifest_split": "{{action}}に失敗：分割パーツが欠落または不整合です。ファイルを再アップロードしてください。",
+    "kind_telegram_server": "{{action}}に失敗：Telegramがリクエストを拒否または制限しました。少し待ってから再試行してください。",
+    "kind_flood_wait": "{{action}}を一時停止：Telegramがこのアカウントを制限中です。カウントダウンの終了をお待ちください。",
+    "kind_network_transport": "{{action}}に失敗：接続が切断またはタイムアウトしました。再試行できます。",
+    "kind_too_large": "{{action}}に失敗：ファイルがTelegramのサイズ制限を超えています。",
+    "kind_cancelled": "{{action}}をキャンセルしました。",
+    "kind_unknown": "{{action}}が予期せず失敗しました。詳細は転送ログを確認してください。",
+    "action_upload": "アップロード",
+    "action_move": "移動",
+    "action_rename": "名前変更",
+    "action_delete": "削除",
+    "action_share": "共有",
+    "action_play": "再生",
+    "action_load_logs": "ログ読込",
+    "action_clear_logs": "ログ消去",
+    "action_delete_folder": "フォルダ削除",
+    "action_toggle_visibility": "表示切替",
+    "action_invite_link": "招待リンク",
+    "action_clear_cache": "キャッシュ消去",
+    "action_duplicate_scan": "重複スキャン",
+    "action_bulk_download": "一括ダウンロード",
+    "action_subtitles_delete": "字幕削除"
   }
 }

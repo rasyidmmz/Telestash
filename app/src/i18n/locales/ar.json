@@ -186,7 +186,9 @@
     "color_primary": "Primary",
     "color_secondary": "Secondary",
     "color_text": "Text",
-    "color_subtext": "Subtext"
+    "color_subtext": "Subtext",
+    "video_thumbnails": "إنشاء مصغرات الفيديو",
+    "video_thumbnails_desc": "يستخرج إطارًا من الفيديوهات دون معاينة عبر MPV المدمج. خفيف: مهمة واحدة في كل مرة، مع تخزين مؤقت."
   },
   "files": {
     "download": "تنزيل",
@@ -304,5 +306,30 @@
     "share_externally": "Share Externally (Tailscale / LAN)",
     "tailscale_help": "To share with someone else on your Tailscale network or local WiFi, enter your machine's IP address or hostname below:",
     "done": "Done"
+  },
+  "errors": {
+    "kind_local_file": "فشل {{action}}: تعذر قراءة الملف من القرص. تأكد من وجوده وعدم قفله.",
+    "kind_manifest_split": "فشل {{action}}: أجزاء التقسيم مفقودة أو غير متسقة. أعد رفع الملف.",
+    "kind_telegram_server": "فشل {{action}}: رفض تيليجرام الطلب أو قيّده. انتظر قليلاً ثم أعد المحاولة.",
+    "kind_flood_wait": "توقف {{action}}: تيليجرام يحد من هذا الحساب مؤقتًا. انتظر انتهاء العد التنازلي.",
+    "kind_network_transport": "فشل {{action}}: انقطع الاتصال أو انتهت المهلة. يمكنك إعادة المحاولة.",
+    "kind_too_large": "فشل {{action}}: الملف يتجاوز حد حجم تيليجرام.",
+    "kind_cancelled": "أُلغي {{action}}.",
+    "kind_unknown": "فشل {{action}} بشكل غير متوقع. راجع سجلات النقل للتفاصيل.",
+    "action_upload": "الرفع",
+    "action_move": "النقل",
+    "action_rename": "إعادة التسمية",
+    "action_delete": "الحذف",
+    "action_share": "المشاركة",
+    "action_play": "التشغيل",
+    "action_load_logs": "تحميل السجلات",
+    "action_clear_logs": "مسح السجلات",
+    "action_delete_folder": "حذف المجلد",
+    "action_toggle_visibility": "تغيير الظهور",
+    "action_invite_link": "رابط الدعوة",
+    "action_clear_cache": "مسح الذاكرة المؤقتة",
+    "action_duplicate_scan": "فحص التكرار",
+    "action_bulk_download": "تنزيل جماعي",
+    "action_subtitles_delete": "إزالة الترجمات"
   }
 }

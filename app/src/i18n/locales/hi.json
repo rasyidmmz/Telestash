@@ -186,7 +186,9 @@
     "color_primary": "Primary",
     "color_secondary": "Secondary",
     "color_text": "Text",
-    "color_subtext": "Subtext"
+    "color_subtext": "Subtext",
+    "video_thumbnails": "वीडियो थंबनेल बनाएं",
+    "video_thumbnails_desc": "बंडल किए MPV से बिना प्रीव्यू वाले वीडियो का एक फ़्रेम निकालता है। हल्का: एक बार में एक काम, कैश्ड।"
   },
   "files": {
     "download": "डाउनलोड",
@@ -280,5 +282,30 @@
     "share_externally": "Share Externally (Tailscale / LAN)",
     "tailscale_help": "To share with someone else on your Tailscale network or local WiFi, enter your machine's IP address or hostname below:",
     "done": "Done"
+  },
+  "errors": {
+    "kind_local_file": "{{action}} विफल: फ़ाइल डिस्क से नहीं पढ़ी जा सकी। सुनिश्चित करें कि वह मौजूद है और लॉक नहीं है।",
+    "kind_manifest_split": "{{action}} विफल: स्प्लिट भाग गायब या असंगत हैं। फ़ाइल दोबारा अपलोड करें।",
+    "kind_telegram_server": "{{action}} विफल: टेलीग्राम ने अनुरोध अस्वीकार या सीमित किया। थोड़ी देर बाद पुनः प्रयास करें।",
+    "kind_flood_wait": "{{action}} रुका: टेलीग्राम इस खाते को अस्थायी रूप से सीमित कर रहा है। काउंटडाउन समाप्त होने दें।",
+    "kind_network_transport": "{{action}} विफल: कनेक्शन टूट गया या टाइमआउट हुआ। पुनः प्रयास कर सकते हैं।",
+    "kind_too_large": "{{action}} विफल: फ़ाइल टेलीग्राम की आकार सीमा से बड़ी है।",
+    "kind_cancelled": "{{action}} रद्द किया गया।",
+    "kind_unknown": "{{action}} अप्रत्याशित रूप से विफल। विवरण के लिए ट्रांसफर लॉग देखें।",
+    "action_upload": "अपलोड",
+    "action_move": "स्थानांतरण",
+    "action_rename": "नाम बदलें",
+    "action_delete": "हटाएं",
+    "action_share": "साझा करें",
+    "action_play": "प्लेबैक",
+    "action_load_logs": "लॉग लोड",
+    "action_clear_logs": "लॉग साफ़ करें",
+    "action_delete_folder": "फ़ोल्डर हटाएं",
+    "action_toggle_visibility": "दृश्यता बदलें",
+    "action_invite_link": "इनवाइट लिंक",
+    "action_clear_cache": "कैश साफ़ करें",
+    "action_duplicate_scan": "डुप्लिकेट स्कैन",
+    "action_bulk_download": "बल्क डाउनलोड",
+    "action_subtitles_delete": "सबटाइटल हटाएं"
   }
 }
