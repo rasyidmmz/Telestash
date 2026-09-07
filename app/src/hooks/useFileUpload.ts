@@ -6,6 +6,8 @@ import { useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { QueueItem } from '../types';
 import { showFileDialogFallback, pickWithFallback } from '../utils';
+import { humanizeError } from '../utils/errorHumanizer';
+import i18n from '../i18n';
 import { useSettings } from '../context/SettingsContext';
 import type { Store } from '@tauri-apps/plugin-store';
 
@@ -109,11 +111,11 @@ export function useFileUpload(activeFolderId: number | null, store: Store | null
                     setUploadQueue(q => q.map(i => i.id === item.id ? { ...i, status: 'cancelled' } : i));
                 } else if (errMsg.includes('FILE_TOO_BIG') || errMsg.includes('too large') || errMsg.includes('2 GB') || errMsg.includes('2GB')) {
                     setUploadQueue(q => q.map(i => i.id === item.id ? { ...i, status: 'error', error: errMsg } : i));
-                    toast.error(`Upload failed: Telegram rejected this file or split part. ${errMsg}`);
+                    toast.error(`${humanizeError(e, i18n.t('errors.action_upload'))} (${errMsg})`);
                 } else {
                     const displayPath = item.path;
                     setUploadQueue(q => q.map(i => i.id === item.id ? { ...i, status: 'error', error: errMsg } : i));
-                    toast.error(`Upload failed for ${displayPath.split('/').pop()}: ${e}`);
+                    toast.error(`${humanizeError(e, i18n.t('errors.action_upload'))} — ${displayPath.split('/').pop()}`);
                 }
             } else {
                 cancelledRef.current.delete(item.id);

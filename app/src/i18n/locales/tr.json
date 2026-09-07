@@ -186,7 +186,14 @@
     "color_primary": "Primary",
     "color_secondary": "Secondary",
     "color_text": "Text",
-    "color_subtext": "Subtext"
+    "color_subtext": "Subtext",
+    "video_thumbnails": "Video küçük resimleri oluştur",
+    "video_thumbnails_desc": "Önizlemesi olmayan videolardan gömülü MPV ile bir kare çıkarır. Hafif: tek seferde bir iş, önbellekli.",
+    "tmdb_section": "Kişisel Sinema",
+    "tmdb_enable": "TMDB meta verileri",
+    "tmdb_enable_desc": "Videolarınız için başlık, poster ve puan arar. Varsayılan olarak kapalı.",
+    "tmdb_api_key": "TMDB API anahtarı",
+    "tmdb_api_key_desc": "themoviedb.org kaynaklı ücretsiz anahtarınız. Yerel olarak saklanır, hiçbir yere gönderilmez."
   },
   "files": {
     "download": "İndir",
@@ -234,7 +241,10 @@
     "subtitles_manage": "Altyazıları Yönet",
     "subtitles_delete_confirm": "Telegram'dan kaldırmak için tekrar tıklayın",
     "subtitles_deleted": "{{language}} altyazı kaldırıldı",
-    "subtitles_delete_failed": "Altyazı kaldırılamadı"
+    "subtitles_delete_failed": "Altyazı kaldırılamadı",
+    "metadata_info_title": "Bu video hakkında",
+    "metadata_info_menu": "Bilgileri gör",
+    "metadata_info_empty": "Bu video için henüz meta veri yok. Ayarlar'dan TMDB'yi etkinleştirip bu klasörü açın."
   },
   "archive": {
     "archive_viewer": "Arşiv Görüntüleyici",
@@ -280,5 +290,45 @@
     "share_externally": "Share Externally (Tailscale / LAN)",
     "tailscale_help": "To share with someone else on your Tailscale network or local WiFi, enter your machine's IP address or hostname below:",
     "done": "Done"
+  },
+  "errors": {
+    "kind_local_file": "{{action}} başarısız: dosya diskten okunamadı. Dosyanın var olduğundan ve kilitli olmadığından emin olun.",
+    "kind_manifest_split": "{{action}} başarısız: bölünmüş parçalar eksik veya tutarsız. Dosyayı yeniden yükleyin.",
+    "kind_telegram_server": "{{action}} başarısız: Telegram isteği reddetti veya kısıtladı. Biraz bekleyip tekrar deneyin.",
+    "kind_flood_wait": "{{action}} duraklatıldı: Telegram bu hesabı geçici olarak sınırlıyor. Geri sayımın bitmesini bekleyin.",
+    "kind_network_transport": "{{action}} başarısız: bağlantı koptu veya zaman aşımı. Yeniden deneyebilirsiniz.",
+    "kind_too_large": "{{action}} başarısız: dosya Telegram boyut sınırını aşıyor.",
+    "kind_cancelled": "{{action}} iptal edildi.",
+    "kind_unknown": "{{action}} beklenmedik şekilde başarısız oldu. Ayrıntılar için Aktarım Günlüklerine bakın.",
+    "action_upload": "Yükleme",
+    "action_move": "Taşıma",
+    "action_rename": "Yeniden adlandırma",
+    "action_delete": "Silme",
+    "action_share": "Paylaşım",
+    "action_play": "Oynatma",
+    "action_load_logs": "Günlük yükleme",
+    "action_clear_logs": "Günlük temizleme",
+    "action_delete_folder": "Klasör silme",
+    "action_toggle_visibility": "Görünürlük değişimi",
+    "action_invite_link": "Davet bağlantısı",
+    "action_clear_cache": "Önbellek temizleme",
+    "action_duplicate_scan": "Kopya tarama",
+    "action_bulk_download": "Toplu indirme",
+    "action_subtitles_delete": "Altyazı kaldırma"
+  },
+  "analytics": {
+    "title": "İzleme istatistikleri",
+    "unique_titles": "İzlenen başlık",
+    "total_watch": "Toplam izleme süresi",
+    "streak": "Mevcut seri",
+    "streak_days": "{n} gün",
+    "activity_30d": "Son 30 gün",
+    "top_titles": "İlk 10 başlık",
+    "plays": "{n} kez oynatıldı",
+    "mins": "{n} dk",
+    "hours": "{n} sa",
+    "hours_mins": "{h} sa {m} dk",
+    "load_failed": "İstatistikler yüklenemedi.",
+    "empty": "Henüz kayıtlı oynatma yok."
   }
 }

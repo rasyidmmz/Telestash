@@ -12,6 +12,12 @@ pub struct ResumePosition {
 /// stream URL (`# filename: .../stream/{folder}/{msg}` + `start=SECONDS`).
 #[tauri::command]
 pub fn cmd_list_resume_positions(app_handle: tauri::AppHandle) -> Result<Vec<ResumePosition>, String> {
+    Ok(collect_resume_positions(&app_handle))
+}
+
+/// Shared implementation: parses `mpv-watch-later/` into resume positions.
+/// Used by the resume command and by the watch analytics aggregation.
+pub fn collect_resume_positions(app_handle: &tauri::AppHandle) -> Vec<ResumePosition> {
     let dir: PathBuf = app_handle
         .path()
         .app_data_dir()
@@ -20,10 +26,13 @@ pub fn cmd_list_resume_positions(app_handle: tauri::AppHandle) -> Result<Vec<Res
 
     let mut out: Vec<ResumePosition> = Vec::new();
     if !dir.exists() {
-        return Ok(out);
+        return out;
     }
 
-    for entry in std::fs::read_dir(&dir).map_err(|e| e.to_string())?.flatten() {
+    for entry in match std::fs::read_dir(&dir) {
+        Ok(rd) => rd.flatten(),
+        Err(_) => return out,
+    } {
         let Ok(content) = std::fs::read_to_string(entry.path()) else { continue };
         let mut folder_id: Option<i64> = None;
         let mut message_id: Option<i32> = None;
@@ -47,16 +56,16 @@ pub fn cmd_list_resume_positions(app_handle: tauri::AppHandle) -> Result<Vec<Res
         if let (Some(fid), Some(mid), Some(secs)) = (folder_id, message_id, seconds) {
             if secs > 0.5 {
                 out.push(ResumePosition { folder_id: Some(fid), message_id: mid, seconds: secs });
-            } else if folder_id.is_none() {
-                // "home" streams store folder_id as absent; message_id still parsed
-                if let Some(mid) = message_id {
-                    if secs > 0.5 {
-                        out.push(ResumePosition { folder_id: None, message_id: mid, seconds: secs });
-                    }
+            }
+        } else if let Some(mid) = message_id {
+            // "home" streams store folder_id as absent; message_id still parsed
+            if let Some(secs) = seconds {
+                if secs > 0.5 {
+                    out.push(ResumePosition { folder_id: None, message_id: mid, seconds: secs });
                 }
             }
         }
     }
 
-    Ok(out)
+    out
 }

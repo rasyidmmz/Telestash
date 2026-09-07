@@ -186,7 +186,14 @@
     "color_primary": "Primary",
     "color_secondary": "Secondary",
     "color_text": "Text",
-    "color_subtext": "Subtext"
+    "color_subtext": "Subtext",
+    "video_thumbnails": "生成视频缩略图",
+    "video_thumbnails_desc": "通过内置 MPV 为无预览视频提取一帧。轻量：单任务队列，已缓存。",
+    "tmdb_section": "个人影院",
+    "tmdb_enable": "TMDB 元数据",
+    "tmdb_enable_desc": "为视频查询标题、海报和评分。默认关闭。",
+    "tmdb_api_key": "TMDB API 密钥",
+    "tmdb_api_key_desc": "你在 themoviedb.org 的免费密钥。仅保存在本地，不会发送到其他任何地方。"
   },
   "files": {
     "download": "下载",
@@ -234,7 +241,10 @@
     "subtitles_manage": "管理字幕",
     "subtitles_delete_confirm": "再次点击以从 Telegram 移除",
     "subtitles_deleted": "已移除 {{language}} 字幕",
-    "subtitles_delete_failed": "移除字幕失败"
+    "subtitles_delete_failed": "移除字幕失败",
+    "metadata_info_title": "关于此视频",
+    "metadata_info_menu": "查看信息",
+    "metadata_info_empty": "此视频尚无元数据。请在设置中启用 TMDB，然后打开此文件夹。"
   },
   "archive": {
     "archive_viewer": "压缩包查看器",
@@ -280,5 +290,45 @@
     "share_externally": "Share Externally (Tailscale / LAN)",
     "tailscale_help": "To share with someone else on your Tailscale network or local WiFi, enter your machine's IP address or hostname below:",
     "done": "Done"
+  },
+  "errors": {
+    "kind_local_file": "{{action}}失败：无法从磁盘读取文件。请确认文件仍存在且未被占用。",
+    "kind_manifest_split": "{{action}}失败：分卷缺失或不一致。请重新上传该文件。",
+    "kind_telegram_server": "{{action}}失败：Telegram拒绝或限制了该请求。请稍候再试。",
+    "kind_flood_wait": "{{action}}已暂停：Telegram正在临时限流此账户。请等待倒计时结束。",
+    "kind_network_transport": "{{action}}失败：连接中断或超时。可以重试。",
+    "kind_too_large": "{{action}}失败：文件超过Telegram的大小限制。",
+    "kind_cancelled": "{{action}}已取消。",
+    "kind_unknown": "{{action}}意外失败。详情请查看传输日志。",
+    "action_upload": "上传",
+    "action_move": "移动",
+    "action_rename": "重命名",
+    "action_delete": "删除",
+    "action_share": "分享",
+    "action_play": "播放",
+    "action_load_logs": "加载日志",
+    "action_clear_logs": "清空日志",
+    "action_delete_folder": "删除文件夹",
+    "action_toggle_visibility": "更改可见性",
+    "action_invite_link": "邀请链接",
+    "action_clear_cache": "清理缓存",
+    "action_duplicate_scan": "重复扫描",
+    "action_bulk_download": "批量下载",
+    "action_subtitles_delete": "删除字幕"
+  },
+  "analytics": {
+    "title": "观看统计",
+    "unique_titles": "已看标题",
+    "total_watch": "总观看时长",
+    "streak": "连续观看",
+    "streak_days": "{n} 天",
+    "activity_30d": "最近 30 天",
+    "top_titles": "观看最多的 10 个标题",
+    "plays": "{n} 次播放",
+    "mins": "{n} 分钟",
+    "hours": "{n} 小时",
+    "hours_mins": "{h} 小时 {m} 分钟",
+    "load_failed": "无法加载观看统计。",
+    "empty": "尚无播放记录。"
   }
 }

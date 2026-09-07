@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, RotateCcw, Download, Upload, Trash2, HardDrive, Globe, Key, Copy, Check, RefreshCw, ChevronDown, Link, Sparkles, Info, Clipboard, Monitor, Loader2, Languages, Palette, Plus, Tag } from '../../shared/icons.tsx';
+import { X, RotateCcw, Download, Upload, Trash2, HardDrive, Globe, Key, Copy, Check, RefreshCw, ChevronDown, Link, Sparkles, Info, Clipboard, Monitor, Loader2, Languages, Palette, Plus, Tag, Eye } from '../../shared/icons.tsx';
 import { invoke } from '@tauri-apps/api/core';
 import { open } from '@tauri-apps/plugin-shell';
 import { toast } from 'sonner';
@@ -144,6 +144,11 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
     const [apiPort, setApiPort] = useState('8550');
     const [apiLoading, setApiLoading] = useState(false);
     const [generatedKey, setGeneratedKey] = useState<string | null>(null);
+    // TMDB key draft mirrors settings; committed to the store on blur.
+    const [tmdbKeyDraft, setTmdbKeyDraft] = useState(settings.tmdbApiKey || '');
+    useEffect(() => {
+        setTmdbKeyDraft(settings.tmdbApiKey || '');
+    }, [settings.tmdbApiKey]);
     const [keyCopied, setKeyCopied] = useState(false);
 
     const fetchApiSettings = useCallback(async () => {
@@ -397,6 +402,24 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                                     </button>
                                 </div>
 
+                                {/* Video Thumbnail Generation */}
+                                <div className="flex items-center justify-between p-3 rounded-lg bg-stash-hover/50">
+                                    <div className="flex items-center gap-2">
+                                        <Eye className="w-4 h-4 text-stash-subtext" />
+                                        <div>
+                                            <p className="text-sm text-stash-text font-medium">{t('settings.video_thumbnails')}</p>
+                                            <p className="text-xs text-stash-subtext">{t('settings.video_thumbnails_desc')}</p>
+                                        </div>
+                                    </div>
+                                    <button
+                                        onClick={() => updateSetting('videoThumbnails', !settings.videoThumbnails)}
+                                        className={`relative w-11 h-6 rounded-full transition-colors duration-200 ${settings.videoThumbnails ? 'bg-stash-primary' : 'bg-stash-border'}`}
+                                        aria-pressed={settings.videoThumbnails}
+                                    >
+                                        <span className={`absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white shadow transition-transform duration-200 ${settings.videoThumbnails ? 'translate-x-5' : 'translate-x-0'}`} />
+                                    </button>
+                                </div>
+
                                 {/* Windows Autostart */}
                                 <div className="flex items-center justify-between p-3 rounded-lg bg-stash-hover/50">
                                     <div className="flex items-center gap-2">
@@ -462,7 +485,6 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                                     <Globe className="w-3.5 h-3.5" />
                                     {t('settings.rest_api')}
                                 </h3>
-
                                 {/* Enable Toggle */}
                                 <div className="flex items-center justify-between p-3 rounded-lg bg-stash-hover/50">
                                     <div className="flex items-center gap-2">
@@ -544,6 +566,56 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                                             </div>
                                         </div>
                                     )}
+                                </div>
+                            </section>
+
+                            {/* Personal Cinema (TMDB) Section */}
+                            <section className="space-y-3">
+                                <h3 className="text-xs font-semibold text-stash-subtext uppercase tracking-wider flex items-center gap-2">
+                                    <Sparkles className="w-3.5 h-3.5" />
+                                    {t('settings.tmdb_section')}
+                                </h3>
+
+                                {/* Enable Toggle */}
+                                <div className="flex items-center justify-between p-3 rounded-lg bg-stash-hover/50">
+                                    <div className="flex items-center gap-2">
+                                        <Sparkles className="w-4 h-4 text-stash-subtext" />
+                                        <div>
+                                            <p className="text-sm text-stash-text font-medium">{t('settings.tmdb_enable')}</p>
+                                            <p className="text-xs text-stash-subtext">{t('settings.tmdb_enable_desc')}</p>
+                                        </div>
+                                    </div>
+                                    <button
+                                        onClick={() => updateSetting('tmdbEnabled', !settings.tmdbEnabled)}
+                                        className={`relative w-11 h-6 rounded-full transition-colors duration-200 ${settings.tmdbEnabled ? 'bg-stash-primary' : 'bg-stash-border'}`}
+                                        aria-pressed={settings.tmdbEnabled}
+                                    >
+                                        <span className={`absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white shadow transition-transform duration-200 ${settings.tmdbEnabled ? 'translate-x-5' : 'translate-x-0'}`} />
+                                    </button>
+                                </div>
+
+                                {/* API Key */}
+                                <div className="p-3 rounded-lg bg-stash-hover/50 space-y-2.5">
+                                    <div className="flex items-center gap-2">
+                                        <Key className="w-4 h-4 text-stash-subtext" />
+                                        <div>
+                                            <p className="text-sm text-stash-text font-medium">{t('settings.tmdb_api_key')}</p>
+                                            <p className="text-xs text-stash-subtext">{t('settings.tmdb_api_key_desc')}</p>
+                                        </div>
+                                    </div>
+                                    <input
+                                        type="password"
+                                        value={tmdbKeyDraft}
+                                        onChange={(e) => setTmdbKeyDraft(e.target.value)}
+                                        onBlur={() => {
+                                            if (tmdbKeyDraft.trim() !== (settings.tmdbApiKey || '')) {
+                                                updateSetting('tmdbApiKey', tmdbKeyDraft.trim());
+                                            }
+                                        }}
+                                        placeholder="32-character v3 API key"
+                                        aria-label={t('settings.tmdb_api_key')}
+                                        className="w-full bg-stash-bg border border-stash-border rounded-md px-3 py-1.5 text-sm text-stash-text font-mono focus:outline-none focus:border-stash-primary/50 transition"
+                                    />
                                 </div>
                             </section>
 

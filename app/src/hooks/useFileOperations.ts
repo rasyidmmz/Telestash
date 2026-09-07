@@ -6,6 +6,8 @@ import { useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { useConfirm } from '../context/ConfirmContext';
 import { TelegramFile } from '../types';
+import { humanizeError } from '../utils/errorHumanizer';
+import i18n from '../i18n';
 
 export function useFileOperations(
     activeFolderId: number | null,
@@ -34,7 +36,7 @@ export function useFileOperations(
             queryClient.invalidateQueries({ queryKey: ['files', activeFolderId] });
             toast.success("File deleted");
         } catch (e) {
-            toast.error(`Delete failed: ${e}`);
+            toast.error(humanizeError(e, i18n.t('errors.action_delete')));
         }
     }, [activeFolderId, confirm, queryClient]);
 
@@ -106,7 +108,7 @@ export function useFileOperations(
             if (!dirPath) return;
             await downloadToDir(dirPath);
         } catch (e) {
-            toast.error(`Bulk download failed: ${e}`);
+            toast.error(humanizeError(e, i18n.t('errors.action_bulk_download')));
         }
     }, [activeFolderId, setSelectedIds, queueBulkDownload]);
 
@@ -179,7 +181,7 @@ export function useFileOperations(
             if (!dirPath) return;
             await downloadToDir(dirPath);
         } catch (e) {
-            toast.error("Error: " + e);
+            toast.error(humanizeError(e, i18n.t('errors.action_bulk_download')));
         }
     }, [activeFolderId, queueBulkDownload]);
 

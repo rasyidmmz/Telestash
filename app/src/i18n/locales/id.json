@@ -77,6 +77,8 @@
     "performance_compatibility": "Performance & Compatibility",
     "performance_mode_desc": "Disable blur, heavy shadows & animations",
     "windows_autostart_desc": "Mulai TeleStash secara otomatis saat Windows boot",
+    "video_thumbnails": "Buat thumbnail video",
+    "video_thumbnails_desc": "Mengambil satu frame dari video tanpa pratinjau lewat MPV bawaan. Ringan: satu antrean, ter-cache.",
     "language_region": "Language & Region",
     "app_language": "Application Language",
     "choose_language": "Choose your preferred language",
@@ -188,7 +190,12 @@
     "color_primary": "Primary",
     "color_secondary": "Secondary",
     "color_text": "Text",
-    "color_subtext": "Subtext"
+    "color_subtext": "Subtext",
+    "tmdb_section": "Personal Cinema",
+    "tmdb_enable": "Metadata TMDB",
+    "tmdb_enable_desc": "Cari judul, poster, dan rating untuk video-mu. Mati secara bawaan.",
+    "tmdb_api_key": "API key TMDB",
+    "tmdb_api_key_desc": "Kunci gratis pribadimu dari themoviedb.org. Disimpan lokal, tidak dikirim ke mana pun."
   },
   "files": {
     "load_failed": "File tidak dapat dimuat",
@@ -246,7 +253,10 @@
     "subtitles_manage": "Kelola Subtitle",
     "subtitles_delete_confirm": "Klik sekali lagi untuk hapus dari Telegram",
     "subtitles_deleted": "Subtitle {{language}} dihapus",
-    "subtitles_delete_failed": "Gagal menghapus subtitle"
+    "subtitles_delete_failed": "Gagal menghapus subtitle",
+    "metadata_info_title": "Tentang video ini",
+    "metadata_info_menu": "Lihat Info",
+    "metadata_info_empty": "Belum ada metadata untuk video ini. Aktifkan TMDB di Pengaturan lalu buka folder ini."
   },
   "archive": {
     "archive_viewer": "Penampil Arsip",
@@ -292,5 +302,45 @@
     "share_externally": "Share Externally (Tailscale / LAN)",
     "tailscale_help": "To share with someone else on your Tailscale network or local WiFi, enter your machine's IP address or hostname below:",
     "done": "Done"
+  },
+  "errors": {
+    "kind_local_file": "{{action}} gagal: file tidak bisa dibaca dari disk. Pastikan file masih ada dan tidak dikunci.",
+    "kind_manifest_split": "{{action}} gagal: bagian split hilang atau tidak konsisten. Upload ulang file ini.",
+    "kind_telegram_server": "{{action}} gagal: Telegram menolak atau membatasi permintaan. Tunggu sebentar lalu coba lagi.",
+    "kind_flood_wait": "{{action}} dijeda: Telegram membatasi akun ini sementara. Tunggu hitung mundur selesai.",
+    "kind_network_transport": "{{action}} gagal: koneksi terputus atau timeout. Silakan coba lagi.",
+    "kind_too_large": "{{action}} gagal: file melebihi batas ukuran Telegram.",
+    "kind_cancelled": "{{action}} dibatalkan.",
+    "kind_unknown": "{{action}} gagal tak terduga. Cek Transfer Logs untuk detail.",
+    "action_upload": "Unggah",
+    "action_move": "Pindah",
+    "action_rename": "Ganti nama",
+    "action_delete": "Hapus",
+    "action_share": "Bagikan",
+    "action_play": "Pemutaran",
+    "action_load_logs": "Muat log",
+    "action_clear_logs": "Bersihkan log",
+    "action_delete_folder": "Hapus folder",
+    "action_toggle_visibility": "Ubah visibilitas",
+    "action_invite_link": "Tautan undangan",
+    "action_clear_cache": "Bersihkan cache",
+    "action_duplicate_scan": "Pindai duplikat",
+    "action_bulk_download": "Unduh massal",
+    "action_subtitles_delete": "Hapus subtitle"
+  },
+  "analytics": {
+    "title": "Analitik Tontonan",
+    "unique_titles": "Judul ditonton",
+    "total_watch": "Total waktu tonton",
+    "streak": "Runtutan saat ini",
+    "streak_days": "{n} hari",
+    "activity_30d": "30 hari terakhir",
+    "top_titles": "10 judul teratas",
+    "plays": "{n} kali putar",
+    "mins": "{n} mnt",
+    "hours": "{n} j",
+    "hours_mins": "{h} j {m} mnt",
+    "load_failed": "Tidak bisa memuat analitik tontonan.",
+    "empty": "Belum ada pemutaran tercatat."
   }
 }

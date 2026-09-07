@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react';
 import { invoke } from '@tauri-apps/api/core';
-import { Play, Clock, Trash2, History, Sparkles } from '../../shared/icons.tsx';
+import { Play, Clock, Trash2, History, Sparkles, ChartPie } from '../../shared/icons.tsx';
 import { WatchHistoryEntry, removeWatchEntry, clearWatchHistory } from '../../../utils/watchHistory';
+import { useTranslation } from 'react-i18next';
 import { formatBytes } from '../../../utils';
 import { TelegramFile } from '../../../types';
 import { getNextEpisode, groupRecentWatchEntries, parseEpisodeInfo } from '../../../utils/seriesParser';
@@ -13,18 +14,22 @@ interface RecentWatchBarProps {
     onPlay: (entry: WatchHistoryEntry) => void;
     onPlayFile?: (file: TelegramFile) => void;
     onRefresh: () => void;
+    onAnalyticsClick?: () => void;
 }
 
-export function RecentWatchBar({ entries, currentFiles, onPlay, onPlayFile, onRefresh }: RecentWatchBarProps) {
-    // Exact MPV watch-later positions (read once, on demand — no polling)
-    const [resumePositions, setResumePositions] = useState<Record<number, number>>({});
+export function RecentWatchBar({ entries, currentFiles, onPlay, onPlayFile, onRefresh, onAnalyticsClick }: RecentWatchBarProps) {
+    const { t } = useTranslation();
+    // Exact MPV watch-later positions (read once, on demand — no polling).
+    // Keyed by "folder:message" so identical message ids in different folders
+    // cannot borrow each other's position.
+    const [resumePositions, setResumePositions] = useState<Record<string, number>>({});
     useEffect(() => {
         let active = true;
         invoke<{ folder_id: number | null; message_id: number; seconds: number }[]>('cmd_list_resume_positions')
             .then((positions) => {
                 if (!active) return;
-                const map: Record<number, number> = {};
-                for (const p of positions) map[p.message_id] = p.seconds;
+                const map: Record<string, number> = {};
+                for (const p of positions) map[`${p.folder_id ?? 'home'}:${p.message_id}`] = p.seconds;
                 setResumePositions(map);
             })
             .catch(() => { /* watch-later unavailable — silent */ });
@@ -32,7 +37,7 @@ export function RecentWatchBar({ entries, currentFiles, onPlay, onPlayFile, onRe
     }, []);
 
     const resolveSeconds = (entry: WatchHistoryEntry): number | null => {
-        const mpv = resumePositions[entry.file_id];
+        const mpv = resumePositions[`${entry.folder_id ?? 'home'}:${entry.file_id}`];
         const stored = entry.last_position_secs ?? 0;
         const candidate = Math.max(mpv ?? 0, stored);
         return candidate > 5 ? candidate : null;
@@ -97,14 +102,26 @@ export function RecentWatchBar({ entries, currentFiles, onPlay, onPlayFile, onRe
                         {consolidatedEntries.length}
                     </span>
                 </div>
-                <button
-                    onClick={handleClearAll}
-                    className="text-[11px] font-mono text-gray-500 hover:text-red-400 transition-colors flex items-center gap-1"
-                    title="Clear Recent Watch History"
-                >
-                    <Trash2 className="w-3 h-3" />
-                    <span>Clear</span>
-                </button>
+                <div className="flex items-center gap-3">
+                    {onAnalyticsClick && (
+                        <button
+                            onClick={onAnalyticsClick}
+                            className="text-[11px] font-mono text-gray-500 hover:text-stash-primary transition-colors flex items-center gap-1"
+                            title={t('analytics.title')}
+                        >
+                            <ChartPie className="w-3 h-3" />
+                            <span>{t('analytics.title')}</span>
+                        </button>
+                    )}
+                    <button
+                        onClick={handleClearAll}
+                        className="text-[11px] font-mono text-gray-500 hover:text-red-400 transition-colors flex items-center gap-1"
+                        title="Clear Recent Watch History"
+                    >
+                        <Trash2 className="w-3 h-3" />
+                        <span>Clear</span>
+                    </button>
+                </div>
             </div>
 
             <div className="flex items-center gap-3 overflow-x-auto pb-2 scrollbar-thin scrollbar-thumb-gray-800">

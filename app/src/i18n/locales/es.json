@@ -186,7 +186,14 @@
     "color_primary": "Primary",
     "color_secondary": "Secondary",
     "color_text": "Text",
-    "color_subtext": "Subtext"
+    "color_subtext": "Subtext",
+    "video_thumbnails": "Generar miniaturas de video",
+    "video_thumbnails_desc": "Extrae un fotograma de los videos sin vista previa mediante MPV integrado. Ligero: un trabajo a la vez, en caché.",
+    "tmdb_section": "Cine personal",
+    "tmdb_enable": "Metadatos de TMDB",
+    "tmdb_enable_desc": "Busca títulos, pósters y valoraciones de tus vídeos. Desactivado por defecto.",
+    "tmdb_api_key": "Clave API de TMDB",
+    "tmdb_api_key_desc": "Tu clave gratuita de themoviedb.org. Se guarda localmente y no se envía a ningún otro sitio."
   },
   "files": {
     "download": "Descargar",
@@ -234,7 +241,10 @@
     "subtitles_manage": "Administrar subtítulos",
     "subtitles_delete_confirm": "Haz clic de nuevo para quitar de Telegram",
     "subtitles_deleted": "Subtítulo {{language}} eliminado",
-    "subtitles_delete_failed": "Error al quitar el subtítulo"
+    "subtitles_delete_failed": "Error al quitar el subtítulo",
+    "metadata_info_title": "Sobre este vídeo",
+    "metadata_info_menu": "Ver información",
+    "metadata_info_empty": "Aún no hay metadatos para este vídeo. Activa TMDB en Ajustes y abre esta carpeta."
   },
   "archive": {
     "archive_viewer": "Visor de archivos",
@@ -280,5 +290,45 @@
     "share_externally": "Share Externally (Tailscale / LAN)",
     "tailscale_help": "To share with someone else on your Tailscale network or local WiFi, enter your machine's IP address or hostname below:",
     "done": "Done"
+  },
+  "errors": {
+    "kind_local_file": "{{action}} falló: no se pudo leer el archivo del disco. Asegúrate de que exista y no esté bloqueado.",
+    "kind_manifest_split": "{{action}} falló: faltan partes divididas o son inconsistentes. Vuelve a subir el archivo.",
+    "kind_telegram_server": "{{action}} falló: Telegram rechazó o limitó la solicitud. Espera un momento e inténtalo de nuevo.",
+    "kind_flood_wait": "{{action}} en pausa: Telegram está limitando esta cuenta. Espera a que termine la cuenta regresiva.",
+    "kind_network_transport": "{{action}} falló: la conexión se cayó o expiró. Puedes reintentar.",
+    "kind_too_large": "{{action}} falló: el archivo excede el límite de tamaño de Telegram.",
+    "kind_cancelled": "{{action}} cancelado.",
+    "kind_unknown": "{{action}} falló inesperadamente. Revisa los Registros de Transferencia.",
+    "action_upload": "Subida",
+    "action_move": "Mover",
+    "action_rename": "Renombrar",
+    "action_delete": "Eliminar",
+    "action_share": "Compartir",
+    "action_play": "Reproducción",
+    "action_load_logs": "Cargar registros",
+    "action_clear_logs": "Limpiar registros",
+    "action_delete_folder": "Eliminar carpeta",
+    "action_toggle_visibility": "Cambiar visibilidad",
+    "action_invite_link": "Enlace de invitación",
+    "action_clear_cache": "Limpiar caché",
+    "action_duplicate_scan": "Escaneo de duplicados",
+    "action_bulk_download": "Descarga masiva",
+    "action_subtitles_delete": "Eliminar subtítulos"
+  },
+  "analytics": {
+    "title": "Estadísticas de visionado",
+    "unique_titles": "Títulos vistos",
+    "total_watch": "Tiempo total de visionado",
+    "streak": "Racha actual",
+    "streak_days": "{n} día(s)",
+    "activity_30d": "Últimos 30 días",
+    "top_titles": "Top 10 títulos",
+    "plays": "{n} reproducciones",
+    "mins": "{n} min",
+    "hours": "{n} h",
+    "hours_mins": "{h} h {m} min",
+    "load_failed": "No se pudieron cargar las estadísticas.",
+    "empty": "Todavía no hay reproducciones registradas."
   }
 }

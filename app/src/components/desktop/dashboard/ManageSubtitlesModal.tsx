@@ -5,6 +5,7 @@ import { toast } from 'sonner';
 import { Trash2, Loader2, X } from '../../shared/icons.tsx';
 import { TelegramFile, VideoSubtitleInfo } from '../../../types';
 import { getLanguageLabel } from '../../../utils/subtitleMatcher';
+import { humanizeError } from '../../../utils/errorHumanizer';
 import { useTranslation } from 'react-i18next';
 
 interface ManageSubtitlesModalProps {
@@ -36,7 +37,7 @@ export const ManageSubtitlesModal: React.FC<ManageSubtitlesModalProps> = ({ targ
             });
             toast.success(t('files.subtitles_deleted', { language: getLanguageLabel(subtitle.language) }));
         } catch (err) {
-            toast.error(`${t('files.subtitles_delete_failed')}: ${err}`);
+            toast.error(`${t('files.subtitles_delete_failed')} — ${humanizeError(err, t('errors.action_subtitles_delete'))}`);
         } finally {
             setDeletingId(null);
         }

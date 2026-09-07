@@ -26,8 +26,11 @@ import { RenameFileModal } from './dashboard/RenameFileModal';
 import { LogsModal } from './dashboard/LogsModal';
 import { RecentWatchBar } from './dashboard/RecentWatchBar';
 import { WatchLogsModal } from './dashboard/WatchLogsModal';
+import { WatchAnalyticsModal } from './dashboard/WatchAnalyticsModal';
 import { StorageAnalyticsModal } from './dashboard/StorageAnalyticsModal';
-import { getRecentWatchHistory, recordWatchEvent, WatchHistoryEntry } from '../../utils/watchHistory';
+import { getRecentWatchHistory, recordWatchEvent, initWatchHistory, WatchHistoryEntry } from '../../utils/watchHistory';
+import { humanizeError } from '../../utils/errorHumanizer';
+import i18n from '../../i18n';
 import { isVideoFile, isAudioFile } from '../../utils';
 import { Link, Copy, Check, X, Loader2 } from '../shared/icons.tsx';
 
@@ -63,7 +66,7 @@ export function Dashboard({ onLogout }: { onLogout: () => void }) {
     const { confirm } = useConfirm();
     const { checkForUpdates } = useUpdate();
     const viewMode = settings.viewMode;
-    const setViewMode = (mode: 'grid' | 'list') => updateSetting('viewMode', mode);
+    const setViewMode = (mode: 'grid' | 'list' | 'posters') => updateSetting('viewMode', mode);
 
     const [previewFile, setPreviewFile] = useState<TelegramFile | null>(null);
     const [selectedIds, setSelectedIds] = useState<number[]>([]);
@@ -71,6 +74,7 @@ export function Dashboard({ onLogout }: { onLogout: () => void }) {
     const [showSettings, setShowSettings] = useState(false);
     const [showLogs, setShowLogs] = useState(false);
     const [showWatchLogs, setShowWatchLogs] = useState(false);
+    const [showWatchAnalytics, setShowWatchAnalytics] = useState(false);
     const [showAnalytics, setShowAnalytics] = useState(false);
     const [showFolderDrawer, setShowFolderDrawer] = useState(false);
     const [watchHistory, setWatchHistory] = useState<WatchHistoryEntry[]>([]);
@@ -80,7 +84,9 @@ export function Dashboard({ onLogout }: { onLogout: () => void }) {
     }, []);
 
     useEffect(() => {
-        refreshWatchHistory();
+        // Load the SQLite-backed watch store (and migrate legacy localStorage
+        // entries) before the first render of the recent-watch bar.
+        initWatchHistory().then(refreshWatchHistory).catch(console.error);
     }, [refreshWatchHistory]);
     const [searchTerm, setSearchTerm] = useState("");
     const [searchResults, setSearchResults] = useState<TelegramFile[]>([]);
@@ -262,7 +268,7 @@ export function Dashboard({ onLogout }: { onLogout: () => void }) {
                         });
                         return { file, link: info.link };
                     } catch (e) {
-                        toast.error(`Failed to share ${file.name}: ${e}`);
+                        toast.error(humanizeError(e, i18n.t('errors.action_share')));
                         return null;
                     }
                 })
@@ -436,7 +442,7 @@ export function Dashboard({ onLogout }: { onLogout: () => void }) {
             queryClient.invalidateQueries({ queryKey: ['files', activeFolderId] });
             toast.success(`Renamed to "${newName}"`);
         } catch (e) {
-            toast.error(`Failed to rename: ${e}`);
+            toast.error(humanizeError(e, i18n.t('errors.action_rename')));
             throw e;
         }
     }, [renameFileTarget, activeFolderId, queryClient]);
@@ -857,6 +863,7 @@ export function Dashboard({ onLogout }: { onLogout: () => void }) {
                             setPlayingFile(targetFile);
                         }}
                         onRefresh={refreshWatchHistory}
+                        onAnalyticsClick={() => setShowWatchAnalytics(true)}
                     />
                 </div>
                 <FileExplorer
@@ -1054,6 +1061,10 @@ export function Dashboard({ onLogout }: { onLogout: () => void }) {
                     setShowWatchLogs(false);
                     refreshWatchHistory();
                 }} />
+            )}
+
+            {showWatchAnalytics && (
+                <WatchAnalyticsModal onClose={() => setShowWatchAnalytics(false)} />
             )}
 
             {showAnalytics && (

@@ -90,6 +90,8 @@
     "performance_mode_desc": "Disable blur, heavy shadows & animations",
     "windows_autostart": "Launch on Windows Startup",
     "windows_autostart_desc": "Start TeleStash automatically when Windows boots",
+    "video_thumbnails": "Generate video thumbnails",
+    "video_thumbnails_desc": "Extracts a frame from videos without a preview via bundled MPV. Light: one job at a time, cached.",
     "language_region": "Language & Region",
     "app_language": "Application Language",
     "choose_language": "Choose your preferred language",
@@ -188,7 +190,12 @@
     "shared_files": "Shared Files ({{count}})",
     "clear_shared_files": "Clear all shared files",
     "select_app_language": "Select application language",
-    "clear_all_transcoded_cache": "Clear All Transcoded Cache"
+    "clear_all_transcoded_cache": "Clear All Transcoded Cache",
+    "tmdb_section": "Personal Cinema",
+    "tmdb_enable": "TMDB metadata",
+    "tmdb_enable_desc": "Look up titles, posters and ratings for your videos. Off by default.",
+    "tmdb_api_key": "TMDB API key",
+    "tmdb_api_key_desc": "Your own free key from themoviedb.org. Stored locally, never sent anywhere else."
   },
   "files": {
     "load_failed": "Unable to load files",
@@ -246,7 +253,10 @@
     "subtitles_manage": "Manage Subtitles",
     "subtitles_delete_confirm": "Click again to remove from Telegram",
     "subtitles_deleted": "{{language}} subtitle removed",
-    "subtitles_delete_failed": "Failed to remove subtitle"
+    "subtitles_delete_failed": "Failed to remove subtitle",
+    "metadata_info_title": "About this video",
+    "metadata_info_menu": "View Info",
+    "metadata_info_empty": "No metadata found for this video yet. Enable TMDB in Settings and open this folder to populate it."
   },
   "archive": {
     "archive_viewer": "Archive Viewer",
@@ -292,5 +302,45 @@
     "share_externally": "Share Externally (Tailscale / LAN)",
     "tailscale_help": "To share with someone else on your Tailscale network or local WiFi, enter your machine's IP address or hostname below:",
     "done": "Done"
+  },
+  "errors": {
+    "kind_local_file": "{{action}} failed: the file could not be read from disk. Make sure it still exists and is not locked.",
+    "kind_manifest_split": "{{action}} failed: split parts are missing or inconsistent. Re-upload this file.",
+    "kind_telegram_server": "{{action}} failed: Telegram rejected or throttled the request. Wait a moment and try again.",
+    "kind_flood_wait": "{{action}} paused: Telegram is rate-limiting this account. Wait for the countdown to finish.",
+    "kind_network_transport": "{{action}} failed: the connection dropped or timed out. You can retry.",
+    "kind_too_large": "{{action}} failed: the file exceeds Telegram's size limit.",
+    "kind_cancelled": "{{action}} cancelled.",
+    "kind_unknown": "{{action}} failed unexpectedly. Check Transfer Logs for details.",
+    "action_upload": "Upload",
+    "action_move": "Move",
+    "action_rename": "Rename",
+    "action_delete": "Delete",
+    "action_share": "Share",
+    "action_play": "Playback",
+    "action_load_logs": "Log load",
+    "action_clear_logs": "Log clear",
+    "action_delete_folder": "Folder deletion",
+    "action_toggle_visibility": "Visibility change",
+    "action_invite_link": "Invite link",
+    "action_clear_cache": "Cache clear",
+    "action_duplicate_scan": "Duplicate scan",
+    "action_bulk_download": "Bulk download",
+    "action_subtitles_delete": "Subtitle removal"
+  },
+  "analytics": {
+    "title": "Watch Analytics",
+    "unique_titles": "Titles watched",
+    "total_watch": "Total watch time",
+    "streak": "Current streak",
+    "streak_days": "{n} day(s)",
+    "activity_30d": "Last 30 days",
+    "top_titles": "Top 10 titles",
+    "plays": "{n} play(s)",
+    "mins": "{n} min",
+    "hours": "{n} h",
+    "hours_mins": "{h} h {m} min",
+    "load_failed": "Could not load watch analytics.",
+    "empty": "No playback recorded yet."
   }
 }

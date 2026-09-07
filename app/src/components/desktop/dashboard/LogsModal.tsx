@@ -5,6 +5,8 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { invoke } from '@tauri-apps/api/core';
 import { clearErrorLogs, ErrorLogEntry, useErrorLogs } from '../../../errorLogs';
 import { useModalDialog } from '../../../hooks/useModalDialog';
+import { humanizeError } from '../../../utils/errorHumanizer';
+import i18n from '../../../i18n';
 
 interface LogsModalProps {
     isOpen: boolean;
@@ -31,7 +33,7 @@ export function LogsModal({ isOpen, onClose }: LogsModalProps) {
                 })));
             })
             .catch(e => {
-                toast.error(`Failed to load backend logs: ${e}`);
+                toast.error(humanizeError(e, i18n.t('errors.action_load_logs')));
             });
     }, [isOpen]);
 
@@ -51,7 +53,7 @@ export function LogsModal({ isOpen, onClose }: LogsModalProps) {
         try {
             await invoke('cmd_clear_transfer_logs');
         } catch (e) {
-            toast.error(`Failed to clear backend logs: ${e}`);
+            toast.error(humanizeError(e, i18n.t('errors.action_clear_logs')));
         }
     };
 

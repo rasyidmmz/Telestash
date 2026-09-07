@@ -461,6 +461,18 @@ pub fn run() {
             commands::cmd_list_directory_files,
             transfer_log::cmd_get_transfer_logs,
             transfer_log::cmd_clear_transfer_logs,
+            commands::cmd_watch_history_upsert,
+            commands::cmd_watch_history_list,
+            commands::cmd_watch_history_remove,
+            commands::cmd_watch_history_clear,
+            commands::cmd_watch_history_import,
+            commands::cmd_generate_video_thumbnail,
+            commands::cmd_upsert_file_metadata,
+            commands::cmd_get_file_metadata,
+            commands::cmd_delete_file_metadata,
+            commands::cmd_save_tmdb_poster,
+            commands::cmd_get_tmdb_poster,
+            commands::cmd_watch_analytics,
         ])
         .build(tauri::generate_context!())
         .expect("error while building tauri application");

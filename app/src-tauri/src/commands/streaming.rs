@@ -45,7 +45,7 @@ pub struct MpvPlaylistItem {
     pub title: Option<String>,
 }
 
-fn resolve_mpv_binary(app_handle: &tauri::AppHandle) -> Option<std::path::PathBuf> {
+pub fn resolve_mpv_binary(app_handle: &tauri::AppHandle) -> Option<std::path::PathBuf> {
     if let Ok(res_dir) = app_handle.path().resource_dir() {
         let candidates = [
             res_dir.join("bin").join("mpv-x86_64-pc-windows-msvc.exe"),

@@ -93,6 +93,33 @@ pub fn init_db(app: &AppHandle) -> Result<DbConnection, String> {
                     is_paired_vobsub INTEGER DEFAULT 0,
                     paired_message_id INTEGER,
                     created_at INTEGER NOT NULL
+                );
+                CREATE TABLE IF NOT EXISTS watch_history (
+                    file_id INTEGER PRIMARY KEY,
+                    file_name TEXT NOT NULL,
+                    folder_id INTEGER,
+                    file_size INTEGER NOT NULL DEFAULT 0,
+                    timestamp INTEGER NOT NULL,
+                    status TEXT NOT NULL DEFAULT 'started',
+                    quality_tag TEXT,
+                    last_position_secs REAL,
+                    total_duration_secs REAL,
+                    play_count INTEGER NOT NULL DEFAULT 1
+                );
+                CREATE TABLE IF NOT EXISTS file_metadata (
+                    folder_id INTEGER,
+                    message_id INTEGER NOT NULL,
+                    media_type TEXT NOT NULL DEFAULT 'movie',
+                    tmdb_id INTEGER,
+                    title TEXT NOT NULL,
+                    original_title TEXT,
+                    year INTEGER,
+                    overview TEXT,
+                    rating REAL,
+                    genres_json TEXT,
+                    poster_path TEXT,
+                    updated_at INTEGER NOT NULL,
+                    PRIMARY KEY (folder_id, message_id)
                 );"
             ) {
                 Ok(_) => {
@@ -119,7 +146,12 @@ pub fn init_db(app: &AppHandle) -> Result<DbConnection, String> {
             ));
         }
     }
-    
+
+    // Additive column migrations for databases created by older versions.
+    // Each is expected to fail with "duplicate column" once applied, so the
+    // error is intentionally ignored.
+    let _ = conn.execute("ALTER TABLE watch_history ADD COLUMN play_count INTEGER NOT NULL DEFAULT 1;");
+
     log::info!("SQLite database initialized successfully using sqlite crate.");
     Ok(Arc::new(Mutex::new(conn)))
 }
