@@ -190,7 +190,12 @@
     "shared_files": "Shared Files ({{count}})",
     "clear_shared_files": "Clear all shared files",
     "select_app_language": "Select application language",
-    "clear_all_transcoded_cache": "Clear All Transcoded Cache"
+    "clear_all_transcoded_cache": "Clear All Transcoded Cache",
+    "tmdb_section": "Personal Cinema",
+    "tmdb_enable": "TMDB metadata",
+    "tmdb_enable_desc": "Look up titles, posters and ratings for your videos. Off by default.",
+    "tmdb_api_key": "TMDB API key",
+    "tmdb_api_key_desc": "Your own free key from themoviedb.org. Stored locally, never sent anywhere else."
   },
   "files": {
     "load_failed": "Unable to load files",
@@ -248,7 +253,10 @@
     "subtitles_manage": "Manage Subtitles",
     "subtitles_delete_confirm": "Click again to remove from Telegram",
     "subtitles_deleted": "{{language}} subtitle removed",
-    "subtitles_delete_failed": "Failed to remove subtitle"
+    "subtitles_delete_failed": "Failed to remove subtitle",
+    "metadata_info_title": "About this video",
+    "metadata_info_menu": "View Info",
+    "metadata_info_empty": "No metadata found for this video yet. Enable TMDB in Settings and open this folder to populate it."
   },
   "archive": {
     "archive_viewer": "Archive Viewer",
@@ -319,5 +327,20 @@
     "action_duplicate_scan": "Duplicate scan",
     "action_bulk_download": "Bulk download",
     "action_subtitles_delete": "Subtitle removal"
+  },
+  "analytics": {
+    "title": "Watch Analytics",
+    "unique_titles": "Titles watched",
+    "total_watch": "Total watch time",
+    "streak": "Current streak",
+    "streak_days": "{n} day(s)",
+    "activity_30d": "Last 30 days",
+    "top_titles": "Top 10 titles",
+    "plays": "{n} play(s)",
+    "mins": "{n} min",
+    "hours": "{n} h",
+    "hours_mins": "{h} h {m} min",
+    "load_failed": "Could not load watch analytics.",
+    "empty": "No playback recorded yet."
   }
 }

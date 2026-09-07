@@ -104,6 +104,21 @@ pub fn init_db(app: &AppHandle) -> Result<DbConnection, String> {
                     quality_tag TEXT,
                     last_position_secs REAL,
                     total_duration_secs REAL
+                );
+                CREATE TABLE IF NOT EXISTS file_metadata (
+                    folder_id INTEGER,
+                    message_id INTEGER NOT NULL,
+                    media_type TEXT NOT NULL DEFAULT 'movie',
+                    tmdb_id INTEGER,
+                    title TEXT NOT NULL,
+                    original_title TEXT,
+                    year INTEGER,
+                    overview TEXT,
+                    rating REAL,
+                    genres_json TEXT,
+                    poster_path TEXT,
+                    updated_at INTEGER NOT NULL,
+                    PRIMARY KEY (folder_id, message_id)
                 );"
             ) {
                 Ok(_) => {

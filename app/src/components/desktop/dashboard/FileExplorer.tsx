@@ -7,6 +7,7 @@ import { FileCard } from './FileCard';
 import { EmptyState } from './EmptyState';
 import { TelegramFile, TelegramFolder } from '../../../types';
 import { ContextMenu } from './ContextMenu';
+import { MetadataInfoLoader } from './MetadataInfoModal';
 import { FileListItem } from './FileListItem';
 import { AttachSubtitlesModal } from './AttachSubtitlesModal';
 import { ManageSubtitlesModal } from './ManageSubtitlesModal';
@@ -24,7 +25,7 @@ interface FileExplorerProps {
     files: TelegramFile[];
     loading: boolean;
     error: Error | null;
-    viewMode: 'grid' | 'list';
+    viewMode: 'grid' | 'list' | 'posters';
     selectedIds: number[];
     activeFolderId: number | null;
     onFileClick: (e: React.MouseEvent, id: number) => void;
@@ -90,6 +91,7 @@ export function FileExplorer({
     const [sortDirection, setSortDirection] = useState<SortDirection>('asc');
     const [contextMenu, setContextMenu] = useState<{ x: number; y: number; file: TelegramFile; subtitles?: VideoSubtitleInfo[] } | null>(null);
     const [subtitlesTarget, setSubtitlesTarget] = useState<{ file: TelegramFile; subtitles: VideoSubtitleInfo[] } | null>(null);
+    const [infoTarget, setInfoTarget] = useState<TelegramFile | null>(null);
     const { t } = useTranslation();
     const { settings } = useSettings();
 
@@ -101,7 +103,8 @@ export function FileExplorer({
 
     const GAP = 6;
     const cardWidth = (containerWidth - (GAP * (columns - 1))) / columns;
-    const cardHeight = cardWidth * 0.75; // aspect-[4/3]
+    // Posters use a 2:3 movie-poster ratio; grid cards use 4:3.
+    const cardHeight = cardWidth * (viewMode === 'posters' ? 1.5 : 0.75);
 
     const handleContextMenu = useCallback(async (e: React.MouseEvent, file: TelegramFile) => {
         e.preventDefault();
@@ -436,7 +439,7 @@ export function FileExplorer({
                 </div>
             ) : null}
 
-            {viewMode === 'grid' ? (
+            {viewMode === 'grid' || viewMode === 'posters' ? (
                 <>
 
                     <div className="vault-control-row">
@@ -529,6 +532,7 @@ export function FileExplorer({
                                             <FileCard
                                                 key={file.id}
                                                 file={file}
+                                                variant={viewMode === 'posters' ? 'poster' : 'grid'}
                                                 isSelected={selectedIds.includes(file.id)}
                                                 onClick={(e) => onFileClick(e, file.id)}
                                                 onContextMenu={(e) => handleContextMenu(e, file)}
@@ -654,11 +658,19 @@ export function FileExplorer({
                         setSubtitlesTarget({ file: contextMenu.file, subtitles: contextMenu.subtitles ?? [] });
                         setContextMenu(null);
                     } : undefined}
+                    onInfo={contextMenu.file.type !== 'folder' ? () => {
+                        setInfoTarget(contextMenu.file);
+                        setContextMenu(null);
+                    } : undefined}
                 />
             )}
 
             {subtitlesTarget && (
                 <ManageSubtitlesModal target={subtitlesTarget} onClose={() => setSubtitlesTarget(null)} />
+            )}
+
+            {infoTarget && (
+                <MetadataInfoLoader file={infoTarget} onClose={() => setInfoTarget(null)} />
             )}
 
             <AttachSubtitlesModal

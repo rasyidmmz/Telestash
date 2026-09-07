@@ -188,7 +188,12 @@
     "color_text": "Text",
     "color_subtext": "Subtext",
     "video_thumbnails": "वीडियो थंबनेल बनाएं",
-    "video_thumbnails_desc": "बंडल किए MPV से बिना प्रीव्यू वाले वीडियो का एक फ़्रेम निकालता है। हल्का: एक बार में एक काम, कैश्ड।"
+    "video_thumbnails_desc": "बंडल किए MPV से बिना प्रीव्यू वाले वीडियो का एक फ़्रेम निकालता है। हल्का: एक बार में एक काम, कैश्ड।",
+    "tmdb_section": "पर्सनल सिनेमा",
+    "tmdb_enable": "TMDB मेटाडेटा",
+    "tmdb_enable_desc": "अपने वीडियो के शीर्षक, पोस्टर और रेटिंग खोजें। डिफ़ॉल्ट रूप से बंद।",
+    "tmdb_api_key": "TMDB API कुंजी",
+    "tmdb_api_key_desc": "themoviedb.org से आपकी निःशुल्क कुंजी। स्थानीय रूप से संग्रहीत, कहीं नहीं भेजी जाती।"
   },
   "files": {
     "download": "डाउनलोड",
@@ -236,7 +241,10 @@
     "subtitles_manage": "सबटाइटल प्रबंधित करें",
     "subtitles_delete_confirm": "टेलीग्राम से हटाने के लिए फिर से क्लिक करें",
     "subtitles_deleted": "{{language}} सबटाइटल हटाया गया",
-    "subtitles_delete_failed": "सबटाइटल हटाने में विफल"
+    "subtitles_delete_failed": "सबटाइटल हटाने में विफल",
+    "metadata_info_title": "इस वीडियो के बारे में",
+    "metadata_info_menu": "जानकारी देखें",
+    "metadata_info_empty": "इस वीडियो का मेटाडेटा अभी नहीं है। सेटिंग्स में TMDB सक्षम करें और यह फ़ोल्डर खोलें।"
   },
   "archive": {
     "archive_viewer": "संग्रह व्यूअर",
@@ -307,5 +315,20 @@
     "action_duplicate_scan": "डुप्लिकेट स्कैन",
     "action_bulk_download": "बल्क डाउनलोड",
     "action_subtitles_delete": "सबटाइटल हटाएं"
+  },
+  "analytics": {
+    "title": "देखने के आंकड़े",
+    "unique_titles": "देखे गए शीर्षक",
+    "total_watch": "कुल देखने का समय",
+    "streak": "वर्तमान स्ट्रीक",
+    "streak_days": "{n} दिन",
+    "activity_30d": "पिछले 30 दिन",
+    "top_titles": "शीर्ष 10 शीर्षक",
+    "plays": "{n} बार चला",
+    "mins": "{n} मिनट",
+    "hours": "{n} घं",
+    "hours_mins": "{h} घं {m} मिनट",
+    "load_failed": "आंकड़े लोड नहीं हो सके।",
+    "empty": "अभी कोई प्लेबैक दर्ज नहीं है।"
   }
 }

@@ -1,5 +1,15 @@
 # Changelog
 
+## [1.6.0]
+
+### Added
+
+- **TMDB metadata (opt-in)**: videos can now show their real title, year, rating, genres and synopsis. Matching runs from the parsed filename through TMDB search using your own free API key, results are cached in the local `file_metadata` SQLite table, and the fetched poster is stored in a bounded local cache (200 MB LRU). Off by default; enable it in Settings → Personal Cinema. The TMDB requests happen from the app itself only when a card is on screen and the app is visible, so nothing runs in the background.
+- **Poster Wall view mode**: a third layout (cycle the layout button: grid → list → posters) renders videos as 2:3 movie posters with title, year and rating overlay, reusing the existing virtualized grid so large folders stay smooth. Cards without a poster fall back to thumbnails and icons.
+- **View Info context menu**: right-click any video to open an info panel with its poster, title, year, rating, genres and synopsis.
+- **Watch Analytics**: new panel in the Continue Watching header showing titles watched, total watch time, current streak, a 30-day activity strip, and the top 10 most-played titles, all aggregated from the SQLite watch history (no new dependencies).
+- **Dependency refresh**: @tanstack/react-query 5.102.8, framer-motion 13.2.0, react-i18next 17.0.13 (all patch/minor).
+
 ## [1.5.0]
 
 ### Added

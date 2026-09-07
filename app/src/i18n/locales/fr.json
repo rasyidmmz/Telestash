@@ -188,7 +188,12 @@
     "color_text": "Text",
     "color_subtext": "Subtext",
     "video_thumbnails": "Générer les vignettes vidéo",
-    "video_thumbnails_desc": "Extrait une image des vidéos sans aperçu via MPV intégré. Léger : une tâche à la fois, mis en cache."
+    "video_thumbnails_desc": "Extrait une image des vidéos sans aperçu via MPV intégré. Léger : une tâche à la fois, mis en cache.",
+    "tmdb_section": "Cinéma personnel",
+    "tmdb_enable": "Métadonnées TMDB",
+    "tmdb_enable_desc": "Rechercher titres, affiches et notes de vos vidéos. Désactivé par défaut.",
+    "tmdb_api_key": "Clé API TMDB",
+    "tmdb_api_key_desc": "Votre clé gratuite de themoviedb.org. Stockée localement, jamais envoyée ailleurs."
   },
   "files": {
     "download": "Télécharger",
@@ -236,7 +241,10 @@
     "subtitles_manage": "Gérer les sous-titres",
     "subtitles_delete_confirm": "Cliquez à nouveau pour retirer de Telegram",
     "subtitles_deleted": "Sous-titre {{language}} retiré",
-    "subtitles_delete_failed": "Échec de la suppression du sous-titre"
+    "subtitles_delete_failed": "Échec de la suppression du sous-titre",
+    "metadata_info_title": "À propos de cette vidéo",
+    "metadata_info_menu": "Voir les infos",
+    "metadata_info_empty": "Aucune métadonnée pour cette vidéo. Activez TMDB dans les réglages puis ouvrez ce dossier."
   },
   "archive": {
     "archive_viewer": "Lecteur d'archive",
@@ -307,5 +315,20 @@
     "action_duplicate_scan": "Analyse des doublons",
     "action_bulk_download": "Téléchargement groupé",
     "action_subtitles_delete": "Suppression des sous-titres"
+  },
+  "analytics": {
+    "title": "Statistiques de visionnage",
+    "unique_titles": "Titres vus",
+    "total_watch": "Temps de visionnage total",
+    "streak": "Série en cours",
+    "streak_days": "{n} jour(s)",
+    "activity_30d": "30 derniers jours",
+    "top_titles": "Top 10 des titres",
+    "plays": "{n} lecture(s)",
+    "mins": "{n} min",
+    "hours": "{n} h",
+    "hours_mins": "{h} h {m} min",
+    "load_failed": "Impossible de charger les statistiques.",
+    "empty": "Aucune lecture enregistrée pour le moment."
   }
 }

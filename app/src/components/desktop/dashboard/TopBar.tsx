@@ -11,8 +11,8 @@ interface TopBarProps {
     onBulkShare: () => void;
     onDownloadFolder: () => void;
     onClearSelection: () => void;
-    viewMode: 'grid' | 'list';
-    setViewMode: (mode: 'grid' | 'list') => void;
+    viewMode: 'grid' | 'list' | 'posters';
+    setViewMode: (mode: 'grid' | 'list' | 'posters') => void;
     searchTerm: string;
     onSearchChange: (term: string) => void;
     onLogsClick: () => void;
@@ -55,8 +55,8 @@ export function TopBar({
                     </div>
                 )}
                 <button className="vault-icon-button" onClick={onDownloadFolder} data-tooltip={t('files.download_folder')} aria-label={t('files.download_folder')}><HardDrive size={18} /></button>
-                <button className="vault-icon-button" onClick={() => setViewMode(viewMode === 'grid' ? 'list' : 'grid')} data-tooltip={t('files.toggle_layout')} aria-label={t('files.toggle_layout')}>
-                    {viewMode === 'grid' ? <SquaresFour size={18} /> : <List size={18} />}
+                <button className="vault-icon-button" onClick={() => setViewMode(viewMode === 'grid' ? 'list' : viewMode === 'list' ? 'posters' : 'grid')} data-tooltip={t('files.toggle_layout')} aria-label={t('files.toggle_layout')}>
+                    {viewMode === 'grid' ? <SquaresFour size={18} /> : viewMode === 'list' ? <FilmStrip size={18} /> : <List size={18} />}
                 </button>
                 <span className="vault-command-divider" />
                 {onWatchLogsClick && <button className="vault-icon-button" onClick={onWatchLogsClick} data-tooltip="Watch history" aria-label="Watch history"><FilmStrip size={18} /></button>}

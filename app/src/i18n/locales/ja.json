@@ -188,7 +188,12 @@
     "color_text": "Text",
     "color_subtext": "Subtext",
     "video_thumbnails": "動画サムネイルを生成",
-    "video_thumbnails_desc": "プレビューのない動画から同梱MPVでフレームを抽出します。軽量：同時に1件、キャッシュ済み。"
+    "video_thumbnails_desc": "プレビューのない動画から同梱MPVでフレームを抽出します。軽量：同時に1件、キャッシュ済み。",
+    "tmdb_section": "パーソナルシネマ",
+    "tmdb_enable": "TMDB メタデータ",
+    "tmdb_enable_desc": "動画のタイトル・ポスター・評価を検索します。既定ではオフ。",
+    "tmdb_api_key": "TMDB API キー",
+    "tmdb_api_key_desc": "themoviedb.org の無料キーを入力。ローカルにのみ保存され、外部送信されません。"
   },
   "files": {
     "download": "ダウンロード",
@@ -236,7 +241,10 @@
     "subtitles_manage": "字幕の管理",
     "subtitles_delete_confirm": "もう一度クリックでTelegramから削除",
     "subtitles_deleted": "{{language}}字幕を削除しました",
-    "subtitles_delete_failed": "字幕の削除に失敗しました"
+    "subtitles_delete_failed": "字幕の削除に失敗しました",
+    "metadata_info_title": "この動画について",
+    "metadata_info_menu": "情報を見る",
+    "metadata_info_empty": "この動画のメタデータはまだありません。設定で TMDB を有効にしてこのフォルダを開いてください。"
   },
   "archive": {
     "archive_viewer": "アーカイブビューアー",
@@ -307,5 +315,20 @@
     "action_duplicate_scan": "重複スキャン",
     "action_bulk_download": "一括ダウンロード",
     "action_subtitles_delete": "字幕削除"
+  },
+  "analytics": {
+    "title": "視聴アナリティクス",
+    "unique_titles": "視聴タイトル数",
+    "total_watch": "合計視聴時間",
+    "streak": "連続視聴",
+    "streak_days": "{n} 日",
+    "activity_30d": "過去30日",
+    "top_titles": "トップ10タイトル",
+    "plays": "{n} 回再生",
+    "mins": "{n} 分",
+    "hours": "{n} 時間",
+    "hours_mins": "{h} 時間 {m} 分",
+    "load_failed": "アナリティクスを読み込めませんでした。",
+    "empty": "記録された再生はまだありません。"
   }
 }

@@ -1,6 +1,6 @@
 import { motion } from 'framer-motion';
-import { useState, useEffect } from 'react';
-import { Folder, Eye, Trash2, Link, Download } from '../../shared/icons.tsx';
+import { useState, useEffect, useRef } from 'react';
+import { Folder, Eye, Trash2, Link, Download, Star } from '../../shared/icons.tsx';
 import { invoke } from '@tauri-apps/api/core';
 import { TelegramFile } from '../../../types';
 import { createDragGhost } from '../../../utils';
@@ -8,6 +8,7 @@ import { FileTypeIcon } from '../../shared/FileTypeIcon';
 import { useVideoMetadata } from '../../../hooks/useVideoMetadata';
 import { useVideoSubtitles } from '../../../hooks/useVideoSubtitles';
 import { useVideoThumbnail } from '../../../hooks/useVideoThumbnail';
+import { useFileMetadata, useCachedPoster } from '../../../hooks/useFileMetadata';
 import { VideoMetaBadge } from '../../shared/VideoMetaBadge';
 import { MediaBadgesList } from '../../shared/MediaBadgesList';
 
@@ -17,6 +18,8 @@ interface FileCardProps {
     onDownload: () => void;
     onPreview?: () => void;
     onShare?: () => void;
+    /** 'grid' = original 4:3 card; 'poster' = 2:3 poster wall with TMDB info. */
+    variant?: 'grid' | 'poster';
     isSelected: boolean;
     onClick?: (e: React.MouseEvent) => void;
     onContextMenu?: (e: React.MouseEvent) => void;
@@ -36,11 +39,41 @@ function isImageFile(filename: string): boolean {
 }
 
 
-export function FileCard({ file, onDelete, onDownload, onPreview, onShare, isSelected, onClick, onContextMenu, onDrop, onDragStart, onDragEnd, activeFolderId, height, onToggleSelection, selectedIds }: FileCardProps) {
+export function FileCard({ file, onDelete, onDownload, onPreview, onShare, isSelected, onClick, onContextMenu, onDrop, onDragStart, onDragEnd, activeFolderId, height, onToggleSelection, selectedIds, variant = 'grid' }: FileCardProps) {
     const isFolder = file.type === 'folder';
+    const isPosterVariant = variant === 'poster';
     const [isDragOver, setIsDragOver] = useState(false);
     const [thumbnail, setThumbnail] = useState<string | null>(null);
     const [thumbnailLoading, setThumbnailLoading] = useState(false);
+    const rootRef = useRef<HTMLDivElement | null>(null);
+    const [inView, setInView] = useState(false);
+
+    // Poster-wall lazy gate: metadata + poster fetches only for visible cards.
+    useEffect(() => {
+        if (!isPosterVariant) return;
+        const node = rootRef.current;
+        if (!node) return;
+        const observer = new IntersectionObserver(
+            (entries) => {
+                if (entries.some((e) => e.isIntersecting)) {
+                    setInView(true);
+                    observer.disconnect();
+                }
+            },
+            { rootMargin: '200px' },
+        );
+        observer.observe(node);
+        return () => observer.disconnect();
+    }, [isPosterVariant]);
+
+    // Opt-in TMDB metadata (only meaningful for videos in poster variant).
+    const { metadata } = useFileMetadata(
+        file.id,
+        file.name,
+        activeFolderId ?? null,
+        isPosterVariant && inView,
+    );
+    const poster = useCachedPoster(file.id, activeFolderId ?? null, isPosterVariant && inView && !!metadata);
 
     // Lazy video metadata badge (.mp4 only)
     const { data: videoMeta, isLoading: videoMetaLoading } = useVideoMetadata(
@@ -90,7 +123,10 @@ export function FileCard({ file, onDelete, onDownload, onPreview, onShare, isSel
 
     return (
         <div
-            ref={thumbRef}
+            ref={(node) => {
+                thumbRef(node);
+                rootRef.current = node;
+            }}
             className="relative rounded-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-stash-primary"
             role="button"
             tabIndex={0}
@@ -149,15 +185,15 @@ export function FileCard({ file, onDelete, onDownload, onPreview, onShare, isSel
                 className={`vault-file-card group cursor-pointer bg-stash-surface overflow-hidden border transition-all relative
                 ${isSelected ? 'is-selected' : ''}
                 ${isDragOver ? 'is-drag-over' : ''}`}
-                style={height ? { height: `${height}px` } : { aspectRatio: '4/3' }}
+                style={height ? { height: `${height}px` } : { aspectRatio: isPosterVariant ? '2/3' : '4/3' }}
             >
-                {/* Thumbnail or Icon */}
-                {(thumbnail || generatedThumb) ? (
+                {/* Poster (TMDB) or Thumbnail or Icon */}
+                {(poster || thumbnail || generatedThumb) ? (
                     <div className="absolute inset-0">
                         <img
-                            src={thumbnail ?? generatedThumb ?? undefined}
+                            src={poster ?? thumbnail ?? generatedThumb ?? undefined}
                             alt={file.name}
-                            className="w-full h-full object-contain"
+                            className={`w-full h-full ${isPosterVariant ? 'object-cover' : 'object-contain'}`}
                         />
                         {/* Gradient overlay for text readability */}
                         <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent" />
@@ -189,6 +225,27 @@ export function FileCard({ file, onDelete, onDownload, onPreview, onShare, isSel
                 </button>
 
                 {/* File info overlay at bottom */}
+                {isPosterVariant ? (
+                    <div className="absolute bottom-0 left-0 right-0 p-3 text-white">
+                        <h3 className="text-sm font-medium truncate w-full" title={metadata?.title || file.name}>
+                            {metadata?.title || file.name}
+                        </h3>
+                        <div className="flex items-center gap-2 mt-1">
+                            {metadata?.year && <span className="text-xs text-white/70 font-mono">{metadata.year}</span>}
+                            {typeof metadata?.rating === 'number' && metadata.rating > 0 && (
+                                <span className="inline-flex items-center gap-0.5 text-xs text-white/80 font-mono">
+                                    <Star className="w-3 h-3 text-stash-primary" weight="fill" />
+                                    {metadata.rating.toFixed(1)}
+                                </span>
+                            )}
+                            {subtitles && subtitles.length > 0 && (
+                                <span className="inline-flex items-center text-[9px] font-mono font-bold tracking-tight px-1.5 py-0.5 rounded border bg-indigo-950/80 text-indigo-400 border-indigo-500/30">
+                                    SUB
+                                </span>
+                            )}
+                        </div>
+                    </div>
+                ) : (
                 <div className={`absolute bottom-0 left-0 right-0 p-3 ${(thumbnail || generatedThumb) ? 'text-white' : 'text-stash-text'}`}>
                     <h3 className="text-sm font-medium truncate w-full" title={file.name}>{file.name}</h3>
                     <div className="flex items-center gap-1.5 mt-1 flex-wrap">
@@ -202,6 +259,7 @@ export function FileCard({ file, onDelete, onDownload, onPreview, onShare, isSel
                         )}
                     </div>
                 </div>
+                )}
 
                 {/* Quick actions on hover */}
                 <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity flex gap-1 z-10">

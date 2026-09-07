@@ -188,7 +188,12 @@
     "color_text": "Text",
     "color_subtext": "Subtext",
     "video_thumbnails": "Gerar miniaturas de vídeo",
-    "video_thumbnails_desc": "Extrai um quadro de vídeos sem pré-visualização via MPV embutido. Leve: um trabalho por vez, em cache."
+    "video_thumbnails_desc": "Extrai um quadro de vídeos sem pré-visualização via MPV embutido. Leve: um trabalho por vez, em cache.",
+    "tmdb_section": "Cinema pessoal",
+    "tmdb_enable": "Metadados TMDB",
+    "tmdb_enable_desc": "Busca títulos, pôsteres e notas dos seus vídeos. Desligado por padrão.",
+    "tmdb_api_key": "Chave de API TMDB",
+    "tmdb_api_key_desc": "Sua chave gratuita de themoviedb.org. Armazenada localmente, nunca enviada a outros lugares."
   },
   "files": {
     "download": "Baixar",
@@ -236,7 +241,10 @@
     "subtitles_manage": "Gerenciar legendas",
     "subtitles_delete_confirm": "Clique novamente para remover do Telegram",
     "subtitles_deleted": "Legenda {{language}} removida",
-    "subtitles_delete_failed": "Falha ao remover a legenda"
+    "subtitles_delete_failed": "Falha ao remover a legenda",
+    "metadata_info_title": "Sobre este vídeo",
+    "metadata_info_menu": "Ver informações",
+    "metadata_info_empty": "Ainda não há metadados para este vídeo. Ative o TMDB nas Configurações e abra esta pasta."
   },
   "archive": {
     "archive_viewer": "Visualizador de arquivos compactados",
@@ -307,5 +315,20 @@
     "action_duplicate_scan": "Varredura de duplicados",
     "action_bulk_download": "Download em massa",
     "action_subtitles_delete": "Remoção de legendas"
+  },
+  "analytics": {
+    "title": "Estatísticas de exibição",
+    "unique_titles": "Títulos assistidos",
+    "total_watch": "Tempo total de exibição",
+    "streak": "Sequência atual",
+    "streak_days": "{n} dia(s)",
+    "activity_30d": "Últimos 30 dias",
+    "top_titles": "Top 10 títulos",
+    "plays": "{n} reprodução(ões)",
+    "mins": "{n} min",
+    "hours": "{n} h",
+    "hours_mins": "{h} h {m} min",
+    "load_failed": "Não foi possível carregar as estatísticas.",
+    "empty": "Nenhuma reprodução registrada ainda."
   }
 }

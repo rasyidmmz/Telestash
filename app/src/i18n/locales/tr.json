@@ -188,7 +188,12 @@
     "color_text": "Text",
     "color_subtext": "Subtext",
     "video_thumbnails": "Video küçük resimleri oluştur",
-    "video_thumbnails_desc": "Önizlemesi olmayan videolardan gömülü MPV ile bir kare çıkarır. Hafif: tek seferde bir iş, önbellekli."
+    "video_thumbnails_desc": "Önizlemesi olmayan videolardan gömülü MPV ile bir kare çıkarır. Hafif: tek seferde bir iş, önbellekli.",
+    "tmdb_section": "Kişisel Sinema",
+    "tmdb_enable": "TMDB meta verileri",
+    "tmdb_enable_desc": "Videolarınız için başlık, poster ve puan arar. Varsayılan olarak kapalı.",
+    "tmdb_api_key": "TMDB API anahtarı",
+    "tmdb_api_key_desc": "themoviedb.org kaynaklı ücretsiz anahtarınız. Yerel olarak saklanır, hiçbir yere gönderilmez."
   },
   "files": {
     "download": "İndir",
@@ -236,7 +241,10 @@
     "subtitles_manage": "Altyazıları Yönet",
     "subtitles_delete_confirm": "Telegram'dan kaldırmak için tekrar tıklayın",
     "subtitles_deleted": "{{language}} altyazı kaldırıldı",
-    "subtitles_delete_failed": "Altyazı kaldırılamadı"
+    "subtitles_delete_failed": "Altyazı kaldırılamadı",
+    "metadata_info_title": "Bu video hakkında",
+    "metadata_info_menu": "Bilgileri gör",
+    "metadata_info_empty": "Bu video için henüz meta veri yok. Ayarlar'dan TMDB'yi etkinleştirip bu klasörü açın."
   },
   "archive": {
     "archive_viewer": "Arşiv Görüntüleyici",
@@ -307,5 +315,20 @@
     "action_duplicate_scan": "Kopya tarama",
     "action_bulk_download": "Toplu indirme",
     "action_subtitles_delete": "Altyazı kaldırma"
+  },
+  "analytics": {
+    "title": "İzleme istatistikleri",
+    "unique_titles": "İzlenen başlık",
+    "total_watch": "Toplam izleme süresi",
+    "streak": "Mevcut seri",
+    "streak_days": "{n} gün",
+    "activity_30d": "Son 30 gün",
+    "top_titles": "İlk 10 başlık",
+    "plays": "{n} kez oynatıldı",
+    "mins": "{n} dk",
+    "hours": "{n} sa",
+    "hours_mins": "{h} sa {m} dk",
+    "load_failed": "İstatistikler yüklenemedi.",
+    "empty": "Henüz kayıtlı oynatma yok."
   }
 }

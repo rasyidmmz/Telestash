@@ -188,7 +188,12 @@
     "color_text": "Text",
     "color_subtext": "Subtext",
     "video_thumbnails": "Создавать миниатюры видео",
-    "video_thumbnails_desc": "Извлекает кадр из видео без предпросмотра через встроенный MPV. Легко: одна задача за раз, с кэшем."
+    "video_thumbnails_desc": "Извлекает кадр из видео без предпросмотра через встроенный MPV. Легко: одна задача за раз, с кэшем.",
+    "tmdb_section": "Персональный кинозал",
+    "tmdb_enable": "Метаданные TMDB",
+    "tmdb_enable_desc": "Поиск названий, постеров и рейтингов для ваших видео. По умолчанию выключено.",
+    "tmdb_api_key": "API-ключ TMDB",
+    "tmdb_api_key_desc": "Ваш бесплатный ключ с themoviedb.org. Хранится локально и никуда не отправляется."
   },
   "files": {
     "download": "Скачать",
@@ -236,7 +241,10 @@
     "subtitles_manage": "Управление субтитрами",
     "subtitles_delete_confirm": "Нажмите ещё раз, чтобы удалить из Telegram",
     "subtitles_deleted": "Субтитры ({{language}}) удалены",
-    "subtitles_delete_failed": "Не удалось удалить субтитры"
+    "subtitles_delete_failed": "Не удалось удалить субтитры",
+    "metadata_info_title": "Об этом видео",
+    "metadata_info_menu": "Показать сведения",
+    "metadata_info_empty": "Метаданных для этого видео пока нет. Включите TMDB в настройках и откройте эту папку."
   },
   "archive": {
     "archive_viewer": "Просмотр архива",
@@ -319,5 +327,20 @@
     "action_duplicate_scan": "Поиск дубликатов",
     "action_bulk_download": "Массовая загрузка",
     "action_subtitles_delete": "Удаление субтитров"
+  },
+  "analytics": {
+    "title": "Статистика просмотра",
+    "unique_titles": "Просмотрено названий",
+    "total_watch": "Общее время просмотра",
+    "streak": "Текущая серия",
+    "streak_days": "{n} дн.",
+    "activity_30d": "Последние 30 дней",
+    "top_titles": "Топ-10 названий",
+    "plays": "{n} просм.",
+    "mins": "{n} мин",
+    "hours": "{n} ч",
+    "hours_mins": "{h} ч {m} мин",
+    "load_failed": "Не удалось загрузить статистику.",
+    "empty": "Воспроизведений пока не записано."
   }
 }

@@ -188,7 +188,12 @@
     "color_text": "Text",
     "color_subtext": "Subtext",
     "video_thumbnails": "Video-Thumbnails erzeugen",
-    "video_thumbnails_desc": "Extrahiert ein Standbild aus Videos ohne Vorschau über das mitgelieferte MPV. Leicht: ein Auftrag gleichzeitig, zwischengespeichert."
+    "video_thumbnails_desc": "Extrahiert ein Standbild aus Videos ohne Vorschau über das mitgelieferte MPV. Leicht: ein Auftrag gleichzeitig, zwischengespeichert.",
+    "tmdb_section": "Personal Cinema",
+    "tmdb_enable": "TMDB-Metadaten",
+    "tmdb_enable_desc": "Titel, Poster und Bewertungen für deine Videos nachschlagen. Standardmäßig aus.",
+    "tmdb_api_key": "TMDB-API-Schlüssel",
+    "tmdb_api_key_desc": "Dein eigener kostenloser Schlüssel von themoviedb.org. Wird lokal gespeichert, nirgends hin gesendet."
   },
   "files": {
     "download": "Herunterladen",
@@ -236,7 +241,10 @@
     "subtitles_manage": "Untertitel verwalten",
     "subtitles_delete_confirm": "Erneut klicken, um aus Telegram zu entfernen",
     "subtitles_deleted": "{{language}}-Untertitel entfernt",
-    "subtitles_delete_failed": "Entfernen des Untertitels fehlgeschlagen"
+    "subtitles_delete_failed": "Entfernen des Untertitels fehlgeschlagen",
+    "metadata_info_title": "Über dieses Video",
+    "metadata_info_menu": "Info anzeigen",
+    "metadata_info_empty": "Noch keine Metadaten für dieses Video. Aktiviere TMDB in den Einstellungen und öffne diesen Ordner."
   },
   "archive": {
     "archive_viewer": "Archiv-Viewer",
@@ -307,5 +315,20 @@
     "action_duplicate_scan": "Duplikat-Scan",
     "action_bulk_download": "Massen-Download",
     "action_subtitles_delete": "Untertitel entfernen"
+  },
+  "analytics": {
+    "title": "Sehstatistiken",
+    "unique_titles": "Gesehene Titel",
+    "total_watch": "Gesamte Sehzeit",
+    "streak": "Aktuelle Serie",
+    "streak_days": "{n} Tag(e)",
+    "activity_30d": "Letzte 30 Tage",
+    "top_titles": "Top-10-Titel",
+    "plays": "{n}-mal gesehen",
+    "mins": "{n} Min",
+    "hours": "{n} Std",
+    "hours_mins": "{h} Std {m} Min",
+    "load_failed": "Sehstatistiken konnten nicht geladen werden.",
+    "empty": "Noch keine Wiedergaben aufgezeichnet."
   }
 }

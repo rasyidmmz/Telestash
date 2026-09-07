@@ -188,7 +188,12 @@
     "color_text": "Text",
     "color_subtext": "Subtext",
     "video_thumbnails": "生成视频缩略图",
-    "video_thumbnails_desc": "通过内置 MPV 为无预览视频提取一帧。轻量：单任务队列，已缓存。"
+    "video_thumbnails_desc": "通过内置 MPV 为无预览视频提取一帧。轻量：单任务队列，已缓存。",
+    "tmdb_section": "个人影院",
+    "tmdb_enable": "TMDB 元数据",
+    "tmdb_enable_desc": "为视频查询标题、海报和评分。默认关闭。",
+    "tmdb_api_key": "TMDB API 密钥",
+    "tmdb_api_key_desc": "你在 themoviedb.org 的免费密钥。仅保存在本地，不会发送到其他任何地方。"
   },
   "files": {
     "download": "下载",
@@ -236,7 +241,10 @@
     "subtitles_manage": "管理字幕",
     "subtitles_delete_confirm": "再次点击以从 Telegram 移除",
     "subtitles_deleted": "已移除 {{language}} 字幕",
-    "subtitles_delete_failed": "移除字幕失败"
+    "subtitles_delete_failed": "移除字幕失败",
+    "metadata_info_title": "关于此视频",
+    "metadata_info_menu": "查看信息",
+    "metadata_info_empty": "此视频尚无元数据。请在设置中启用 TMDB，然后打开此文件夹。"
   },
   "archive": {
     "archive_viewer": "压缩包查看器",
@@ -307,5 +315,20 @@
     "action_duplicate_scan": "重复扫描",
     "action_bulk_download": "批量下载",
     "action_subtitles_delete": "删除字幕"
+  },
+  "analytics": {
+    "title": "观看统计",
+    "unique_titles": "已看标题",
+    "total_watch": "总观看时长",
+    "streak": "连续观看",
+    "streak_days": "{n} 天",
+    "activity_30d": "最近 30 天",
+    "top_titles": "观看最多的 10 个标题",
+    "plays": "{n} 次播放",
+    "mins": "{n} 分钟",
+    "hours": "{n} 小时",
+    "hours_mins": "{h} 小时 {m} 分钟",
+    "load_failed": "无法加载观看统计。",
+    "empty": "尚无播放记录。"
   }
 }
