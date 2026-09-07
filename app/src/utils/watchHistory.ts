@@ -25,7 +25,9 @@ export interface WatchLogEvent {
 const STORAGE_KEY_HISTORY = 'telestash_recent_watch_v1';
 const STORAGE_KEY_LOGS = 'telestash_watch_logs_v1';
 const MAX_LOG_ENTRIES = 500;
-const MAX_HISTORY_ENTRIES = 50;
+/** Must match HISTORY_CAP in src-tauri/src/commands/watch_history.rs so the
+ *  mirror never hides rows the backend still stores. */
+const MAX_HISTORY_ENTRIES = 200;
 
 /**
  * Watch history is persisted in SQLite via the backend; this module mirrors
@@ -124,7 +126,9 @@ export function initWatchHistory(): Promise<void> {
                 }
             }
 
-            // Keep any entries recorded while the store was still loading.
+            // Keep any entries recorded while the store was still loading. They
+            // were already persisted by their own upsert call, so the mirror
+            // just needs to win over the older backend copy.
             const byId = new Map(merged.map((e) => [e.file_id, e]));
             for (const entry of memoryHistory) {
                 byId.set(entry.file_id, entry);
@@ -141,14 +145,15 @@ export function initWatchHistory(): Promise<void> {
 }
 
 /**
- * Get all recent watch history entries sorted by latest first
+ * Get all recent watch history entries sorted by latest first.
+ * Returns a fresh array so React state comparisons see a new identity after
+ * every mutation.
  */
 export function getRecentWatchHistory(): WatchHistoryEntry[] {
     if (!storeLoaded) {
         initWatchHistory().catch(() => { /* load errors handled inside */ });
-        return memoryHistory;
     }
-    return memoryHistory;
+    return [...memoryHistory];
 }
 
 /**

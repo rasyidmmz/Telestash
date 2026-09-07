@@ -103,7 +103,8 @@ pub fn init_db(app: &AppHandle) -> Result<DbConnection, String> {
                     status TEXT NOT NULL DEFAULT 'started',
                     quality_tag TEXT,
                     last_position_secs REAL,
-                    total_duration_secs REAL
+                    total_duration_secs REAL,
+                    play_count INTEGER NOT NULL DEFAULT 1
                 );
                 CREATE TABLE IF NOT EXISTS file_metadata (
                     folder_id INTEGER,
@@ -145,7 +146,12 @@ pub fn init_db(app: &AppHandle) -> Result<DbConnection, String> {
             ));
         }
     }
-    
+
+    // Additive column migrations for databases created by older versions.
+    // Each is expected to fail with "duplicate column" once applied, so the
+    // error is intentionally ignored.
+    let _ = conn.execute("ALTER TABLE watch_history ADD COLUMN play_count INTEGER NOT NULL DEFAULT 1;");
+
     log::info!("SQLite database initialized successfully using sqlite crate.");
     Ok(Arc::new(Mutex::new(conn)))
 }

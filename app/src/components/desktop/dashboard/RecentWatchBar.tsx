@@ -19,15 +19,17 @@ interface RecentWatchBarProps {
 
 export function RecentWatchBar({ entries, currentFiles, onPlay, onPlayFile, onRefresh, onAnalyticsClick }: RecentWatchBarProps) {
     const { t } = useTranslation();
-    // Exact MPV watch-later positions (read once, on demand — no polling)
-    const [resumePositions, setResumePositions] = useState<Record<number, number>>({});
+    // Exact MPV watch-later positions (read once, on demand — no polling).
+    // Keyed by "folder:message" so identical message ids in different folders
+    // cannot borrow each other's position.
+    const [resumePositions, setResumePositions] = useState<Record<string, number>>({});
     useEffect(() => {
         let active = true;
         invoke<{ folder_id: number | null; message_id: number; seconds: number }[]>('cmd_list_resume_positions')
             .then((positions) => {
                 if (!active) return;
-                const map: Record<number, number> = {};
-                for (const p of positions) map[p.message_id] = p.seconds;
+                const map: Record<string, number> = {};
+                for (const p of positions) map[`${p.folder_id ?? 'home'}:${p.message_id}`] = p.seconds;
                 setResumePositions(map);
             })
             .catch(() => { /* watch-later unavailable — silent */ });
@@ -35,7 +37,7 @@ export function RecentWatchBar({ entries, currentFiles, onPlay, onPlayFile, onRe
     }, []);
 
     const resolveSeconds = (entry: WatchHistoryEntry): number | null => {
-        const mpv = resumePositions[entry.file_id];
+        const mpv = resumePositions[`${entry.folder_id ?? 'home'}:${entry.file_id}`];
         const stored = entry.last_position_secs ?? 0;
         const candidate = Math.max(mpv ?? 0, stored);
         return candidate > 5 ? candidate : null;

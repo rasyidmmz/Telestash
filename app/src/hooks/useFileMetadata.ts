@@ -4,7 +4,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useSettings } from '../context/SettingsContext';
 import { useTranslation } from 'react-i18next';
 import { parseMediaTitle } from '../utils/mediaTitle';
-import { isVideoFile } from './useVideoThumbnail';
+import { isVideoFile } from '../utils';
 
 export interface FileMetadata {
     folder_id: number | null;

@@ -12,7 +12,12 @@ export function formatBytes(bytes: number, decimals = 2) {
 
 // ── File type classification ────────────────────────────────────────────
 
-const VIDEO_EXTENSIONS = ['mp4', 'webm', 'ogg', 'mov', 'mkv', 'avi'] as const;
+const VIDEO_EXTENSIONS = [
+    'mp4', 'webm', 'ogg', 'mov', 'mkv', 'avi',
+    // Containers MPV also plays; kept in one list so video detection, media
+    // routing and thumbnail generation never disagree.
+    'ts', 'm2ts', 'mts', 'm4v', 'mpg', 'mpeg', 'flv', 'wmv',
+] as const;
 const AUDIO_EXTENSIONS = ['mp3', 'wav', 'aac', 'flac', 'm4a', 'opus'] as const;
 const MEDIA_EXTENSIONS: readonly string[] = [...VIDEO_EXTENSIONS, ...AUDIO_EXTENSIONS];
 const IMAGE_EXTENSIONS = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp', 'svg', 'heic', 'heif'] as const;

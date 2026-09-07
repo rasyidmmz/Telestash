@@ -1,15 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { invoke } from '@tauri-apps/api/core';
 import { useSettings } from '../context/SettingsContext';
-
-const VIDEO_EXTS = [
-    'mp4', 'mkv', 'webm', 'mov', 'avi', 'ts', 'm2ts', 'mts', 'm4v', 'mpg', 'mpeg', 'flv', 'wmv',
-];
-
-export function isVideoFile(filename: string): boolean {
-    const ext = filename.split('.').pop()?.toLowerCase() || '';
-    return VIDEO_EXTS.includes(ext);
-}
+import { isVideoFile } from '../utils';
 
 /**
  * Fallback video thumbnail: only fires when the file has no Telegram-native

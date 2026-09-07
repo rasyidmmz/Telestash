@@ -26,6 +26,11 @@ pub struct WatchHistoryRow {
 
 const HISTORY_CAP: i64 = 200;
 
+/// A repeat play of the same file within this window counts as one play, so the
+/// two record paths (MPV launch in the UI and the streaming server's
+/// `stream-playback-started` event) cannot double-count a single session.
+const PLAY_DEDUPE_MILLIS: i64 = 60_000;
+
 fn bind_entry(stmt: &mut sqlite::Statement, entry: &WatchHistoryRow) -> Result<(), String> {
     stmt.bind((1, entry.file_id)).map_err(|e| e.to_string())?;
     stmt.bind((2, entry.file_name.as_str())).map_err(|e| e.to_string())?;
@@ -42,11 +47,30 @@ fn bind_entry(stmt: &mut sqlite::Statement, entry: &WatchHistoryRow) -> Result<(
 #[tauri::command]
 pub fn cmd_watch_history_upsert(entry: WatchHistoryRow, db_pool: State<'_, DbConnection>) -> Result<(), String> {
     let conn = db_pool.lock().map_err(|e| e.to_string())?;
+
+    // Only a genuinely new session increments play_count; a re-record within the
+    // dedupe window (or a progress update) leaves the counter alone.
+    let mut probe = conn
+        .prepare("SELECT timestamp FROM watch_history WHERE file_id = ?1;")
+        .map_err(|e| e.to_string())?;
+    probe.bind((1, entry.file_id)).map_err(|e| e.to_string())?;
+    let previous_ts: Option<i64> = if let sqlite::State::Row = probe.next().map_err(|e| e.to_string())? {
+        Some(probe.read::<i64, _>("timestamp").map_err(|e| e.to_string())?)
+    } else {
+        None
+    };
+    drop(probe);
+    let counts_as_new_play = match previous_ts {
+        None => true,
+        Some(prev) => entry.timestamp.saturating_sub(prev) > PLAY_DEDUPE_MILLIS,
+    };
+    let play_increment: i64 = if counts_as_new_play { 1 } else { 0 };
+
     let mut stmt = conn
-        .prepare(
+        .prepare(&format!(
             "INSERT INTO watch_history
-                (file_id, file_name, folder_id, file_size, timestamp, status, quality_tag, last_position_secs, total_duration_secs)
-             VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9)
+                (file_id, file_name, folder_id, file_size, timestamp, status, quality_tag, last_position_secs, total_duration_secs, play_count)
+             VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, 1)
              ON CONFLICT(file_id) DO UPDATE SET
                 file_name = excluded.file_name,
                 folder_id = excluded.folder_id,
@@ -55,11 +79,13 @@ pub fn cmd_watch_history_upsert(entry: WatchHistoryRow, db_pool: State<'_, DbCon
                 status = excluded.status,
                 quality_tag = COALESCE(excluded.quality_tag, watch_history.quality_tag),
                 last_position_secs = COALESCE(excluded.last_position_secs, watch_history.last_position_secs),
-                total_duration_secs = COALESCE(excluded.total_duration_secs, watch_history.total_duration_secs);",
-        )
+                total_duration_secs = COALESCE(excluded.total_duration_secs, watch_history.total_duration_secs),
+                play_count = watch_history.play_count + {play_increment};"
+        ))
         .map_err(|e| e.to_string())?;
     bind_entry(&mut stmt, &entry)?;
     stmt.next().map_err(|e| e.to_string())?;
+    drop(stmt);
 
     // Keep the table bounded the same way the old localStorage store did.
     conn.execute(&format!(
@@ -149,4 +175,35 @@ pub fn cmd_watch_history_import(
         imported += 1;
     }
     Ok(imported)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::PLAY_DEDUPE_MILLIS;
+
+    /// Mirrors the play-count decision in cmd_watch_history_upsert.
+    fn counts_as_new_play(previous_ts: Option<i64>, new_ts: i64) -> bool {
+        match previous_ts {
+            None => true,
+            Some(prev) => new_ts.saturating_sub(prev) > PLAY_DEDUPE_MILLIS,
+        }
+    }
+
+    #[test]
+    fn first_record_for_a_file_is_always_a_new_play() {
+        assert!(counts_as_new_play(None, 1_700_000_000_000));
+    }
+
+    #[test]
+    fn the_two_record_paths_of_one_launch_count_once() {
+        // MediaPlayer records, then the streaming server event arrives ~2s later.
+        let first = 1_700_000_000_000;
+        assert!(!counts_as_new_play(Some(first), first + 2_000));
+    }
+
+    #[test]
+    fn rewatching_later_counts_as_another_play() {
+        let first = 1_700_000_000_000;
+        assert!(counts_as_new_play(Some(first), first + PLAY_DEDUPE_MILLIS + 1));
+    }
 }
