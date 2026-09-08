@@ -62,5 +62,5 @@ export function useVideoThumbnail(
             });
     }, [enabled, fileId, fileName, folderId, telegramThumb, visible]);
 
-    return { generated, ref };
+    return { generated: enabled ? generated : null, ref };
 }

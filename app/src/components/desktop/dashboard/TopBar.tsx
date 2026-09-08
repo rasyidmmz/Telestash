@@ -56,7 +56,7 @@ export function TopBar({
                 )}
                 <button className="vault-icon-button" onClick={onDownloadFolder} data-tooltip={t('files.download_folder')} aria-label={t('files.download_folder')}><HardDrive size={18} /></button>
                 <button className="vault-icon-button" onClick={() => setViewMode(viewMode === 'grid' ? 'list' : viewMode === 'list' ? 'posters' : 'grid')} data-tooltip={t('files.toggle_layout')} aria-label={t('files.toggle_layout')}>
-                    {viewMode === 'grid' ? <SquaresFour size={18} /> : viewMode === 'list' ? <FilmStrip size={18} /> : <List size={18} />}
+                    {viewMode === 'grid' ? <SquaresFour size={18} /> : viewMode === 'list' ? <List size={18} /> : <FilmStrip size={18} />}
                 </button>
                 <span className="vault-command-divider" />
                 {onWatchLogsClick && <button className="vault-icon-button" onClick={onWatchLogsClick} data-tooltip="Watch history" aria-label="Watch history"><FilmStrip size={18} /></button>}

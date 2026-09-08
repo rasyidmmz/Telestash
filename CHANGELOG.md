@@ -1,5 +1,21 @@
 # Changelog
 
+## [1.6.1]
+
+### Fixed
+
+- **Settings thumbnail toggle visual overflow**: Added `shrink-0` to all toggle switches in SettingsModal and constrained text containers with `min-w-0 flex-1 pr-4`. Prevents long description text from squeezing the switch track and causing the knob to visually overflow outside the switch boundary.
+- **TopBar layout view mode icon order**: Corrected the icon rotation in TopBar so List view displays the List icon and Poster Wall displays the FilmStrip icon.
+- **Video thumbnail toggle cache reset**: Hook `useVideoThumbnail` now immediately resets generated thumbnail state to `null` when the feature is turned off in Settings.
+- **Supergroup / Forum channel peer resolution ("Unable to load files")**: Extended `resolve_peer` in `commands/utils.rs` to handle `Peer::Group` (supergroups, megagroups, and forum channels) using `bare_id()`, resolving the failure where supergroups were skipped as unsupported peers when opening folders.
+- **Supergroup preservation during folder scan**: Preserved `Peer::Group` in `cmd_scan_folders` to prevent supergroups from being pruned during DB folder synchronization.
+
+### Changed
+
+- **CI/CD test harness**: Registered `scripts/media-title.test.js` into npm `test` in `package.json` for automated verification in CI workflows.
+- **Stable live debug harness**: Added `run-debug-stable.bat` with `--remote-debugging-port=9222` and real-time log streaming for diagnosing stable builds.
+- **Dependency updates**: Merged Dependabot maintenance updates across Tauri plugins and dependencies (`tauri-plugin-dialog`, `tauri-plugin-opener`, `base64`, `tauri-plugin-updater`, `constant_time_eq`, `@types/react-dom`, `i18next`, `@tauri-apps/plugin-updater`, `@tauri-apps/plugin-shell`).
+
 ## [1.6.0]
 
 ### Added

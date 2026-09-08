@@ -1,6 +1,7 @@
 use grammers_client::Client;
 use grammers_client::peer::Peer;
 use grammers_session::types::PeerRef;
+use grammers_tl_types as tl;
 use tauri::State;
 use crate::bandwidth::BandwidthManager;
 use std::collections::HashMap;
@@ -43,8 +44,12 @@ pub async fn resolve_peer(
             let peer_id = match &dialog.peer {
                 Peer::Channel(c) => Some(c.raw.id),
                 Peer::User(u) => Some(u.raw.id()),
-                _ => None,
-            };
+                Peer::Group(g) => match &g.raw {
+                    tl::enums::Chat::Channel(c) => Some(c.id),
+                    tl::enums::Chat::Chat(c) => Some(c.id),
+                    _ => dialog.peer.id().bare_id(),
+                },
+            }.or_else(|| dialog.peer.id().bare_id());
             if let Some(id) = peer_id {
                 if let Ok(Some(pr)) = dialog.peer.to_ref().await {
                     discovered.insert(id, pr);
@@ -121,5 +126,25 @@ mod tests {
         assert_eq!(map_error("FLOOD_WAIT (value: 45)"), "FLOOD_WAIT_45");
         assert_eq!(map_error("FLOOD_PREMIUM_WAIT_10"), "FLOOD_WAIT_10");
         assert_eq!(map_error("rpc error 400: FILE_PARTS_INVALID"), "rpc error 400: FILE_PARTS_INVALID");
+    }
+
+    #[test]
+    fn supergroup_peer_id_extracts_correct_bare_id() {
+        use grammers_session::types::PeerId;
+
+        // Positive channel/supergroup raw ID (as from Telegram MTProto tl::types::Channel)
+        let raw_supergroup_id: i64 = 1987654321;
+        let peer_id = PeerId::channel_unchecked(raw_supergroup_id);
+        assert_eq!(peer_id.bare_id(), Some(raw_supergroup_id));
+
+        // Bot API dialog ID representation of the supergroup (-100...)
+        let bot_api_dialog_id = -(1000000000000 + raw_supergroup_id);
+        let from_bot_api = PeerId::from_bot_api_dialog_id(bot_api_dialog_id).expect("valid bot api id");
+        assert_eq!(from_bot_api.bare_id(), Some(raw_supergroup_id));
+
+        // Group chat bare ID
+        let raw_chat_id: i64 = 123456789;
+        let peer_chat_id = PeerId::chat_unchecked(raw_chat_id);
+        assert_eq!(peer_chat_id.bare_id(), Some(raw_chat_id));
     }
 }

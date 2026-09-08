@@ -387,16 +387,16 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
 
                                 {/* Hide Folder Groups */}
                                 <div className="flex items-center justify-between p-3 rounded-lg bg-stash-hover/50">
-                                    <div className="flex items-center gap-2">
-                                        <Tag className="w-4 h-4 text-stash-subtext" />
-                                        <div>
+                                    <div className="flex items-center gap-2 min-w-0 flex-1 pr-4">
+                                        <Tag className="w-4 h-4 text-stash-subtext shrink-0" />
+                                        <div className="min-w-0">
                                             <p className="text-sm text-stash-text font-medium">{t('common.hide_groups')}</p>
                                             <p className="text-xs text-stash-subtext">{t('common.hide_groups_desc')}</p>
                                         </div>
                                     </div>
                                     <button
                                         onClick={() => updateSetting('hideGroups', !settings.hideGroups)}
-                                        className={`relative w-11 h-6 rounded-full transition-colors duration-200 ${settings.hideGroups ? 'bg-stash-primary' : 'bg-stash-border'}`}
+                                        className={`relative w-11 h-6 shrink-0 rounded-full transition-colors duration-200 ${settings.hideGroups ? 'bg-stash-primary' : 'bg-stash-border'}`}
                                     >
                                         <span className={`absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white shadow transition-transform duration-200 ${settings.hideGroups ? 'translate-x-5' : 'translate-x-0'}`} />
                                     </button>
@@ -404,16 +404,16 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
 
                                 {/* Video Thumbnail Generation */}
                                 <div className="flex items-center justify-between p-3 rounded-lg bg-stash-hover/50">
-                                    <div className="flex items-center gap-2">
-                                        <Eye className="w-4 h-4 text-stash-subtext" />
-                                        <div>
+                                    <div className="flex items-center gap-2 min-w-0 flex-1 pr-4">
+                                        <Eye className="w-4 h-4 text-stash-subtext shrink-0" />
+                                        <div className="min-w-0">
                                             <p className="text-sm text-stash-text font-medium">{t('settings.video_thumbnails')}</p>
                                             <p className="text-xs text-stash-subtext">{t('settings.video_thumbnails_desc')}</p>
                                         </div>
                                     </div>
                                     <button
                                         onClick={() => updateSetting('videoThumbnails', !settings.videoThumbnails)}
-                                        className={`relative w-11 h-6 rounded-full transition-colors duration-200 ${settings.videoThumbnails ? 'bg-stash-primary' : 'bg-stash-border'}`}
+                                        className={`relative w-11 h-6 shrink-0 rounded-full transition-colors duration-200 ${settings.videoThumbnails ? 'bg-stash-primary' : 'bg-stash-border'}`}
                                         aria-pressed={settings.videoThumbnails}
                                     >
                                         <span className={`absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white shadow transition-transform duration-200 ${settings.videoThumbnails ? 'translate-x-5' : 'translate-x-0'}`} />
@@ -422,9 +422,9 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
 
                                 {/* Windows Autostart */}
                                 <div className="flex items-center justify-between p-3 rounded-lg bg-stash-hover/50">
-                                    <div className="flex items-center gap-2">
-                                        <Monitor className="w-4 h-4 text-stash-subtext" />
-                                        <div>
+                                    <div className="flex items-center gap-2 min-w-0 flex-1 pr-4">
+                                        <Monitor className="w-4 h-4 text-stash-subtext shrink-0" />
+                                        <div className="min-w-0">
                                             <p className="text-sm text-stash-text font-medium">{t('settings.windows_autostart')}</p>
                                             <p className="text-xs text-stash-subtext">{t('settings.windows_autostart_desc')}</p>
                                         </div>
@@ -440,7 +440,7 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                                                 toast.error(e.toString());
                                             }
                                         }}
-                                        className={`relative w-11 h-6 rounded-full transition-colors duration-200 ${settings.windowsAutostart ? 'bg-stash-primary' : 'bg-stash-border'}`}
+                                        className={`relative w-11 h-6 shrink-0 rounded-full transition-colors duration-200 ${settings.windowsAutostart ? 'bg-stash-primary' : 'bg-stash-border'}`}
                                     >
                                         <span className={`absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white shadow transition-transform duration-200 ${settings.windowsAutostart ? 'translate-x-5' : 'translate-x-0'}`} />
                                     </button>
@@ -487,9 +487,9 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                                 </h3>
                                 {/* Enable Toggle */}
                                 <div className="flex items-center justify-between p-3 rounded-lg bg-stash-hover/50">
-                                    <div className="flex items-center gap-2">
-                                        <div className={`w-2 h-2 rounded-full ${apiSettings.running ? 'bg-green-400 shadow-[0_0_6px_rgba(74,222,128,0.5)]' : 'bg-gray-500'}`} />
-                                        <div>
+                                    <div className="flex items-center gap-2 min-w-0 flex-1 pr-4">
+                                        <div className={`w-2 h-2 shrink-0 rounded-full ${apiSettings.running ? 'bg-green-400 shadow-[0_0_6px_rgba(74,222,128,0.5)]' : 'bg-gray-500'}`} />
+                                        <div className="min-w-0">
                                             <p className="text-sm text-stash-text font-medium">{t('settings.enable_api_server')}</p>
                                             <p className="text-xs text-stash-subtext">
                                                 {apiSettings.running ? t('settings.api_running', { port: apiSettings.port }) : t('settings.api_stopped')}
@@ -499,7 +499,7 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                                     <button
                                         onClick={handleApiToggle}
                                         disabled={apiLoading}
-                                        className={`relative w-11 h-6 rounded-full transition-colors duration-200 ${apiSettings.enabled ? 'bg-stash-primary' : 'bg-stash-border'} disabled:opacity-50`}
+                                        className={`relative w-11 h-6 shrink-0 rounded-full transition-colors duration-200 ${apiSettings.enabled ? 'bg-stash-primary' : 'bg-stash-border'} disabled:opacity-50`}
                                     >
                                         <span className={`absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white shadow transition-transform duration-200 ${apiSettings.enabled ? 'translate-x-5' : 'translate-x-0'}`} />
                                     </button>
@@ -578,16 +578,16 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
 
                                 {/* Enable Toggle */}
                                 <div className="flex items-center justify-between p-3 rounded-lg bg-stash-hover/50">
-                                    <div className="flex items-center gap-2">
-                                        <Sparkles className="w-4 h-4 text-stash-subtext" />
-                                        <div>
+                                    <div className="flex items-center gap-2 min-w-0 flex-1 pr-4">
+                                        <Sparkles className="w-4 h-4 text-stash-subtext shrink-0" />
+                                        <div className="min-w-0">
                                             <p className="text-sm text-stash-text font-medium">{t('settings.tmdb_enable')}</p>
                                             <p className="text-xs text-stash-subtext">{t('settings.tmdb_enable_desc')}</p>
                                         </div>
                                     </div>
                                     <button
                                         onClick={() => updateSetting('tmdbEnabled', !settings.tmdbEnabled)}
-                                        className={`relative w-11 h-6 rounded-full transition-colors duration-200 ${settings.tmdbEnabled ? 'bg-stash-primary' : 'bg-stash-border'}`}
+                                        className={`relative w-11 h-6 shrink-0 rounded-full transition-colors duration-200 ${settings.tmdbEnabled ? 'bg-stash-primary' : 'bg-stash-border'}`}
                                         aria-pressed={settings.tmdbEnabled}
                                     >
                                         <span className={`absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white shadow transition-transform duration-200 ${settings.tmdbEnabled ? 'translate-x-5' : 'translate-x-0'}`} />

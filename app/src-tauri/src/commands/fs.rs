@@ -2415,56 +2415,79 @@ pub async fn cmd_scan_folders(
 
     while let Some(dialog) = dialogs.next().await.map_err(|e| e.to_string())? {
         // Populate peer cache for every dialog we encounter (free priming)
-        match &dialog.peer {
-            Peer::Channel(c) => {
-                let id = c.raw.id;
-                if let Ok(Some(pr)) = dialog.peer.to_ref().await { discovered.insert(id, pr); }
-
-                let name = c.raw.title.clone();
-                let access_hash = c.raw.access_hash.unwrap_or(0);
-                
-                log::debug!("[SCAN] Processing Channel: '{}' (ID: {})", name, id);
-
-                // Strategy 1: Title
-                if name.to_lowercase().contains("[td]") {
-                    log::info!(" -> MATCH via Title: {}", name);
-                    let display_name = name.replace(" [TD]", "").replace(" [td]", "").replace("[TD]", "").replace("[td]", "").trim().to_string();
-                    let username = c.raw.username.clone();
-                    let is_public = username.is_some();
-                    folders.push(FolderMetadata { id, name: display_name, parent_id: None, username, is_public, group_id: None, display_order: 0 });
-                    continue; 
-                }
-
-                // Strategy 2: About (Only if we are the creator to avoid rate limits on third-party channels)
-                if c.raw.creator {
-                    let input_chan = tl::enums::InputChannel::Channel(tl::types::InputChannel {
-                        channel_id: c.raw.id,
-                        access_hash,
-                    });
-                    
-                    match client.invoke(&tl::functions::channels::GetFullChannel {
-                        channel: input_chan,
-                    }).await {
-                        Ok(tl::enums::messages::ChatFull::Full(f)) => {
-                            if let tl::enums::ChatFull::Full(cf) = f.full_chat {
-                                 if cf.about.contains("[telestash-folder]") {
-                                     log::info!(" -> MATCH via About: {}", name);
-                                     let username = c.raw.username.clone();
-                                     let is_public = username.is_some();
-                                     folders.push(FolderMetadata { id, name: name.clone(), parent_id: None, username, is_public, group_id: None, display_order: 0 });
-                                 }
-                            }
-                        },
-                        Err(e) => log::warn!(" -> Failed to get full info: {}", e),
+        let channel_info = match &dialog.peer {
+            Peer::Channel(c) => Some(&c.raw),
+            Peer::Group(g) => match &g.raw {
+                tl::enums::Chat::Channel(c) => Some(c),
+                tl::enums::Chat::Chat(chat) => {
+                    let id = chat.id;
+                    if let Ok(Some(pr)) = dialog.peer.to_ref().await { discovered.insert(id, pr); }
+                    let name = chat.title.clone();
+                    log::debug!("[SCAN] Processing Group Chat: '{}' (ID: {})", name, id);
+                    if name.to_lowercase().contains("[td]") {
+                        log::info!(" -> MATCH via Title: {}", name);
+                        let display_name = name.replace(" [TD]", "").replace(" [td]", "").replace("[TD]", "").replace("[td]", "").trim().to_string();
+                        folders.push(FolderMetadata { id, name: display_name, parent_id: None, username: None, is_public: false, group_id: None, display_order: 0 });
                     }
+                    None
+                }
+                _ => {
+                    if let Ok(Some(pr)) = dialog.peer.to_ref().await {
+                        if let Some(id) = dialog.peer.id().bare_id() {
+                            discovered.insert(id, pr);
+                        }
+                    }
+                    None
                 }
             },
             Peer::User(u) => {
                 if let Ok(Some(pr)) = dialog.peer.to_ref().await { discovered.insert(u.raw.id(), pr); }
                 log::debug!("[SCAN] Cached User Peer: {}", u.raw.id());
+                None
             },
-            peer => {
-                log::debug!("[SCAN] Skipped Peer: {:?}", peer);
+        };
+
+        if let Some(c) = channel_info {
+            let id = c.id;
+            if let Ok(Some(pr)) = dialog.peer.to_ref().await { discovered.insert(id, pr); }
+
+            let name = c.title.clone();
+            let access_hash = c.access_hash.unwrap_or(0);
+            
+            log::debug!("[SCAN] Processing Channel/Supergroup: '{}' (ID: {})", name, id);
+
+            // Strategy 1: Title
+            if name.to_lowercase().contains("[td]") {
+                log::info!(" -> MATCH via Title: {}", name);
+                let display_name = name.replace(" [TD]", "").replace(" [td]", "").replace("[TD]", "").replace("[td]", "").trim().to_string();
+                let username = c.username.clone();
+                let is_public = username.is_some();
+                folders.push(FolderMetadata { id, name: display_name, parent_id: None, username, is_public, group_id: None, display_order: 0 });
+                continue; 
+            }
+
+            // Strategy 2: About (Only if we are the creator to avoid rate limits on third-party channels)
+            if c.creator {
+                let input_chan = tl::enums::InputChannel::Channel(tl::types::InputChannel {
+                    channel_id: c.id,
+                    access_hash,
+                });
+                
+                match client.invoke(&tl::functions::channels::GetFullChannel {
+                    channel: input_chan,
+                }).await {
+                    Ok(tl::enums::messages::ChatFull::Full(f)) => {
+                        if let tl::enums::ChatFull::Full(cf) = f.full_chat {
+                             if cf.about.contains("[telestash-folder]") {
+                                 log::info!(" -> MATCH via About: {}", name);
+                                 let username = c.username.clone();
+                                 let is_public = username.is_some();
+                                 folders.push(FolderMetadata { id, name: name.clone(), parent_id: None, username, is_public, group_id: None, display_order: 0 });
+                             }
+                        }
+                    },
+                    Err(e) => log::warn!(" -> Failed to get full info: {}", e),
+                }
             }
         }
     }
