@@ -75,16 +75,34 @@ fn get_share_by_token(db: &DbConnection, token: &str) -> Result<Option<SharedLin
     }
 }
 
+/// Escape text for safe interpolation into HTML text nodes and attributes.
+fn escape_html(s: &str) -> String {
+    let mut out = String::with_capacity(s.len());
+    for c in s.chars() {
+        match c {
+            '&' => out.push_str("&amp;"),
+            '<' => out.push_str("&lt;"),
+            '>' => out.push_str("&gt;"),
+            '"' => out.push_str("&quot;"),
+            '\'' => out.push_str("&#39;"),
+            _ => out.push(c),
+        }
+    }
+    out
+}
+
 /// Renders the password entry form for protected share links.
+///
+/// Filename and token are HTML-escaped: file names are user/Telegram-controlled
+/// and must never be interpreted as markup on this auth boundary.
 ///
 /// NOTE: This HTML contains an inline `<style>` block which requires
 /// `style-src 'unsafe-inline'` in the Tauri CSP (tauri.conf.json).
 /// This is acceptable because the page is served only over the local
-/// Actix streaming server (127.0.0.1/0.0.0.0:14201), not the public internet,
-/// so the XSS attack surface is minimal.
+/// Actix streaming server on loopback, not the public internet.
 fn render_password_form(file_name: &str, token: &str, error: Option<&str>) -> HttpResponse {
     let error_html = match error {
-        Some(err) => format!("<div class=\"error\">{}</div>", err),
+        Some(err) => format!("<div class=\"error\">{}</div>", escape_html(err)),
         None => "".to_string(),
     };
     
@@ -173,7 +191,9 @@ fn render_password_form(file_name: &str, token: &str, error: Option<&str>) -> Ht
     </div>
 </body>
 </html>"#,
-        file_name, error_html, token
+        escape_html(file_name),
+        error_html,
+        escape_html(token)
     );
 
     HttpResponse::Ok()
@@ -321,4 +341,27 @@ async fn verify_shared_file_password(
 pub fn configure_share_routes(cfg: &mut web::ServiceConfig) {
     cfg.service(get_shared_file)
        .service(verify_shared_file_password);
+}
+
+#[cfg(test)]
+mod tests {
+    use super::escape_html;
+
+    #[test]
+    fn escapes_html_metacharacters_in_filenames() {
+        assert_eq!(
+            escape_html(r#"<img src=x onerror=alert(1)>.mkv"#),
+            "&lt;img src=x onerror=alert(1)&gt;.mkv"
+        );
+        assert_eq!(escape_html("a&b"), "a&amp;b");
+        assert_eq!(escape_html(r#"say "hi" & 'bye'"#), "say &quot;hi&quot; &amp; &#39;bye&#39;");
+    }
+
+    #[test]
+    fn leaves_ordinary_filenames_unchanged() {
+        assert_eq!(
+            escape_html("Movie.Title.2024.1080p.mkv"),
+            "Movie.Title.2024.1080p.mkv"
+        );
+    }
 }
