@@ -1,7 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { X, File, ChevronLeft, ChevronRight } from '../../shared/icons.tsx';
 import { invoke } from '@tauri-apps/api/core';
-import { convertFileSrc } from '@tauri-apps/api/core';
 import { TelegramFile } from '../../../types';
 import { isImageFile } from '../../../utils';
 
@@ -94,11 +93,21 @@ export function PreviewModal({ file, onClose, onNext, onPrev, currentIndex, tota
                 if (requestId !== latestRequestRef.current) return;
 
                 if (path) {
-                    const converted = convertFileSrc(path);
-                    setSrc(converted);
-                    rememberPreview(key, converted);
+                    // Image preview returns an HTTP URL (served by the local
+                    // streaming server with token auth); non-image paths
+                    // (e.g. archives for cmd_open_file_externally) are returned
+                    // as filesystem paths by the backend.
+                    if (path.startsWith('http://') || path.startsWith('https://')) {
+                        setSrc(path);
+                        rememberPreview(key, path);
+                    } else {
+                        // Non-image preview: MediaPlayer / open-externally
+                        // path is handled elsewhere — nothing to render here.
+                        setSrc('');
+                        setError('Preview not available for this file type');
+                    }
                 } else {
-                    setError("Preview not available");
+                    setError('Preview not available');
                 }
             } catch (e) {
                 if (requestId !== latestRequestRef.current) return;
@@ -124,7 +133,9 @@ export function PreviewModal({ file, onClose, onNext, onPrev, currentIndex, tota
                 folderId: activeFolderId
             }).then((path) => {
                 if (!path) return;
-                rememberPreview(key, convertFileSrc(path));
+                if (path.startsWith('http://') || path.startsWith('https://')) {
+                    rememberPreview(key, path);
+                }
             }).catch(() => {
                 // Ignore prefetch errors, main preview flow will handle user-visible failures.
             }).finally(() => {

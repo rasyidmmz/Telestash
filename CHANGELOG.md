@@ -1,5 +1,11 @@
 # Changelog
 
+## [1.6.4]
+
+### Changed
+
+- **Thumbnails, generated video thumbnails and previews served by the local streaming server**: Tauri's asset-protocol approach proved unreliable on Windows in v1.6.2/v1.6.3 (CSP, scope or scheme mismatch) — three new routes `/thumb/thumbnails/{folder}/{msg}.{ext}`, `/thumb/generated/{folder}/{msg}.jpg` and `/thumb/preview/{folder}/{msg}.{ext}` now serve cached images directly from disk, using the same port and token auth as `/stream`. Rust commands (`cmd_get_thumbnail`, `cmd_generate_video_thumbnail`, `cmd_get_preview` image branch) now return the full URL with token instead of a filesystem path, so the frontend feeds it straight into `<img src>` — no `convertFileSrc` wrapping, no asset-protocol CSP wrinkle. Legacy `assetProtocol` config and `protocol-asset` cargo feature dropped.
+
 ## [1.6.3]
 
 ### Fixed

@@ -35,6 +35,10 @@ pub async fn cmd_generate_video_thumbnail(
     let folder_key = folder_id
         .map(|id| id.to_string())
         .unwrap_or_else(|| "home".to_string());
+    let thumb_url = format!(
+        "http://localhost:{}/thumb/generated/{}_{}.jpg?token={}",
+        config.port, folder_key, message_id, config.token
+    );
 
     let cache_dir = app_handle
         .path()
@@ -43,7 +47,7 @@ pub async fn cmd_generate_video_thumbnail(
         .join("generated_thumbs");
     let cache_path = cache_dir.join(format!("{}_{}.jpg", folder_key, message_id));
     if tokio::fs::metadata(&cache_path).await.is_ok() {
-        return Ok(cache_path.to_string_lossy().to_string());
+        return Ok(thumb_url);
     }
 
     // Only videos are worth a frame extraction.
@@ -60,7 +64,7 @@ pub async fn cmd_generate_video_thumbnail(
     // Another request may have finished generation while we waited for the
     // queue — re-check before spawning anything.
     if tokio::fs::metadata(&cache_path).await.is_ok() {
-        return Ok(cache_path.to_string_lossy().to_string());
+        return Ok(thumb_url);
     }
 
     tokio::fs::create_dir_all(&cache_dir)
@@ -90,7 +94,7 @@ pub async fn cmd_generate_video_thumbnail(
     match result {
         Ok(()) => {
             prune_generated_cache(&cache_dir).await;
-            Ok(cache_path.to_string_lossy().to_string())
+            Ok(thumb_url)
         }
         // Soft-fail: the card keeps its icon; nothing logs as user-facing error.
         Err(e) => {

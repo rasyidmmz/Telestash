@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { invoke, convertFileSrc } from '@tauri-apps/api/core';
+import { invoke } from '@tauri-apps/api/core';
 import { useSettings } from '../context/SettingsContext';
 import { isVideoFile } from '../utils';
 
@@ -7,9 +7,10 @@ import { isVideoFile } from '../utils';
  * Fallback video thumbnail: only fires when the file has no Telegram-native
  * thumbnail (cmd_get_thumbnail returned empty). Visibility-gated via
  * IntersectionObserver so off-screen cards never queue work, single-flight
- * per card, globally queued 1-at-a-time by the backend. The backend returns
- * the cached JPEG's path; it is converted to an asset-protocol URL here.
- * Attach the returned ref to the card's root element.
+ * per card, globally queued 1-at-a-time by the backend. The backend now
+ * returns the cached JPEG's full URL (served by the local streaming
+ * server), used directly here. Attach the returned ref to the card's
+ * root element.
  */
 export function useVideoThumbnail(
     fileId: number,
@@ -56,7 +57,9 @@ export function useVideoThumbnail(
             folderId: folderId ?? null,
         })
             .then((result) => {
-                if (result) setGenerated(convertFileSrc(result));
+                // Backend returns the full HTTP URL for the cached JPEG —
+                // use it directly as the <img src>.
+                if (result) setGenerated(result);
             })
             .catch(() => {
                 // Soft-fail: the card keeps its icon.

@@ -125,7 +125,17 @@ pub async fn cmd_get_preview(
     app_handle: tauri::AppHandle,
     state: State<'_, TelegramState>,
     bw_state: State<'_, Arc<BandwidthManager>>,
+    config: State<'_, crate::commands::streaming::StreamConfig>,
 ) -> Result<String, String> {
+    let token = config.token.clone();
+    let port = config.port;
+    let preview_url = |folder_key: &str, msg_id: i32, ext: &str| {
+        format!(
+            "http://localhost:{}/thumb/preview/{}_{}.{}?token={}",
+            port, folder_key, msg_id, ext, token
+        )
+    };
+
     let cache_dir = app_handle
         .path()
         .app_cache_dir()
@@ -299,9 +309,16 @@ pub async fn cmd_get_preview(
                 }
             };
             if file_ready {
-                // All cached previews live under the asset-protocol scope, so
-                // the path can be served straight through convertFileSrc —
-                // images no longer round-trip through a base64 IPC payload.
+                // Images are served over HTTP from the local streaming server
+                // (proven infrastructure, same token auth as /stream) so the
+                // frontend can use the URL directly in <img src>. Other types
+                // (PDF / video / archive) are still returned as paths because
+                // `cmd_open_file_externally` needs a real filesystem path.
+                let lower_ext = ext.to_lowercase();
+                if ["jpg", "jpeg", "png", "gif", "webp", "bmp", "svg"].contains(&lower_ext.as_str()) {
+                    log::info!("Returning preview image URL: {}", save_path_str);
+                    return Ok(preview_url(&folder_key, message_id, &ext));
+                }
                 log::info!("Returning path preview: {}", save_path_str);
                 return Ok(save_path_str);
             }
@@ -362,16 +379,26 @@ pub async fn cmd_clean_cache(
 }
 
 /// Get a small thumbnail for inline display in file cards.
-/// Returns the cached file's absolute path for the frontend to load via the
-/// asset protocol (convertFileSrc), empty string for non-image files.
-/// Uses same cache as cmd_get_preview for consistency.
+/// Returns the cached image's URL (served by the local streaming server with
+/// token auth) for the frontend to load directly via `<img src>`, or an empty
+/// string when no thumbnail is available. Uses same cache as cmd_get_preview.
 #[tauri::command]
 pub async fn cmd_get_thumbnail(
     message_id: i32,
     folder_id: Option<i64>,
     app_handle: tauri::AppHandle,
     state: State<'_, TelegramState>,
+    config: State<'_, crate::commands::streaming::StreamConfig>,
 ) -> Result<String, String> {
+    let token = config.token.clone();
+    let port = config.port;
+    let url_for = |folder_key: &str, msg_id: i32, ext: &str| {
+        format!(
+            "http://localhost:{}/thumb/thumbnails/{}_{}.{}?token={}",
+            port, folder_key, msg_id, ext, token
+        )
+    };
+
     // Check if thumbnail already in cache
     let cache_dir = app_handle
         .path()
@@ -391,7 +418,7 @@ pub async fn cmd_get_thumbnail(
     for ext in supported_exts {
         let path = cache_dir.join(format!("{}_{}.{}", folder_key, message_id, ext));
         if tokio::fs::metadata(&path).await.is_ok() {
-            return Ok(path.to_string_lossy().to_string());
+            return Ok(url_for(&folder_key, message_id, ext));
         }
     }
 
@@ -498,11 +525,11 @@ pub async fn cmd_get_thumbnail(
                     // Atomically rename part file to final path
                     match tokio::fs::rename(&part_path, &save_path).await {
                         Ok(_) => {
-                            return Ok(save_path.to_string_lossy().to_string());
+                            return Ok(url_for(&folder_key, message_id, &ext));
                         },
                         Err(e) if e.kind() == std::io::ErrorKind::NotFound => {
                             // Another concurrent request already renamed our part file.
-                            return Ok(save_path.to_string_lossy().to_string());
+                            return Ok(url_for(&folder_key, message_id, &ext));
                         },
                         Err(_) => {
                             let _ = tokio::fs::remove_file(&part_path).await;

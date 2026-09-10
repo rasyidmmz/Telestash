@@ -1,7 +1,7 @@
 import { motion } from 'framer-motion';
 import { useState, useEffect, useRef } from 'react';
 import { Folder, Eye, Trash2, Link, Download } from '../../shared/icons.tsx';
-import { invoke, convertFileSrc } from '@tauri-apps/api/core';
+import { invoke } from '@tauri-apps/api/core';
 import { TelegramFile } from '../../../types';
 import { createDragGhost } from '../../../utils';
 import { FileTypeIcon } from '../../shared/FileTypeIcon';
@@ -72,7 +72,10 @@ export function FileCard({ file, onDelete, onDownload, onPreview, onShare, isSel
             folderId: activeFolderId
         }).then((result) => {
             if (!cancelled && result) {
-                setThumbnail(convertFileSrc(result));
+                // cmd_get_thumbnail now returns the full URL (served by the
+                // local streaming server with token auth) so the value is
+                // used directly as the <img src>.
+                setThumbnail(result);
             }
         }).catch(() => {
             // Silently fail - will show icon instead
