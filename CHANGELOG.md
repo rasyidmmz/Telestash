@@ -1,5 +1,16 @@
 # Changelog
 
+## [1.6.5]
+
+### Fixed
+
+- **Video thumbnails never generated (root cause of the blank grid)**: the MPV frame-extraction command passed two options that do not exist in the bundled MPV 0.41 build — `--vo-image-quality` (renamed to `--vo-image-jpeg-quality`) and `--no-subtitles` (never existed; `--sid=no` is the real flag). MPV treats an unknown option as fatal and exits before it opens the stream, so `generated_thumbs/` stayed empty and every video card fell back to its icon. Both flags are corrected, and a regression test (`mpv_args_are_valid_for_041`) now fails CI if the argument list ever drifts from the bundled MPV again.
+- **Silent MPV failures**: `extract_frame` discarded MPV's stderr, so every failure — bad option, refused stream, dead process — looked identical and was invisible in the log. The exit reason is now captured and logged at warn level, and the process is killed on timeout instead of being left as an orphan.
+
+### Changed
+
+- **Thumbnail generation logging** is debug-level per card (a 200-video grid no longer buries real failures), while skips and thumbnail-serve misses stay at warn.
+
 ## [1.6.4]
 
 ### Changed

@@ -625,6 +625,9 @@ async fn serve_cached_image(
     let path = base_dir.join(format!("{}_{}.{}", folder_key, message_id, ext));
     match tokio::fs::read(&path).await {
         Ok(bytes) => {
+            // One line per image request would flood the log on a 200-card
+            // grid; a miss is the interesting case and stays at warn.
+            log::debug!("[thumb-serve] hit {} ({} bytes)", path.display(), bytes.len());
             let mime = match ext {
                 "png" => "image/png",
                 "gif" => "image/gif",
@@ -638,7 +641,10 @@ async fn serve_cached_image(
                 .insert_header(("Cache-Control", "private, max-age=86400"))
                 .body(bytes)
         }
-        Err(_) => HttpResponse::NotFound().body("Image not found"),
+        Err(e) => {
+            log::warn!("[thumb-serve] miss {} ({})", path.display(), e);
+            HttpResponse::NotFound().body("Image not found")
+        }
     }
 }
 

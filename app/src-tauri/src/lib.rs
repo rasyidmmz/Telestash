@@ -221,7 +221,22 @@ fn cmd_get_system_diagnostics(
 }
 
 pub fn run() {
-    env_logger::init();
+    // env_logger writes to stderr by default; a release build with
+    // `windows_subsystem = "windows"` has no console, so when
+    // TELESTASH_LOG_FILE is set (the debug launcher sets it) every log line
+    // is routed to that file instead and the run leaves a trace.
+    let mut log_builder = env_logger::Builder::from_env(
+        env_logger::Env::default().default_filter_or("info"),
+    );
+    if let Ok(log_path) = std::env::var("TELESTASH_LOG_FILE") {
+        match std::fs::File::create(&log_path) {
+            Ok(file) => {
+                log_builder.target(env_logger::Target::Pipe(Box::new(file)));
+            }
+            Err(e) => eprintln!("Failed to open TELESTASH_LOG_FILE {}: {}", log_path, e),
+        }
+    }
+    log_builder.init();
 
     // The generated invoke handler chains every command (67 registered + plugin
     // commands) through deeply inlined release-build wrappers, and each IPC

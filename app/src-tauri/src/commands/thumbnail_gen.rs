@@ -32,6 +32,9 @@ pub async fn cmd_generate_video_thumbnail(
     state: State<'_, TelegramState>,
     config: State<'_, StreamConfig>,
 ) -> Result<String, String> {
+    // Per-card: debug, not info. A grid of 200 videos would otherwise bury
+    // real failures under its own success path.
+    log::debug!("[thumbgen] invoked msg={} folder={:?}", message_id, folder_id);
     let folder_key = folder_id
         .map(|id| id.to_string())
         .unwrap_or_else(|| "home".to_string());
@@ -52,12 +55,14 @@ pub async fn cmd_generate_video_thumbnail(
 
     // Only videos are worth a frame extraction.
     let is_video = message_is_video(&state, folder_id, message_id).await.unwrap_or(false);
+    log::debug!("[thumbgen] msg={} is_video={}", message_id, is_video);
     if !is_video {
         return Ok(String::new());
     }
 
     let mpv_bin = crate::commands::streaming::resolve_mpv_binary(&app_handle)
         .ok_or_else(|| "MPV binary not found".to_string())?;
+    log::debug!("[thumbgen] msg={} mpv_bin={:?}", message_id, mpv_bin);
 
     let _permit = GEN_PERMIT.acquire().await.map_err(|e| e.to_string())?;
 
@@ -93,15 +98,46 @@ pub async fn cmd_generate_video_thumbnail(
 
     match result {
         Ok(()) => {
+            log::debug!("[thumbgen] msg={} frame cached at {}", message_id, cache_path.display());
             prune_generated_cache(&cache_dir).await;
             Ok(thumb_url)
         }
-        // Soft-fail: the card keeps its icon; nothing logs as user-facing error.
+        // Soft-fail: the card keeps its icon. Warn — not debug — so a broken
+        // mpv build is visible in the log instead of buried among card noise.
         Err(e) => {
-            log::debug!("Video thumbnail generation skipped for msg {}: {}", message_id, e);
+            log::warn!("[thumbgen] msg={} skipped: {}", message_id, e);
             Ok(String::new())
         }
     }
+}
+
+/// Build the mpv argument list for a single-frame extraction.
+///
+/// Every flag here must exist in the *bundled* mpv build (v0.41 ships as the
+/// sidecar). mpv treats an unknown option as fatal and exits before it ever
+/// opens the stream, so a typo or an upstream rename kills the feature
+/// silently — which is exactly how `--vo-image-quality` (renamed to
+/// `--vo-image-jpeg-quality`) and `--no-subtitles` (never existed; `--sid=no`
+/// is the real flag) broke thumbnail generation. `mpv_args_are_valid_for_041`
+/// guards against that drift.
+fn frame_extraction_args(outdir: &std::path::Path, stream_url: &str) -> Vec<String> {
+    vec![
+        "--no-config".to_string(),
+        "--no-terminal".to_string(),
+        "--vo=image".to_string(),
+        "--vo-image-format=jpeg".to_string(),
+        "--vo-image-jpeg-quality=85".to_string(),
+        format!("--vo-image-outdir={}", outdir.display()),
+        // Keyframe-relative seek 5s in: skips black intro frames without
+        // decoding from the start, and --frames=1 exits after one frame.
+        "--start=+5".to_string(),
+        "--frames=1".to_string(),
+        "--audio=no".to_string(),
+        "--sid=no".to_string(),
+        "--hwdec=no".to_string(),
+        "--fullscreen=no".to_string(),
+        stream_url.to_string(),
+    ]
 }
 
 async fn extract_frame(
@@ -111,41 +147,29 @@ async fn extract_frame(
     cache_path: &std::path::Path,
 ) -> Result<(), String> {
     let mut child = tokio::process::Command::new(mpv_bin)
-        .args([
-            "--no-config",
-            "--no-terminal",
-            "--really-quiet",
-            "--vo=image",
-            "--vo-image-format=jpeg",
-            "--vo-image-quality=85",
-        ])
-        .arg(format!("--vo-image-outdir={}", outdir.display()))
-        .args([
-            // Keyframe-relative seek 5s in: skips black intro frames without
-            // decoding from the start, and --frames=1 exits after one frame.
-            "--start=+5",
-            "--frames=1",
-            "--audio=no",
-            "--no-subtitles",
-            "--hwdec=no",
-            "--fullscreen=no",
-            stream_url,
-        ])
+        .args(frame_extraction_args(outdir, stream_url))
         .stdin(std::process::Stdio::null())
         .stdout(std::process::Stdio::null())
-        .stderr(std::process::Stdio::null())
+        .stderr(std::process::Stdio::piped())
+        // The 45s timeout below drops the wait future; without this a hung mpv
+        // would keep running as an orphan instead of dying with the request.
+        .kill_on_drop(true)
         .spawn()
         .map_err(|e| format!("MPV spawn failed: {}", e))?;
 
     // 45s is generous for a 1–5 MB range request plus one frame decode,
     // while guaranteeing no zombie MPV lingers in the tray.
-    let status = tokio::time::timeout(std::time::Duration::from_secs(45), child.wait())
+    let output = tokio::time::timeout(std::time::Duration::from_secs(45), child.wait_with_output())
         .await
         .map_err(|_| "Frame extraction timed out".to_string())?
         .map_err(|e| format!("MPV wait failed: {}", e))?;
 
-    if !status.success() {
-        return Err(format!("MPV exited with {}", status));
+    if !output.status.success() {
+        // Keep the reason: mpv reports bad options and stream errors on stderr,
+        // and swallowing it made every failure look identical to a crash.
+        let stderr = String::from_utf8_lossy(&output.stderr);
+        let detail = stderr.lines().last().unwrap_or("").trim();
+        return Err(format!("MPV exited with {}: {}", output.status, detail));
     }
 
     // MPV names extracted frames like 00000001.jpeg inside the outdir.
@@ -270,4 +294,40 @@ async fn message_is_video(
         _ => false,
     };
     Ok(is_video)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::path::Path;
+
+    /// Locks the mpv flag names against the bundled v0.41 build. mpv aborts on
+    /// an unknown option before opening the stream, so a rename upstream (or a
+    /// typo here) silently disables every generated thumbnail. This test is the
+    /// tripwire that turns that silent failure into a red CI run.
+    #[test]
+    fn mpv_args_are_valid_for_041() {
+        let args = frame_extraction_args(Path::new(r"C:\tmp\out"), "http://localhost:1/s");
+        let joined = args.join(" ");
+
+        // Renamed in mpv 0.41 — the old name is fatal.
+        assert!(joined.contains("--vo-image-jpeg-quality=85"));
+        assert!(!joined.contains("--vo-image-quality"));
+
+        // Never existed — the real flag is --sid=no.
+        assert!(joined.contains("--sid=no"));
+        assert!(!joined.contains("--no-subtitles"));
+
+        // Core options that must survive any future refactor.
+        assert!(joined.contains("--vo=image"));
+        assert!(joined.contains("--vo-image-format=jpeg"));
+        assert!(joined.contains("--frames=1"));
+        assert!(args.last().map(String::as_str) == Some("http://localhost:1/s"));
+    }
+
+    #[test]
+    fn mpv_outdir_is_passed_through() {
+        let args = frame_extraction_args(Path::new(r"C:\tmp\out"), "url");
+        assert!(args.iter().any(|a| a == r"--vo-image-outdir=C:\tmp\out"));
+    }
 }
