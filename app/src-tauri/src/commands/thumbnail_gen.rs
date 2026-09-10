@@ -7,7 +7,6 @@
 //! Lightness guards: single global queue (one MPV at a time), hard timeout,
 //! per-message single-flight, and an LRU byte cap on the generated cache.
 
-use base64::{Engine as _, engine::general_purpose};
 use tauri::{Manager, State};
 use tokio::sync::Semaphore;
 
@@ -22,7 +21,8 @@ const GEN_CACHE_MAX_BYTES: u64 = 100 * 1024 * 1024;
 const GEN_CACHE_MAX_FILES: usize = 2_000;
 
 /// Extract one frame from a video message through bundled MPV.
-/// Returns a base64 JPEG data URL, or "" when generation is not possible
+/// Returns the cached JPEG's absolute path for the frontend to load via the
+/// asset protocol (convertFileSrc), or "" when generation is not possible
 /// (non-video file, MPV missing, timeout) so the UI keeps its icon fallback.
 #[tauri::command]
 pub async fn cmd_generate_video_thumbnail(
@@ -42,8 +42,8 @@ pub async fn cmd_generate_video_thumbnail(
         .map_err(|e: tauri::Error| e.to_string())?
         .join("generated_thumbs");
     let cache_path = cache_dir.join(format!("{}_{}.jpg", folder_key, message_id));
-    if let Ok(bytes) = tokio::fs::read(&cache_path).await {
-        return Ok(to_data_url(&bytes));
+    if tokio::fs::metadata(&cache_path).await.is_ok() {
+        return Ok(cache_path.to_string_lossy().to_string());
     }
 
     // Only videos are worth a frame extraction.
@@ -59,8 +59,8 @@ pub async fn cmd_generate_video_thumbnail(
 
     // Another request may have finished generation while we waited for the
     // queue — re-check before spawning anything.
-    if let Ok(bytes) = tokio::fs::read(&cache_path).await {
-        return Ok(to_data_url(&bytes));
+    if tokio::fs::metadata(&cache_path).await.is_ok() {
+        return Ok(cache_path.to_string_lossy().to_string());
     }
 
     tokio::fs::create_dir_all(&cache_dir)
@@ -88,9 +88,9 @@ pub async fn cmd_generate_video_thumbnail(
     let _ = tokio::fs::remove_dir_all(&outdir).await;
 
     match result {
-        Ok(bytes) => {
+        Ok(()) => {
             prune_generated_cache(&cache_dir).await;
-            Ok(to_data_url(&bytes))
+            Ok(cache_path.to_string_lossy().to_string())
         }
         // Soft-fail: the card keeps its icon; nothing logs as user-facing error.
         Err(e) => {
@@ -105,9 +105,7 @@ async fn extract_frame(
     stream_url: &str,
     outdir: &std::path::Path,
     cache_path: &std::path::Path,
-) -> Result<Vec<u8>, String> {
-    use tokio::io::AsyncWriteExt;
-
+) -> Result<(), String> {
     let mut child = tokio::process::Command::new(mpv_bin)
         .args([
             "--no-config",
@@ -165,38 +163,36 @@ async fn extract_frame(
     }
     let frame_path = frame_path.ok_or_else(|| "No frame written by MPV".to_string())?;
 
-    let mut bytes = tokio::fs::read(&frame_path)
+    let frame_len = tokio::fs::metadata(&frame_path)
         .await
-        .map_err(|e| format!("Frame read failed: {}", e))?;
-    if bytes.is_empty() {
+        .map_err(|e| format!("Frame stat failed: {}", e))?
+        .len();
+    if frame_len == 0 {
         return Err("Frame written empty".to_string());
+    }
+    // Cap absurd frame sizes (>2 MB would mean something decoded a
+    // poster-sized frame — still fine, but not worth caching).
+    if frame_len > 2 * 1024 * 1024 {
+        return Err("Frame unexpectedly large".to_string());
     }
 
     // Cache under the same naming scheme cmd_get_thumbnail already probes.
+    // The frame goes straight from MPV's outdir into the cache via rename-
+    // through-temp — no bytes are ever buffered for a base64 round-trip.
     let mut tmp_cache = cache_path.to_path_buf();
     tmp_cache.set_extension("jpg.part");
-    let mut part = tokio::fs::File::create(&tmp_cache)
-        .await
-        .map_err(|e| format!("Cache write failed: {}", e))?;
-    part.write_all(&bytes)
-        .await
-        .map_err(|e| format!("Cache write failed: {}", e))?;
-    part.flush()
-        .await
-        .map_err(|e| format!("Cache write failed: {}", e))?;
-    drop(part);
+    if tokio::fs::rename(&frame_path, &tmp_cache).await.is_err() {
+        // Cross-device rename can fail; fall back to copy+delete.
+        tokio::fs::copy(&frame_path, &tmp_cache)
+            .await
+            .map_err(|e| format!("Cache write failed: {}", e))?;
+        let _ = tokio::fs::remove_file(&frame_path).await;
+    }
     tokio::fs::rename(&tmp_cache, cache_path)
         .await
         .map_err(|e| format!("Cache rename failed: {}", e))?;
 
-    // mpv may emit jpegs with a JFIF-less header some webviews dislike;
-    // data URL uses image/jpeg either way. Cap absurd frame sizes (>2 MB
-    // would mean something decoded a poster-sized frame — still fine).
-    if bytes.len() > 2 * 1024 * 1024 {
-        bytes.truncate(0);
-        return Err("Frame unexpectedly large".to_string());
-    }
-    Ok(bytes)
+    Ok(())
 }
 
 /// LRU prune of the generated cache by byte + file-count cap.
@@ -230,10 +226,6 @@ async fn prune_generated_cache(cache_dir: &std::path::Path) {
         }
     })
     .await;
-}
-
-fn to_data_url(bytes: &[u8]) -> String {
-    format!("data:image/jpeg;base64,{}", general_purpose::STANDARD.encode(bytes))
 }
 
 /// Probe whether the message media is a video document, without downloading.

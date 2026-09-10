@@ -1,6 +1,6 @@
 [package]
 name = "telestash"
-version = "1.6.1"
+version = "1.6.2"
 description = "Windows 11 x64 Telegram-backed media and file drive."
 authors = ["rasyidmmz"]
 edition = "2021"
@@ -16,7 +16,7 @@ crate-type = ["staticlib", "cdylib", "rlib"]
 tauri-build = { version = "2", features = [] }
 
 [dependencies]
-tauri = { version = "2", features = ["tray-icon"] }
+tauri = { version = "2", features = ["tray-icon", "protocol-asset"] }
 tauri-plugin-opener = "2"
 tauri-plugin-os = "2"
 serde = { version = "1", features = ["derive"] }
@@ -63,4 +63,9 @@ sysinfo = "0.39"
 webview-install-mode = "embeddir"
 
 [profile.release]
+# Keep debug info (PDB) for crash-dump symbolization via the pdbdump tool.
+# thin LTO + one codegen unit trade build time for a smaller, faster binary
+# without the full-link-time cost of "fat" LTO.
 debug = true
+lto = "thin"
+codegen-units = 1

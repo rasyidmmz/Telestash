@@ -18,7 +18,6 @@ import { DownloadQueue } from './dashboard/DownloadQueue';
 import { MoveToFolderModal } from './dashboard/MoveToFolderModal';
 import { PreviewModal } from './dashboard/PreviewModal';
 import { MediaPlayer } from './dashboard/MediaPlayer';
-import { PdfViewer } from './dashboard/PdfViewer';
 import { ArchiveViewerModal } from './dashboard/ArchiveViewerModal';
 import { ShareDialog } from './dashboard/ShareDialog';
 import { RenameFolderModal } from './dashboard/RenameFolderModal';
@@ -47,6 +46,9 @@ import { useUpdate } from '../../context/UpdateContext';
 import { recordErrorLog } from '../../errorLogs';
 
 const SettingsModal = lazy(() => import('./dashboard/SettingsModal').then(m => ({ default: m.SettingsModal })));
+// pdfjs-dist is a ~1 MB dependency; only pull it into the bundle when a
+// PDF is actually opened.
+const PdfViewer = lazy(() => import('./dashboard/PdfViewer').then(m => ({ default: m.PdfViewer })));
 
 export function Dashboard({ onLogout }: { onLogout: () => void }) {
     const queryClient = useQueryClient();
@@ -735,16 +737,18 @@ export function Dashboard({ onLogout }: { onLogout: () => void }) {
                     />
                 )}
                 {pdfFile && (
-                    <PdfViewer
-                        file={pdfFile}
-                        onClose={() => setPdfFile(null)}
-                        onNext={handleNextPreview}
-                        onPrev={handlePrevPreview}
-                        currentIndex={previewContextIndex}
-                        totalItems={previewContextFiles.length}
-                        activeFolderId={activeFolderId}
-                        key="pdf-viewer"
-                    />
+                    <Suspense fallback={null}>
+                        <PdfViewer
+                            file={pdfFile}
+                            onClose={() => setPdfFile(null)}
+                            onNext={handleNextPreview}
+                            onPrev={handlePrevPreview}
+                            currentIndex={previewContextIndex}
+                            totalItems={previewContextFiles.length}
+                            activeFolderId={activeFolderId}
+                            key="pdf-viewer"
+                        />
+                    </Suspense>
                 )}
             </AnimatePresence>
 

@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { invoke } from '@tauri-apps/api/core';
+import { invoke, convertFileSrc } from '@tauri-apps/api/core';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useSettings } from '../context/SettingsContext';
 import { useTranslation } from 'react-i18next';
@@ -199,7 +199,7 @@ export function useCachedPoster(fileId: number, folderId: number | null | undefi
         let cancelled = false;
         invoke<string>('cmd_get_tmdb_poster', { messageId: fileId, folderId: folderId ?? null })
             .then((p) => {
-                if (!cancelled && p) setPoster(p);
+                if (!cancelled && p) setPoster(convertFileSrc(p));
             })
             .catch(() => { /* no poster cached */ });
         return () => { cancelled = true; };

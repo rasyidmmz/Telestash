@@ -219,15 +219,14 @@ fn set_poster_path_sync(
     Ok(())
 }
 
-/// Serve a cached poster as a base64 data URL; empty string when absent.
+/// Serve a cached poster's file path for the frontend to load via the asset
+/// protocol (convertFileSrc); empty string when absent.
 #[tauri::command]
 pub async fn cmd_get_tmdb_poster(
     message_id: i32,
     folder_id: Option<i64>,
     app_handle: tauri::AppHandle,
 ) -> Result<String, String> {
-    use base64::{Engine as _, engine::general_purpose};
-
     let dir = app_handle
         .path()
         .app_data_dir()
@@ -235,12 +234,9 @@ pub async fn cmd_get_tmdb_poster(
         .join("tmdb_posters");
     let folder_key = folder_id.map(|id| id.to_string()).unwrap_or_else(|| "home".to_string());
     let path = dir.join(format!("{folder_key}_{message_id}.jpg"));
-    match tokio::fs::read(&path).await {
-        Ok(bytes) => Ok(format!(
-            "data:image/jpeg;base64,{}",
-            general_purpose::STANDARD.encode(bytes)
-        )),
-        Err(_) => Ok(String::new()),
+    match tokio::fs::metadata(&path).await {
+        Ok(m) if m.len() > 0 => Ok(path.to_string_lossy().to_string()),
+        _ => Ok(String::new()),
     }
 }
 

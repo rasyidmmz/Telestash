@@ -2,7 +2,6 @@ use tauri::State;
 use tauri::Manager;
 use std::sync::Arc;
 use grammers_client::media::Media;
-use base64::{Engine as _, engine::general_purpose};
 use rand::Rng;
 use tokio::io::AsyncWriteExt;
 use crate::TelegramState;
@@ -300,28 +299,9 @@ pub async fn cmd_get_preview(
                 }
             };
             if file_ready {
-                let lower_ext = ext.to_lowercase();
-                if ["jpg", "jpeg", "png", "gif", "webp", "bmp", "svg"].contains(&lower_ext.as_str()) {
-                    log::info!("Converting file to Base64...");
-                    match tokio::fs::read(&save_path).await {
-                        Ok(bytes) => {
-                            let b64 = general_purpose::STANDARD.encode(&bytes);
-                            let mime = match lower_ext.as_str() {
-                                "png" => "image/png",
-                                "gif" => "image/gif",
-                                "webp" => "image/webp",
-                                "bmp" => "image/bmp",
-                                "svg" => "image/svg+xml",
-                                _ => "image/jpeg",
-                            };
-                            return Ok(format!("data:{};base64,{}", mime, b64));
-                        },
-                        Err(e) => {
-                            log::error!("Failed to read file for base64: {}", e);
-                            return Ok(save_path_str);
-                        }
-                    }
-                }
+                // All cached previews live under the asset-protocol scope, so
+                // the path can be served straight through convertFileSrc —
+                // images no longer round-trip through a base64 IPC payload.
                 log::info!("Returning path preview: {}", save_path_str);
                 return Ok(save_path_str);
             }
@@ -382,7 +362,8 @@ pub async fn cmd_clean_cache(
 }
 
 /// Get a small thumbnail for inline display in file cards.
-/// Returns base64 data URL for images, empty string for non-image files.
+/// Returns the cached file's absolute path for the frontend to load via the
+/// asset protocol (convertFileSrc), empty string for non-image files.
 /// Uses same cache as cmd_get_preview for consistency.
 #[tauri::command]
 pub async fn cmd_get_thumbnail(
@@ -410,16 +391,7 @@ pub async fn cmd_get_thumbnail(
     for ext in supported_exts {
         let path = cache_dir.join(format!("{}_{}.{}", folder_key, message_id, ext));
         if tokio::fs::metadata(&path).await.is_ok() {
-            if let Ok(bytes) = tokio::fs::read(&path).await {
-                let mime = match *ext {
-                    "png" => "image/png",
-                    "gif" => "image/gif",
-                    "webp" => "image/webp",
-                    _ => "image/jpeg",
-                };
-                let b64 = general_purpose::STANDARD.encode(&bytes);
-                return Ok(format!("data:{};base64,{}", mime, b64));
-            }
+            return Ok(path.to_string_lossy().to_string());
         }
     }
 
@@ -526,29 +498,11 @@ pub async fn cmd_get_thumbnail(
                     // Atomically rename part file to final path
                     match tokio::fs::rename(&part_path, &save_path).await {
                         Ok(_) => {
-                            if let Ok(bytes) = tokio::fs::read(&save_path).await {
-                                let mime = match ext.as_str() {
-                                    "png" => "image/png",
-                                    "gif" => "image/gif",
-                                    "webp" => "image/webp",
-                                    _ => "image/jpeg",
-                                };
-                                let b64 = general_purpose::STANDARD.encode(&bytes);
-                                return Ok(format!("data:{};base64,{}", mime, b64));
-                            }
+                            return Ok(save_path.to_string_lossy().to_string());
                         },
                         Err(e) if e.kind() == std::io::ErrorKind::NotFound => {
                             // Another concurrent request already renamed our part file.
-                            if let Ok(bytes) = tokio::fs::read(&save_path).await {
-                                let mime = match ext.as_str() {
-                                    "png" => "image/png",
-                                    "gif" => "image/gif",
-                                    "webp" => "image/webp",
-                                    _ => "image/jpeg",
-                                };
-                                let b64 = general_purpose::STANDARD.encode(&bytes);
-                                return Ok(format!("data:{};base64,{}", mime, b64));
-                            }
+                            return Ok(save_path.to_string_lossy().to_string());
                         },
                         Err(_) => {
                             let _ = tokio::fs::remove_file(&part_path).await;

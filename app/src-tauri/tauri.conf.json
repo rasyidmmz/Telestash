@@ -15,7 +15,7 @@
     }
   },
   "productName": "TeleStash",
-  "version": "1.6.1",
+  "version": "1.6.2",
   "identifier": "com.rasyidmmz.telestash",
   "build": {
     "beforeDevCommand": "npm run dev",
@@ -36,6 +36,15 @@
     ],
     "security": {
       "csp": "default-src 'self'; connect-src 'self' https: http://localhost:* https://asset.localhost http://asset.localhost; media-src 'self' blob: http://localhost:*; img-src 'self' data: blob: asset: https: https://asset.localhost; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-eval' blob: https:; frame-src 'self' blob:; worker-src 'self' blob:;",
+      "assetProtocol": {
+        "enable": true,
+        "scope": [
+          "$APPDATA/thumbnails/**/*",
+          "$APPDATA/generated_thumbs/**/*",
+          "$APPDATA/tmdb_posters/**/*",
+          "$APPCACHE/previews/**/*"
+        ]
+      },
       "capabilities": [
         "default"
       ]

@@ -1,6 +1,6 @@
 import { X, Star, Film } from '../../shared/icons.tsx';
 import { useEffect, useState } from 'react';
-import { invoke } from '@tauri-apps/api/core';
+import { invoke, convertFileSrc } from '@tauri-apps/api/core';
 import { TelegramFile } from '../../../types';
 import { FileMetadata } from '../../../hooks/useFileMetadata';
 import { useTranslation } from 'react-i18next';
@@ -130,7 +130,7 @@ export function MetadataInfoLoader({ file, onClose }: { file: TelegramFile; onCl
             messageId: file.id,
             folderId: file.folder_id ?? null,
         })
-            .then((p) => { if (!cancelled && p) setPoster(p); })
+            .then((p) => { if (!cancelled && p) setPoster(convertFileSrc(p)); })
             .catch(() => { /* no poster cached */ });
         return () => { cancelled = true; };
     }, [file.id, file.folder_id]);

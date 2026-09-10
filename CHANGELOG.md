@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.6.2]
+
+### Changed
+
+- **Thumbnails, posters and previews via asset protocol**: image thumbnails, generated video thumbnails, TMDB posters and inline previews are now served from their on-disk cache through Tauri's asset protocol (`convertFileSrc`) instead of base64 data URLs over IPC. Card grids load faster, memory pressure drops, and the WebView caches images natively. Requires the new `protocol-asset` feature flag; cache file naming is unchanged, so existing cached files keep working.
+- **PDF viewer lazy-loaded**: pdfjs-dist (~1 MB + 2.4 MB worker) now loads only when a PDF is actually opened, taking it off the dashboard's critical bundle path.
+- **Release build profile**: `lto = "thin"` + `codegen-units = 1` in the Rust release profile for a smaller, faster binary (PDB debug info retained for crash symbolization; CI build time increases ~10–15%).
+
 ## [1.6.1]
 
 ### Fixed

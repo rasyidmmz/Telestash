@@ -94,14 +94,9 @@ export function PreviewModal({ file, onClose, onNext, onPrev, currentIndex, tota
                 if (requestId !== latestRequestRef.current) return;
 
                 if (path) {
-                    if (path.startsWith('data:')) {
-                        setSrc(path);
-                        rememberPreview(key, path);
-                    } else {
-                        const converted = convertFileSrc(path);
-                        setSrc(converted);
-                        rememberPreview(key, converted);
-                    }
+                    const converted = convertFileSrc(path);
+                    setSrc(converted);
+                    rememberPreview(key, converted);
                 } else {
                     setError("Preview not available");
                 }
@@ -129,8 +124,7 @@ export function PreviewModal({ file, onClose, onNext, onPrev, currentIndex, tota
                 folderId: activeFolderId
             }).then((path) => {
                 if (!path) return;
-                const normalized = path.startsWith('data:') ? path : convertFileSrc(path);
-                rememberPreview(key, normalized);
+                rememberPreview(key, convertFileSrc(path));
             }).catch(() => {
                 // Ignore prefetch errors, main preview flow will handle user-visible failures.
             }).finally(() => {
