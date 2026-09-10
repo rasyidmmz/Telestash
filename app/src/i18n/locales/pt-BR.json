@@ -188,12 +188,7 @@
     "color_text": "Text",
     "color_subtext": "Subtext",
     "video_thumbnails": "Gerar miniaturas de vídeo",
-    "video_thumbnails_desc": "Extrai um quadro de vídeos sem pré-visualização via MPV embutido. Leve: um trabalho por vez, em cache.",
-    "tmdb_section": "Cinema pessoal",
-    "tmdb_enable": "Metadados TMDB",
-    "tmdb_enable_desc": "Busca títulos, pôsteres e notas dos seus vídeos. Desligado por padrão.",
-    "tmdb_api_key": "Chave de API TMDB",
-    "tmdb_api_key_desc": "Sua chave gratuita de themoviedb.org. Armazenada localmente, nunca enviada a outros lugares."
+    "video_thumbnails_desc": "Extrai um quadro de vídeos sem pré-visualização via MPV embutido. Leve: um trabalho por vez, em cache."
   },
   "files": {
     "download": "Baixar",
@@ -241,10 +236,7 @@
     "subtitles_manage": "Gerenciar legendas",
     "subtitles_delete_confirm": "Clique novamente para remover do Telegram",
     "subtitles_deleted": "Legenda {{language}} removida",
-    "subtitles_delete_failed": "Falha ao remover a legenda",
-    "metadata_info_title": "Sobre este vídeo",
-    "metadata_info_menu": "Ver informações",
-    "metadata_info_empty": "Ainda não há metadados para este vídeo. Ative o TMDB nas Configurações e abra esta pasta."
+    "subtitles_delete_failed": "Falha ao remover a legenda"
   },
   "archive": {
     "archive_viewer": "Visualizador de arquivos compactados",

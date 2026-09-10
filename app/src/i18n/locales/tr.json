@@ -188,12 +188,7 @@
     "color_text": "Text",
     "color_subtext": "Subtext",
     "video_thumbnails": "Video küçük resimleri oluştur",
-    "video_thumbnails_desc": "Önizlemesi olmayan videolardan gömülü MPV ile bir kare çıkarır. Hafif: tek seferde bir iş, önbellekli.",
-    "tmdb_section": "Kişisel Sinema",
-    "tmdb_enable": "TMDB meta verileri",
-    "tmdb_enable_desc": "Videolarınız için başlık, poster ve puan arar. Varsayılan olarak kapalı.",
-    "tmdb_api_key": "TMDB API anahtarı",
-    "tmdb_api_key_desc": "themoviedb.org kaynaklı ücretsiz anahtarınız. Yerel olarak saklanır, hiçbir yere gönderilmez."
+    "video_thumbnails_desc": "Önizlemesi olmayan videolardan gömülü MPV ile bir kare çıkarır. Hafif: tek seferde bir iş, önbellekli."
   },
   "files": {
     "download": "İndir",
@@ -241,10 +236,7 @@
     "subtitles_manage": "Altyazıları Yönet",
     "subtitles_delete_confirm": "Telegram'dan kaldırmak için tekrar tıklayın",
     "subtitles_deleted": "{{language}} altyazı kaldırıldı",
-    "subtitles_delete_failed": "Altyazı kaldırılamadı",
-    "metadata_info_title": "Bu video hakkında",
-    "metadata_info_menu": "Bilgileri gör",
-    "metadata_info_empty": "Bu video için henüz meta veri yok. Ayarlar'dan TMDB'yi etkinleştirip bu klasörü açın."
+    "subtitles_delete_failed": "Altyazı kaldırılamadı"
   },
   "archive": {
     "archive_viewer": "Arşiv Görüntüleyici",

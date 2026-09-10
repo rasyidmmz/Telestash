@@ -190,12 +190,7 @@
     "color_primary": "Primary",
     "color_secondary": "Secondary",
     "color_text": "Text",
-    "color_subtext": "Subtext",
-    "tmdb_section": "Personal Cinema",
-    "tmdb_enable": "Metadata TMDB",
-    "tmdb_enable_desc": "Cari judul, poster, dan rating untuk video-mu. Mati secara bawaan.",
-    "tmdb_api_key": "API key TMDB",
-    "tmdb_api_key_desc": "Kunci gratis pribadimu dari themoviedb.org. Disimpan lokal, tidak dikirim ke mana pun."
+    "color_subtext": "Subtext"
   },
   "files": {
     "load_failed": "File tidak dapat dimuat",
@@ -253,10 +248,7 @@
     "subtitles_manage": "Kelola Subtitle",
     "subtitles_delete_confirm": "Klik sekali lagi untuk hapus dari Telegram",
     "subtitles_deleted": "Subtitle {{language}} dihapus",
-    "subtitles_delete_failed": "Gagal menghapus subtitle",
-    "metadata_info_title": "Tentang video ini",
-    "metadata_info_menu": "Lihat Info",
-    "metadata_info_empty": "Belum ada metadata untuk video ini. Aktifkan TMDB di Pengaturan lalu buka folder ini."
+    "subtitles_delete_failed": "Gagal menghapus subtitle"
   },
   "archive": {
     "archive_viewer": "Penampil Arsip",

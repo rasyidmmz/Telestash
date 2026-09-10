@@ -188,12 +188,7 @@
     "color_text": "Text",
     "color_subtext": "Subtext",
     "video_thumbnails": "إنشاء مصغرات الفيديو",
-    "video_thumbnails_desc": "يستخرج إطارًا من الفيديوهات دون معاينة عبر MPV المدمج. خفيف: مهمة واحدة في كل مرة، مع تخزين مؤقت.",
-    "tmdb_section": "السينما الشخصية",
-    "tmdb_enable": "بيانات وصفية من TMDB",
-    "tmdb_enable_desc": "البحث عن العناوين والملصقات والتقييمات لفيديوهاتك. معطّلة افتراضيًا.",
-    "tmdb_api_key": "مفتاح API الخاص بـ TMDB",
-    "tmdb_api_key_desc": "مفتاحك المجاني من themoviedb.org. يُخزَّن محليًا ولا يُرسل لأي مكان آخر."
+    "video_thumbnails_desc": "يستخرج إطارًا من الفيديوهات دون معاينة عبر MPV المدمج. خفيف: مهمة واحدة في كل مرة، مع تخزين مؤقت."
   },
   "files": {
     "download": "تنزيل",
@@ -241,10 +236,7 @@
     "subtitles_manage": "إدارة الترجمات",
     "subtitles_delete_confirm": "انقر مرة أخرى للإزالة من تيليجرام",
     "subtitles_deleted": "تمت إزالة ترجمة {{language}}",
-    "subtitles_delete_failed": "فشل في إزالة الترجمة",
-    "metadata_info_title": "عن هذا الفيديو",
-    "metadata_info_menu": "عرض المعلومات",
-    "metadata_info_empty": "لا توجد بيانات وصفية لهذا الفيديو بعد. فعّل TMDB في الإعدادات ثم افتح هذا المجلد."
+    "subtitles_delete_failed": "فشل في إزالة الترجمة"
   },
   "archive": {
     "archive_viewer": "عارض الأرشيف",

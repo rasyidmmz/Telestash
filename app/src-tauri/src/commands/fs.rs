@@ -1818,9 +1818,9 @@ pub async fn cmd_rename_file(
     Ok(true)
 }
 
-/// Remove a deleted file's rows from the watch-history and metadata tables.
+/// Remove a deleted file's rows from the watch-history table.
 /// Takes the pool by value so no state guard is held across an await.
-fn purge_file_side_tables(pool: DbConnection, folder_id: Option<i64>, message_id: i32) -> Result<(), String> {
+fn purge_file_side_tables(pool: DbConnection, message_id: i32) -> Result<(), String> {
     let conn = pool.lock().map_err(|e| e.to_string())?;
 
     let mut history = conn
@@ -1828,13 +1828,6 @@ fn purge_file_side_tables(pool: DbConnection, folder_id: Option<i64>, message_id
         .map_err(|e| e.to_string())?;
     history.bind((1, message_id as i64)).map_err(|e| e.to_string())?;
     history.next().map_err(|e| e.to_string())?;
-
-    let mut metadata = conn
-        .prepare("DELETE FROM file_metadata WHERE folder_id = ?1 AND message_id = ?2")
-        .map_err(|e| e.to_string())?;
-    metadata.bind((1, folder_id.unwrap_or(-1))).map_err(|e| e.to_string())?;
-    metadata.bind((2, message_id as i64)).map_err(|e| e.to_string())?;
-    metadata.next().map_err(|e| e.to_string())?;
 
     Ok(())
 }
@@ -1912,11 +1905,11 @@ pub async fn cmd_delete_file(
         delete_message_ids(&client, peer, &sidecar_ids, "Subtitle sidecar delete").await?;
     }
 
-    // Drop the file's watch-history row and cached TMDB metadata so analytics
+    // Drop the file's watch-history row so analytics
     // and the poster wall stop counting a file that no longer exists.
     {
         let pool = (*app_handle.state::<DbConnection>()).clone();
-        let _ = purge_file_side_tables(pool, folder_id, message_id);
+        let _ = purge_file_side_tables(pool, message_id);
     }
 
     if let Ok(app_dir) = app_handle.path().app_data_dir() {

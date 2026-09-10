@@ -33,10 +33,11 @@ inventarisasi kode internal.
 
 ## Tier 2 — Personal Cinema Flagship (v1.6.0)
 
-1. **Metadata TMDB opt-in** — parse nama file (reuse `seriesParser` + `mediaTags`) →
-   fetch judul/tahun/genre/sinopsis/rating → cache tabel `file_metadata`. Default
-   MATI, toggle di settings + API key sendiri. Tidak mengirim data library ke mana pun.
-2. **Poster Wall view mode** — grid poster + detail drawer (sinopsis, rating, genre).
+1. ~~**Metadata TMDB opt-in**~~ — DIHAPUS di v1.6.3 (merumitkan user: wajib API
+   key sendiri; user memutuskan tidak jadi). Tabel `file_metadata` didrop,
+   command + UI dihapus bersih.
+2. **Poster Wall view mode** — tetap ada setelah v1.6.3 sebagai thumbnail wall
+   2:3 dari generated video thumbs (tanpa layanan eksternal).
 3. **Watch Analytics Dashboard** — dari watch history Tier 1: total waktu tonton,
    streak, top series/folder, chart bulanan.
 
@@ -64,6 +65,8 @@ inventarisasi kode internal.
 - Proxy/VPN/throttle, folder/URL/drag-drop ingest — melanggar AGENTS.md (keputusan
   desain final).
 - Whisper/translate subtitle — sudah dihapus bersih di v1.4.0, tidak dikembalikan.
+- Metadata TMDB — dihapus di v1.6.3; API key pribadi terlalu rumit untuk user,
+  tidak akan ditawarkan kembali.
 - Export library & advanced search — ditolak user (09-05).
 - Transcoding/HLS/playback webview — sengaja dibuang (v1.2.3); MPV native = moto.
 - Multi-akun & sharing publik internet — kompleks + bertentangan dengan
@@ -72,7 +75,6 @@ inventarisasi kode internal.
 
 ## Asumsi Kunci (validasi saat eksekusi)
 
-- Parsing nama file → match TMDB cukup akurat untuk library user (uji 20 file sample).
 - MPV `--vo=image` dapat dipakai ekstraksi thumbnail (pattern `--ao=pcm` terbukti).
 - grammers 0.10 expose flag `is_premium` (cek saat implementasi Tier 4).
 - Migrasi watch history tidak kehilangan data localStorage lama (dual-read).

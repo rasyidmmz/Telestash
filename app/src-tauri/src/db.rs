@@ -105,21 +105,6 @@ pub fn init_db(app: &AppHandle) -> Result<DbConnection, String> {
                     last_position_secs REAL,
                     total_duration_secs REAL,
                     play_count INTEGER NOT NULL DEFAULT 1
-                );
-                CREATE TABLE IF NOT EXISTS file_metadata (
-                    folder_id INTEGER,
-                    message_id INTEGER NOT NULL,
-                    media_type TEXT NOT NULL DEFAULT 'movie',
-                    tmdb_id INTEGER,
-                    title TEXT NOT NULL,
-                    original_title TEXT,
-                    year INTEGER,
-                    overview TEXT,
-                    rating REAL,
-                    genres_json TEXT,
-                    poster_path TEXT,
-                    updated_at INTEGER NOT NULL,
-                    PRIMARY KEY (folder_id, message_id)
                 );"
             ) {
                 Ok(_) => {
@@ -151,6 +136,8 @@ pub fn init_db(app: &AppHandle) -> Result<DbConnection, String> {
     // Each is expected to fail with "duplicate column" once applied, so the
     // error is intentionally ignored.
     let _ = conn.execute("ALTER TABLE watch_history ADD COLUMN play_count INTEGER NOT NULL DEFAULT 1;");
+    // TMDB metadata was removed in v1.6.3; drop its table and stop tracking it.
+    let _ = conn.execute("DROP TABLE IF EXISTS file_metadata;");
 
     log::info!("SQLite database initialized successfully using sqlite crate.");
     Ok(Arc::new(Mutex::new(conn)))

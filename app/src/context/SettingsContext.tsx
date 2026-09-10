@@ -17,12 +17,6 @@ export interface Settings {
     /** Generate fallback thumbnails for videos lacking a Telegram-native thumb (light: 1 MPV job, LRU-capped cache). */
     videoThumbnails: boolean;
 
-    // ── Personal Cinema (TMDB) ─────────────────────────────
-    /** Opt-in TMDB metadata lookup (titles, posters, ratings). Off by default; uses the user's own API key. */
-    tmdbEnabled: boolean;
-    /** The user's personal TMDB API key (v3 key, stored locally only). */
-    tmdbApiKey: string;
-
     windowsAutostart: boolean;       // Launch on Windows Startup
 }
 
@@ -39,10 +33,6 @@ const defaultSettings: Settings = {
 
     // Vault
     videoThumbnails: true,
-
-    // Personal Cinema (TMDB) — opt-in
-    tmdbEnabled: false,
-    tmdbApiKey: '',
 
     windowsAutostart: false,
 };
@@ -75,6 +65,8 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
                         'floodWaitRespect', 'peerCacheSize', 'bandwidthLimitUpKBs',
                         'bandwidthLimitDownKBs', 'chunkSizeKb', 'keepAliveIntervalSec',
                         'autoDetectVpn', 'archiveMaxBytes', 'transcodeCacheMaxGb',
+                        // TMDB settings removed in v1.6.3 — purge stale copies.
+                        'tmdbEnabled', 'tmdbApiKey',
                     ]) {
                         delete savedSettings[key];
                     }

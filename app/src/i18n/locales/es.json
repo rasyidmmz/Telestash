@@ -188,12 +188,7 @@
     "color_text": "Text",
     "color_subtext": "Subtext",
     "video_thumbnails": "Generar miniaturas de video",
-    "video_thumbnails_desc": "Extrae un fotograma de los videos sin vista previa mediante MPV integrado. Ligero: un trabajo a la vez, en caché.",
-    "tmdb_section": "Cine personal",
-    "tmdb_enable": "Metadatos de TMDB",
-    "tmdb_enable_desc": "Busca títulos, pósters y valoraciones de tus vídeos. Desactivado por defecto.",
-    "tmdb_api_key": "Clave API de TMDB",
-    "tmdb_api_key_desc": "Tu clave gratuita de themoviedb.org. Se guarda localmente y no se envía a ningún otro sitio."
+    "video_thumbnails_desc": "Extrae un fotograma de los videos sin vista previa mediante MPV integrado. Ligero: un trabajo a la vez, en caché."
   },
   "files": {
     "download": "Descargar",
@@ -241,10 +236,7 @@
     "subtitles_manage": "Administrar subtítulos",
     "subtitles_delete_confirm": "Haz clic de nuevo para quitar de Telegram",
     "subtitles_deleted": "Subtítulo {{language}} eliminado",
-    "subtitles_delete_failed": "Error al quitar el subtítulo",
-    "metadata_info_title": "Sobre este vídeo",
-    "metadata_info_menu": "Ver información",
-    "metadata_info_empty": "Aún no hay metadatos para este vídeo. Activa TMDB en Ajustes y abre esta carpeta."
+    "subtitles_delete_failed": "Error al quitar el subtítulo"
   },
   "archive": {
     "archive_viewer": "Visor de archivos",

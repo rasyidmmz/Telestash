@@ -7,7 +7,6 @@ import { FileCard } from './FileCard';
 import { EmptyState } from './EmptyState';
 import { TelegramFile, TelegramFolder } from '../../../types';
 import { ContextMenu } from './ContextMenu';
-import { MetadataInfoLoader } from './MetadataInfoModal';
 import { FileListItem } from './FileListItem';
 import { AttachSubtitlesModal } from './AttachSubtitlesModal';
 import { ManageSubtitlesModal } from './ManageSubtitlesModal';
@@ -91,7 +90,6 @@ export function FileExplorer({
     const [sortDirection, setSortDirection] = useState<SortDirection>('asc');
     const [contextMenu, setContextMenu] = useState<{ x: number; y: number; file: TelegramFile; subtitles?: VideoSubtitleInfo[] } | null>(null);
     const [subtitlesTarget, setSubtitlesTarget] = useState<{ file: TelegramFile; subtitles: VideoSubtitleInfo[] } | null>(null);
-    const [infoTarget, setInfoTarget] = useState<TelegramFile | null>(null);
     const { t } = useTranslation();
     const { settings } = useSettings();
 
@@ -658,19 +656,11 @@ export function FileExplorer({
                         setSubtitlesTarget({ file: contextMenu.file, subtitles: contextMenu.subtitles ?? [] });
                         setContextMenu(null);
                     } : undefined}
-                    onInfo={contextMenu.file.type !== 'folder' ? () => {
-                        setInfoTarget(contextMenu.file);
-                        setContextMenu(null);
-                    } : undefined}
                 />
             )}
 
             {subtitlesTarget && (
                 <ManageSubtitlesModal target={subtitlesTarget} onClose={() => setSubtitlesTarget(null)} />
-            )}
-
-            {infoTarget && (
-                <MetadataInfoLoader file={infoTarget} onClose={() => setInfoTarget(null)} />
             )}
 
             <AttachSubtitlesModal

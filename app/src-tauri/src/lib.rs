@@ -467,11 +467,6 @@ pub fn run() {
             commands::cmd_watch_history_clear,
             commands::cmd_watch_history_import,
             commands::cmd_generate_video_thumbnail,
-            commands::cmd_upsert_file_metadata,
-            commands::cmd_get_file_metadata,
-            commands::cmd_delete_file_metadata,
-            commands::cmd_save_tmdb_poster,
-            commands::cmd_get_tmdb_poster,
             commands::cmd_watch_analytics,
         ])
         .build(tauri::generate_context!())

@@ -1,5 +1,15 @@
 # Changelog
 
+## [1.6.3]
+
+### Fixed
+
+- **Blank thumbnails, posters and previews (v1.6.2 regression)**: images served through the new asset protocol were silently blocked by CSP — on Windows `convertFileSrc` produces `http://asset.localhost` URLs, but `img-src` only allowed the `https` variant. Both schemes are now allowed; cached thumbnails, generated video thumbnails and previews render again.
+
+### Removed
+
+- **TMDB metadata integration**: the opt-in Personal Cinema feature (title/year/rating lookup, TMDB posters, "View Info" panel, Settings section, `file_metadata` SQLite table) has been removed entirely — obtaining a personal API key proved too cumbersome. The Poster Wall view mode remains, now rendering the 2:3 wall from locally generated video thumbnails with no external service. Stored TMDB settings are purged from the local settings store on first launch; the `file_metadata` table is dropped from the local database.
+
 ## [1.6.2]
 
 ### Changed
