@@ -186,9 +186,7 @@
     "color_primary": "Primary",
     "color_secondary": "Secondary",
     "color_text": "Text",
-    "color_subtext": "Subtext",
-    "video_thumbnails": "Générer les vignettes vidéo",
-    "video_thumbnails_desc": "Extrait une image des vidéos sans aperçu via MPV intégré. Léger : une tâche à la fois, mis en cache."
+    "color_subtext": "Subtext"
   },
   "files": {
     "download": "Télécharger",

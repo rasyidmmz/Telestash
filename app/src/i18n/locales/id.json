@@ -77,8 +77,6 @@
     "performance_compatibility": "Performance & Compatibility",
     "performance_mode_desc": "Disable blur, heavy shadows & animations",
     "windows_autostart_desc": "Mulai TeleStash secara otomatis saat Windows boot",
-    "video_thumbnails": "Buat thumbnail video",
-    "video_thumbnails_desc": "Mengambil satu frame dari video tanpa pratinjau lewat MPV bawaan. Ringan: satu antrean, ter-cache.",
     "language_region": "Language & Region",
     "app_language": "Application Language",
     "choose_language": "Choose your preferred language",

@@ -186,9 +186,7 @@
     "color_primary": "Primary",
     "color_secondary": "Secondary",
     "color_text": "Text",
-    "color_subtext": "Subtext",
-    "video_thumbnails": "Video-Thumbnails erzeugen",
-    "video_thumbnails_desc": "Extrahiert ein Standbild aus Videos ohne Vorschau über das mitgelieferte MPV. Leicht: ein Auftrag gleichzeitig, zwischengespeichert."
+    "color_subtext": "Subtext"
   },
   "files": {
     "download": "Herunterladen",

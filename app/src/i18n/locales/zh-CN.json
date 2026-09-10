@@ -186,9 +186,7 @@
     "color_primary": "Primary",
     "color_secondary": "Secondary",
     "color_text": "Text",
-    "color_subtext": "Subtext",
-    "video_thumbnails": "生成视频缩略图",
-    "video_thumbnails_desc": "通过内置 MPV 为无预览视频提取一帧。轻量：单任务队列，已缓存。"
+    "color_subtext": "Subtext"
   },
   "files": {
     "download": "下载",

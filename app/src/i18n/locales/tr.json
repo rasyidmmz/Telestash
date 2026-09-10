@@ -186,9 +186,7 @@
     "color_primary": "Primary",
     "color_secondary": "Secondary",
     "color_text": "Text",
-    "color_subtext": "Subtext",
-    "video_thumbnails": "Video küçük resimleri oluştur",
-    "video_thumbnails_desc": "Önizlemesi olmayan videolardan gömülü MPV ile bir kare çıkarır. Hafif: tek seferde bir iş, önbellekli."
+    "color_subtext": "Subtext"
   },
   "files": {
     "download": "İndir",

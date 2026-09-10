@@ -13,10 +13,6 @@ export interface Settings {
     sidebarCollapsed: boolean;
     hideGroups: boolean;
 
-    // ── Vault ───────────────────────────────────────────────
-    /** Generate fallback thumbnails for videos lacking a Telegram-native thumb (light: 1 MPV job, LRU-capped cache). */
-    videoThumbnails: boolean;
-
     windowsAutostart: boolean;       // Launch on Windows Startup
 }
 
@@ -30,9 +26,6 @@ const defaultSettings: Settings = {
     // Sidebar
     sidebarCollapsed: false,
     hideGroups: false,
-
-    // Vault
-    videoThumbnails: true,
 
     windowsAutostart: false,
 };
@@ -65,8 +58,8 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
                         'floodWaitRespect', 'peerCacheSize', 'bandwidthLimitUpKBs',
                         'bandwidthLimitDownKBs', 'chunkSizeKb', 'keepAliveIntervalSec',
                         'autoDetectVpn', 'archiveMaxBytes', 'transcodeCacheMaxGb',
-                        // TMDB settings removed in v1.6.3 — purge stale copies.
-                        'tmdbEnabled', 'tmdbApiKey',
+                        // Legacy keys removed in earlier versions — purge stale copies.
+                        'tmdbEnabled', 'tmdbApiKey', 'videoThumbnails',
                     ]) {
                         delete savedSettings[key];
                     }

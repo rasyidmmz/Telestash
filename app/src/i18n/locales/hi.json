@@ -186,9 +186,7 @@
     "color_primary": "Primary",
     "color_secondary": "Secondary",
     "color_text": "Text",
-    "color_subtext": "Subtext",
-    "video_thumbnails": "वीडियो थंबनेल बनाएं",
-    "video_thumbnails_desc": "बंडल किए MPV से बिना प्रीव्यू वाले वीडियो का एक फ़्रेम निकालता है। हल्का: एक बार में एक काम, कैश्ड।"
+    "color_subtext": "Subtext"
   },
   "files": {
     "download": "डाउनलोड",

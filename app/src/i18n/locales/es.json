@@ -186,9 +186,7 @@
     "color_primary": "Primary",
     "color_secondary": "Secondary",
     "color_text": "Text",
-    "color_subtext": "Subtext",
-    "video_thumbnails": "Generar miniaturas de video",
-    "video_thumbnails_desc": "Extrae un fotograma de los videos sin vista previa mediante MPV integrado. Ligero: un trabajo a la vez, en caché."
+    "color_subtext": "Subtext"
   },
   "files": {
     "download": "Descargar",

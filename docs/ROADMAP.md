@@ -20,10 +20,10 @@ inventarisasi kode internal.
 
 ## Tier 1 — Foundation & Quick Wins (v1.5.0)
 
-1. **Thumbnail ringan (fallback-only)** — ekstrak 1 frame via MPV sidecar ter-bundle
-   (`--vo=image`, tanpa ffmpeg baru) hanya untuk video yang thumbnail Telegram-nya
-   NULL. Cache JPEG LRU 100 MB di `app_data/previews/gen/`, lazy queue 1 file,
-   tidak pernah jalan saat MPV aktif, toggle settings default ON.
+1. ~~**Thumbnail ringan (fallback-only)**~~ — DIHAPUS di v1.6.6. Ekstraksi frame
+   via MPV tidak pernah berhasil di mesin user dan, lebih buruk, memicu event
+   `stream-playback-started` yang merusak Recent Watch / Next Up. Tidak akan
+   ditawarkan kembali.
 2. **Watch history → SQLite** — tabel `watch_history`, migrasi dual-read dari
    localStorage (`telestash_recent_watch_v1`), fondasi watch analytics Tier 2.
 3. **Error UX** — peta error backend → pesan manusiawi + kode klasifikasi (reuse
@@ -36,8 +36,8 @@ inventarisasi kode internal.
 1. ~~**Metadata TMDB opt-in**~~ — DIHAPUS di v1.6.3 (merumitkan user: wajib API
    key sendiri; user memutuskan tidak jadi). Tabel `file_metadata` didrop,
    command + UI dihapus bersih.
-2. **Poster Wall view mode** — tetap ada setelah v1.6.3 sebagai thumbnail wall
-   2:3 dari generated video thumbs (tanpa layanan eksternal).
+2. **Poster Wall view mode** — tetap ada sebagai card wall 2:3 dengan badges
+   metadata yang sama seperti grid (tanpa layanan eksternal, tanpa thumbnail).
 3. **Watch Analytics Dashboard** — dari watch history Tier 1: total waktu tonton,
    streak, top series/folder, chart bulanan.
 
@@ -75,6 +75,7 @@ inventarisasi kode internal.
 
 ## Asumsi Kunci (validasi saat eksekusi)
 
-- MPV `--vo=image` dapat dipakai ekstraksi thumbnail (pattern `--ao=pcm` terbukti).
+- ~~MPV `--vo=image` dapat dipakai ekstraksi thumbnail~~ — TERBUKTI SALAH; fitur
+  thumbnail dihapus di v1.6.6.
 - grammers 0.10 expose flag `is_premium` (cek saat implementasi Tier 4).
 - Migrasi watch history tidak kehilangan data localStorage lama (dual-read).

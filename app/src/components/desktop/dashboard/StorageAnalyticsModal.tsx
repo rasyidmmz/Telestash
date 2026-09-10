@@ -116,7 +116,7 @@ export function StorageAnalyticsModal({ files, folders, onClose }: StorageAnalyt
     const handlePurgeCache = async () => {
         try {
             await invoke('cmd_clean_cache');
-            toast.success('Preview & thumbnail cache cleared successfully!');
+            toast.success('Preview cache cleared successfully!');
         } catch (err) {
             toast.error(humanizeError(err, i18n.t('errors.action_clear_cache')));
         }

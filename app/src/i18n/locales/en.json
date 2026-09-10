@@ -90,8 +90,6 @@
     "performance_mode_desc": "Disable blur, heavy shadows & animations",
     "windows_autostart": "Launch on Windows Startup",
     "windows_autostart_desc": "Start TeleStash automatically when Windows boots",
-    "video_thumbnails": "Generate video thumbnails",
-    "video_thumbnails_desc": "Extracts a frame from videos without a preview via bundled MPV. Light: one job at a time, cached.",
     "language_region": "Language & Region",
     "app_language": "Application Language",
     "choose_language": "Choose your preferred language",

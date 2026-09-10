@@ -186,9 +186,7 @@
     "color_primary": "Primary",
     "color_secondary": "Secondary",
     "color_text": "Text",
-    "color_subtext": "Subtext",
-    "video_thumbnails": "動画サムネイルを生成",
-    "video_thumbnails_desc": "プレビューのない動画から同梱MPVでフレームを抽出します。軽量：同時に1件、キャッシュ済み。"
+    "color_subtext": "Subtext"
   },
   "files": {
     "download": "ダウンロード",

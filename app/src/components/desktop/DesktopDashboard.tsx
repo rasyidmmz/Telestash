@@ -635,11 +635,10 @@ export function Dashboard({ onLogout }: { onLogout: () => void }) {
                 sourceFolderId: activeFolderId,
                 targetFolderId: targetFolderId
             });
-            // Clean up stale thumbnail and preview cache entries for the old message IDs
-            await Promise.all(idsToMove.flatMap(id => [
-                invoke('cmd_delete_image_thumbnail', { messageId: id, folderId: activeFolderId }).catch(() => {}),
+            // Clean up stale preview cache entries for the old message IDs
+            await Promise.all(idsToMove.flatMap(id =>
                 invoke('cmd_delete_preview_for_message', { messageId: id, folderId: activeFolderId }).catch(() => {}),
-            ]));
+            ));
 
             queryClient.invalidateQueries({ queryKey: ['files', activeFolderId] });
             setSelectedIds([]);
@@ -703,11 +702,8 @@ export function Dashboard({ onLogout }: { onLogout: () => void }) {
                                         sourceFolderId: activeFolderId,
                                         targetFolderId,
                                     });
-                                    // Clean up stale thumbnail and preview cache for the old message ID
-                                    await Promise.all([
-                                        invoke('cmd_delete_image_thumbnail', { messageId: moveFileTarget.id, folderId: activeFolderId }).catch(() => {}),
-                                        invoke('cmd_delete_preview_for_message', { messageId: moveFileTarget.id, folderId: activeFolderId }).catch(() => {}),
-                                    ]);
+                                    // Clean up stale preview cache for the old message ID
+                                    await invoke('cmd_delete_preview_for_message', { messageId: moveFileTarget.id, folderId: activeFolderId }).catch(() => {});
                                     queryClient.invalidateQueries({ queryKey: ['files', activeFolderId] });
                                     toast.success(`Moved "${moveFileTarget.name}"`);
                                     setMoveFileTarget(null);

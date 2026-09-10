@@ -186,9 +186,7 @@
     "color_primary": "Primary",
     "color_secondary": "Secondary",
     "color_text": "Text",
-    "color_subtext": "Subtext",
-    "video_thumbnails": "إنشاء مصغرات الفيديو",
-    "video_thumbnails_desc": "يستخرج إطارًا من الفيديوهات دون معاينة عبر MPV المدمج. خفيف: مهمة واحدة في كل مرة، مع تخزين مؤقت."
+    "color_subtext": "Subtext"
   },
   "files": {
     "download": "تنزيل",

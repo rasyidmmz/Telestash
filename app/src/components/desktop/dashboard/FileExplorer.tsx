@@ -466,7 +466,7 @@ export function FileExplorer({
                             <button
                                 onClick={() => onCardScaleChange(Math.max(0.5, cardScale - 0.25))}
                                 className="p-1 rounded hover:bg-white/10 text-stash-subtext hover:text-stash-text transition-colors"
-                                title="Smaller thumbnails"
+                                title="Smaller cards"
                                 disabled={cardScale <= 0.5}
                             >
                                 <ZoomOut className="w-3.5 h-3.5" />
@@ -479,12 +479,12 @@ export function FileExplorer({
                                 value={cardScale}
                                 onChange={(e) => onCardScaleChange(parseFloat(e.target.value))}
                                 className="w-20 h-1 bg-stash-border rounded-full appearance-none cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-3 [&::-webkit-slider-thumb]:h-3 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-stash-primary [&::-webkit-slider-thumb]:cursor-pointer [&::-webkit-slider-thumb]:transition-transform [&::-webkit-slider-thumb]:hover:scale-125"
-                                title={`Thumbnail zoom: ${Math.round(cardScale * 100)}%`}
+                                title={`Card zoom: ${Math.round(cardScale * 100)}%`}
                             />
                             <button
                                 onClick={() => onCardScaleChange(Math.min(2, cardScale + 0.25))}
                                 className="p-1 rounded hover:bg-white/10 text-stash-subtext hover:text-stash-text transition-colors"
-                                title="Larger thumbnails"
+                                title="Larger cards"
                                 disabled={cardScale >= 2}
                             >
                                 <ZoomIn className="w-3.5 h-3.5" />

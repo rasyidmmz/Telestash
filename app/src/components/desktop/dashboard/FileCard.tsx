@@ -1,13 +1,11 @@
 import { motion } from 'framer-motion';
-import { useState, useEffect, useRef } from 'react';
+import { useState, useRef } from 'react';
 import { Folder, Eye, Trash2, Link, Download } from '../../shared/icons.tsx';
-import { invoke } from '@tauri-apps/api/core';
 import { TelegramFile } from '../../../types';
 import { createDragGhost } from '../../../utils';
 import { FileTypeIcon } from '../../shared/FileTypeIcon';
 import { useVideoMetadata } from '../../../hooks/useVideoMetadata';
 import { useVideoSubtitles } from '../../../hooks/useVideoSubtitles';
-import { useVideoThumbnail } from '../../../hooks/useVideoThumbnail';
 import { VideoMetaBadge } from '../../shared/VideoMetaBadge';
 import { MediaBadgesList } from '../../shared/MediaBadgesList';
 
@@ -17,7 +15,7 @@ interface FileCardProps {
     onDownload: () => void;
     onPreview?: () => void;
     onShare?: () => void;
-    /** 'grid' = original 4:3 card; 'poster' = 2:3 poster wall of thumbnails. */
+    /** 'grid' = 4:3 card; 'poster' = 2:3 card. */
     variant?: 'grid' | 'poster';
     isSelected: boolean;
     onClick?: (e: React.MouseEvent) => void;
@@ -31,76 +29,29 @@ interface FileCardProps {
     selectedIds?: number[];
 }
 
-// Check if file is an image type that can have a thumbnail
-function isImageFile(filename: string): boolean {
-    const ext = filename.split('.').pop()?.toLowerCase() || '';
-    return ['jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp'].includes(ext);
-}
-
-
-export function FileCard({ file, onDelete, onDownload, onPreview, onShare, isSelected, onClick, onContextMenu, onDrop, onDragStart, onDragEnd, activeFolderId, height, onToggleSelection, selectedIds, variant = 'grid' }: FileCardProps) {
+export function FileCard({ file, onDelete, onDownload, onPreview, onShare, isSelected, onClick, onContextMenu, onDrop, onDragStart, onDragEnd, height, onToggleSelection, selectedIds, variant = 'grid' }: FileCardProps) {
     const isFolder = file.type === 'folder';
     const isPosterVariant = variant === 'poster';
     const [isDragOver, setIsDragOver] = useState(false);
-    const [thumbnail, setThumbnail] = useState<string | null>(null);
-    const [thumbnailLoading, setThumbnailLoading] = useState(false);
     const rootRef = useRef<HTMLDivElement | null>(null);
 
-    // Lazy video metadata badge (.mp4 only)
+    // Lazy video metadata badge (.mp4/.mkv only)
     const { data: videoMeta, isLoading: videoMetaLoading } = useVideoMetadata(
         file.id,
         file.folder_id ?? null,
         file.name,
     );
 
-    // Attached Subtitles
+    // Attached subtitles
     const { data: subtitles } = useVideoSubtitles(
         file.id,
         file.folder_id ?? null,
         file.name,
     );
 
-    // Lazy load thumbnail for image files
-    useEffect(() => {
-        if (isFolder || !isImageFile(file.name)) return;
-
-        let cancelled = false;
-        setThumbnailLoading(true);
-
-        invoke<string>('cmd_get_thumbnail', {
-            messageId: file.id,
-            folderId: activeFolderId
-        }).then((result) => {
-            if (!cancelled && result) {
-                // cmd_get_thumbnail now returns the full URL (served by the
-                // local streaming server with token auth) so the value is
-                // used directly as the <img src>.
-                setThumbnail(result);
-            }
-        }).catch(() => {
-            // Silently fail - will show icon instead
-        }).finally(() => {
-            if (!cancelled) setThumbnailLoading(false);
-        });
-
-        return () => { cancelled = true; };
-    }, [file.id, file.name, activeFolderId, isFolder]);
-
-    // Fallback thumbnail for videos without a Telegram-native one (light
-    // single-frame MPV extraction, visibility-gated, queued 1-at-a-time).
-    const { generated: generatedThumb, ref: thumbRef } = useVideoThumbnail(
-        file.id,
-        file.name,
-        activeFolderId ?? null,
-        thumbnail,
-    );
-
     return (
         <div
-            ref={(node) => {
-                thumbRef(node);
-                rootRef.current = node;
-            }}
+            ref={rootRef}
             className="relative rounded-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-stash-primary"
             role="button"
             tabIndex={0}
@@ -116,7 +67,7 @@ export function FileCard({ file, onDelete, onDownload, onPreview, onShare, isSel
             onDragStart={!isFolder ? (e: any) => {
                 const idsToDrag = selectedIds && selectedIds.includes(file.id) ? selectedIds : [file.id];
                 if (onDragStart) onDragStart(idsToDrag);
-                e.dataTransfer.setData("application/x-telegram-file-ids", JSON.stringify(idsToDrag));
+                e.dataTransfer.setData('application/x-telegram-file-ids', JSON.stringify(idsToDrag));
                 e.dataTransfer.effectAllowed = 'move';
                 const dragCount = idsToDrag.length;
                 const ghost = createDragGhost(file.name, isFolder, dragCount);
@@ -128,8 +79,8 @@ export function FileCard({ file, onDelete, onDownload, onPreview, onShare, isSel
             } : undefined}
             onDragOver={(e) => {
                 // Internal drags only (TeleStash file IDs); OS file drops are ignored.
-                const isInternal = e.dataTransfer.types.includes("application/x-telegram-file-id") ||
-                    e.dataTransfer.types.includes("application/x-telegram-file-ids");
+                const isInternal = e.dataTransfer.types.includes('application/x-telegram-file-id') ||
+                    e.dataTransfer.types.includes('application/x-telegram-file-ids');
                 if (isFolder && isInternal) {
                     e.preventDefault();
                     e.stopPropagation();
@@ -144,8 +95,8 @@ export function FileCard({ file, onDelete, onDownload, onPreview, onShare, isSel
                 }
             }}
             onDrop={(e) => {
-                const isInternal = e.dataTransfer.types.includes("application/x-telegram-file-id") ||
-                    e.dataTransfer.types.includes("application/x-telegram-file-ids");
+                const isInternal = e.dataTransfer.types.includes('application/x-telegram-file-id') ||
+                    e.dataTransfer.types.includes('application/x-telegram-file-ids');
                 if (isFolder && isInternal && onDrop) {
                     e.preventDefault();
                     e.stopPropagation();
@@ -161,28 +112,14 @@ export function FileCard({ file, onDelete, onDownload, onPreview, onShare, isSel
                 ${isDragOver ? 'is-drag-over' : ''}`}
                 style={height ? { height: `${height}px` } : { aspectRatio: isPosterVariant ? '2/3' : '4/3' }}
             >
-                {/* Thumbnail or Icon */}
-                {(thumbnail || generatedThumb) ? (
-                    <div className="absolute inset-0">
-                        <img
-                            src={thumbnail ?? generatedThumb ?? undefined}
-                            alt={file.name}
-                            className={`w-full h-full ${isPosterVariant ? 'object-cover' : 'object-contain'}`}
-                        />
-                        {/* Gradient overlay for text readability */}
-                        <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent" />
-                    </div>
-                ) : (
-                    <div className="absolute inset-0 flex items-center justify-center p-4">
-                        {isFolder ? (
-                            <Folder className="w-12 h-12 text-stash-primary" />
-                        ) : thumbnailLoading && isImageFile(file.name) ? (
-                            <div className="w-8 h-8 border-2 border-stash-primary/30 border-t-stash-primary rounded-full animate-spin" />
-                        ) : (
-                            <FileTypeIcon filename={file.name} size="lg" />
-                        )}
-                    </div>
-                )}
+                {/* File type icon */}
+                <div className="absolute inset-0 flex items-center justify-center p-4">
+                    {isFolder ? (
+                        <Folder className="w-12 h-12 text-stash-primary" />
+                    ) : (
+                        <FileTypeIcon filename={file.name} size="lg" />
+                    )}
+                </div>
 
                 {/* Selection Checkmark */}
                 <button
@@ -199,24 +136,10 @@ export function FileCard({ file, onDelete, onDownload, onPreview, onShare, isSel
                 </button>
 
                 {/* File info overlay at bottom */}
-                {isPosterVariant ? (
-                    <div className="absolute bottom-0 left-0 right-0 p-3 text-white">
-                        <h3 className="text-sm font-medium truncate w-full" title={file.name}>{file.name}</h3>
-                        <div className="flex items-center gap-2 mt-1">
-                            <p className="text-xs text-white/70">{file.sizeStr}</p>
-                            <MediaBadgesList filename={file.name} maxBadges={2} />
-                            {subtitles && subtitles.length > 0 && (
-                                <span className="inline-flex items-center text-[9px] font-mono font-bold tracking-tight px-1.5 py-0.5 rounded border bg-indigo-950/80 text-indigo-400 border-indigo-500/30">
-                                    SUB
-                                </span>
-                            )}
-                        </div>
-                    </div>
-                ) : (
-                <div className={`absolute bottom-0 left-0 right-0 p-3 ${(thumbnail || generatedThumb) ? 'text-white' : 'text-stash-text'}`}>
+                <div className="absolute bottom-0 left-0 right-0 p-3 text-stash-text">
                     <h3 className="text-sm font-medium truncate w-full" title={file.name}>{file.name}</h3>
                     <div className="flex items-center gap-1.5 mt-1 flex-wrap">
-                        <p className={`text-xs ${(thumbnail || generatedThumb) ? 'text-white/70' : 'text-stash-subtext'}`}>{file.sizeStr}</p>
+                        <p className="text-xs text-stash-subtext">{file.sizeStr}</p>
                         <MediaBadgesList filename={file.name} maxBadges={3} />
                         <VideoMetaBadge metadata={videoMeta} isLoading={videoMetaLoading} filename={file.name} />
                         {subtitles && subtitles.length > 0 && (
@@ -226,7 +149,6 @@ export function FileCard({ file, onDelete, onDownload, onPreview, onShare, isSel
                         )}
                     </div>
                 </div>
-                )}
 
                 {/* Quick actions on hover */}
                 <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity flex gap-1 z-10">

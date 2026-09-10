@@ -186,9 +186,7 @@
     "color_primary": "Primary",
     "color_secondary": "Secondary",
     "color_text": "Text",
-    "color_subtext": "Subtext",
-    "video_thumbnails": "동영상 썸네일 생성",
-    "video_thumbnails_desc": "미리보기 없는 동영상에서 내장 MPV로 프레임을 추출합니다. 가벼움: 한 번에 하나씩, 캐시됨."
+    "color_subtext": "Subtext"
   },
   "files": {
     "download": "다운로드",

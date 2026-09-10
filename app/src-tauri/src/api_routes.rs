@@ -10,7 +10,6 @@ use crate::commands::fs::{
     delete_message_ids, split_manifest_from_media, validate_split_parts_present, ProgressReader,
 };
 use crate::commands::{create_folder_inner, delete_folder_inner, rename_folder_inner};
-use crate::commands::preview::THUMBNAIL_EXTS;
 use crate::models::FolderMetadata;
 use crate::bandwidth::BandwidthManager;
 use crate::transfer_policy::TransferPolicy;
@@ -31,10 +30,9 @@ pub struct ApiState {
 }
 
 /// Cache directory paths used by the API server for cleanup operations.
-/// The thumbnail and preview caches live on disk and can become stale
-/// when files are moved (forwarded → new message IDs).
+/// The preview cache lives on disk and can become stale when files are
+/// moved (forwarded → new message IDs).
 pub struct CacheDirs {
-    pub thumbnail_dir: std::path::PathBuf,
     pub preview_dir: std::path::PathBuf,
 }
 
@@ -101,23 +99,16 @@ fn peer_to_input_peer(peer: grammers_session::types::PeerRef) -> Result<tl::enum
     Ok(tl::enums::InputPeer::from(peer))
 }
 
-/// Spawn a blocking task to delete stale thumbnail and preview cache entries
-/// for the given message IDs in the given source folder.
+/// Spawn a blocking task to delete stale preview cache entries for the given
+/// message IDs in the given source folder.
 /// Best-effort: failures are silently ignored since cache cleanup is non-critical.
 fn spawn_cache_cleanup(
-    thumb_dir: std::path::PathBuf,
     prev_dir: std::path::PathBuf,
     ids: Vec<i32>,
     folder_key: String,
 ) {
     tokio::task::spawn_blocking(move || {
         for mid in &ids {
-            for ext in THUMBNAIL_EXTS {
-                let path = thumb_dir.join(format!("{}_{}.{}", folder_key, mid, ext));
-                if path.exists() {
-                    let _ = std::fs::remove_file(&path);
-                }
-            }
             let prefix = format!("{}_{}.", folder_key, mid);
             if let Ok(entries) = std::fs::read_dir(&prev_dir) {
                 for entry in entries.flatten() {
@@ -664,12 +655,11 @@ async fn api_bulk_files(
                 return json_error("DELETE_FAILED", &e, 500);
             }
 
-            // Clean up stale thumbnail and preview caches for deleted messages.
+            // Clean up stale preview cache entries for deleted messages.
             let source_folder_key = source_folder
                 .map(|id| id.to_string())
                 .unwrap_or_else(|| "home".to_string());
             spawn_cache_cleanup(
-                cache_dirs.thumbnail_dir.clone(),
                 cache_dirs.preview_dir.clone(),
                 ids.clone(),
                 source_folder_key,
@@ -708,14 +698,13 @@ async fn api_bulk_files(
                     return json_error("MOVE_DELETE_FAILED", &format!("Delete original failed: {}", e), 500);
                 }
 
-                // Clean up stale thumbnail and preview caches for the old message IDs.
+                // Clean up stale preview cache entries for the old message IDs.
                 // After a move (forward+delete), messages get new IDs in the target folder,
-                // so any cached thumbnails/previews under the old IDs are orphaned.
+                // so any cached previews under the old IDs are orphaned.
                 let source_folder_key = source_folder
                     .map(|id| id.to_string())
                     .unwrap_or_else(|| "home".to_string());
                 spawn_cache_cleanup(
-                    cache_dirs.thumbnail_dir.clone(),
                     cache_dirs.preview_dir.clone(),
                     ids.clone(),
                     source_folder_key,
@@ -1147,12 +1136,11 @@ async fn api_update_file(
                 return json_error("MOVE_DELETE_FAILED", &e.to_string(), 500);
             }
 
-            // Clean up stale thumbnail and preview caches for the old message ID
+            // Clean up stale preview cache entries for the old message ID
             let source_folder_key = source_folder_id
                 .map(|id| id.to_string())
                 .unwrap_or_else(|| "home".to_string());
             spawn_cache_cleanup(
-                cache_dirs.thumbnail_dir.clone(),
                 cache_dirs.preview_dir.clone(),
                 vec![message_id],
                 source_folder_key,
@@ -1778,90 +1766,6 @@ async fn api_empty_folders(
     HttpResponse::Ok().json(empty_folders)
 }
 
-#[get("/api/v1/files/{message_id}/thumbnail")]
-async fn api_get_file_thumbnail(
-    req: HttpRequest,
-    path: web::Path<i32>,
-    query: web::Query<FolderQuery>,
-    tg_state: web::Data<Arc<TelegramState>>,
-    api_state: web::Data<ApiState>,
-) -> impl Responder {
-    if let Err(e) = check_auth(&req, &api_state) {
-        return e;
-    }
-    let message_id = path.into_inner();
-    let folder_id = query.folder_id;
-
-    let client_opt = { tg_state.client.lock().await.clone() };
-    let client = match client_opt {
-        Some(c) => c,
-        None => return json_error("NOT_CONNECTED", "Telegram client is not connected", 503),
-    };
-
-    let peer = match resolve_peer(&client, folder_id, &tg_state.peer_cache).await {
-        Ok(p) => p,
-        Err(e) => return json_error("PEER_ERROR", &e, 400),
-    };
-
-    let messages = match client.get_messages_by_id(peer, &[message_id]).await {
-        Ok(msgs) => msgs,
-        Err(e) => return json_error("GET_MESSAGE_ERROR", &e.to_string(), 500),
-    };
-
-    if let Some(m) = messages.into_iter().flatten().next() {
-        if let Some(media) = m.media() {
-            let (is_image, ext) = match &media {
-                Media::Photo(_) => (true, "jpg"),
-                Media::Document(d) => {
-                    let mime = d.mime_type().unwrap_or("");
-                    if mime.starts_with("image/") || mime.starts_with("video/") {
-                        if !d.thumbs().is_empty() {
-                            (true, "jpg")
-                        } else {
-                            (false, "")
-                        }
-                    } else {
-                        (false, "")
-                    }
-                }
-                _ => (false, ""),
-            };
-
-            if is_image {
-                let temp_path = std::env::temp_dir().join(format!("thumb_{}_{}", message_id, rand::random::<u32>()));
-                let temp_path_str = temp_path.to_string_lossy().to_string();
-
-                let thumbs = match &media {
-                    Media::Photo(p) => p.thumbs(),
-                    Media::Document(d) => d.thumbs(),
-                    _ => vec![],
-                };
-
-                let download_success = if let Some(thumb) = thumbs.iter().filter(|t| t.size() > 0).max_by_key(|t| t.size()) {
-                    client.download_media(thumb, &temp_path_str).await.is_ok()
-                } else {
-                    client.download_media(&media, &temp_path_str).await.is_ok()
-                };
-
-                if download_success {
-                    if let Ok(bytes) = tokio::fs::read(&temp_path).await {
-                        let _ = tokio::fs::remove_file(&temp_path).await;
-                        let mime = match ext {
-                            "png" => "image/png",
-                            "gif" => "image/gif",
-                            _ => "image/jpeg",
-                        };
-                        return HttpResponse::Ok().content_type(mime).body(bytes);
-                    }
-                }
-                let _ = tokio::fs::remove_file(&temp_path).await;
-            }
-        }
-    }
-
-    json_error("NOT_FOUND", "Thumbnail not found", 404)
-}
-
 #[derive(Serialize)]
 struct MediaInfoResponse {
     duration_secs: Option<f64>,
@@ -1961,6 +1865,5 @@ pub fn configure_api(cfg: &mut web::ServiceConfig) {
        .service(api_storage_stats)
        .service(api_storage_duplicates)
        .service(api_empty_folders)
-       .service(api_get_file_thumbnail)
        .service(api_media_info);
 }

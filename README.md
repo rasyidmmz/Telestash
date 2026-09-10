@@ -91,10 +91,9 @@ The data path is intentionally short and deterministic: the Windows application 
 * 🍿 **Recent Watch Bar & Dedicated Watch Logs**: Continue watching strip with instant playback resume and separate activity logs.
 * ⚡ **Direct Telegram Transfer Engine**: Shared retry classification, protocol backoff, and diagnostic logs for uploads and downloads.
 * 💾 **SQLite Resumable Uploads**: Persisted checkpoints support eligible interrupted transfers.
-* 🖼️ **Generated Video Thumbnails (Light Fallback)**: videos without a Telegram-native preview show a real extracted frame — one MPV job at a time, visibility-gated, cached under a bounded LRU cache; toggleable in Settings.
 * 💾 **Persistent Watch History (SQLite)**: Continue Watching entries survive webview storage clears, stored in a local `watch_history` table with automatic one-time migration.
 * 💬 **Humanized Error Messages**: failure toasts are classified (network, Telegram, local file, split manifest, rate-limit) and localized in 13 languages instead of raw error strings; raw details stay in Transfer Logs.
-* 🎞️ **Poster Wall View Mode**: a third layout (grid → list → posters) renders your video library as a 2:3 poster wall built from the generated video thumbnails — no external service, no API key.
+* 🎞️ **Poster Wall View Mode**: a third layout (grid → list → posters) renders your video library as a 2:3 card wall with the same metadata badges as the grid — no external service, no API key.
 * 📊 **Watch Analytics**: titles watched, total watch time, current streak, a 30-day activity strip, and your top 10 titles, aggregated from the local SQLite watch history.
 * 🎬 **Subtitle Sidecar Manager**: Attach SRT/ASS/SSA/VTT/VobSub to videos as hidden sidecars, with in-app review and removal.
 * 🛡️ **Bounded Streaming Prefetch**: 16 MiB in-memory forward buffer per active stream; no full media download is retained by the stream path.

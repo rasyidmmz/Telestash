@@ -1,5 +1,11 @@
 # Changelog
 
+## [1.6.6]
+
+### Removed
+
+- **Video thumbnail generation**: the MPV frame-extraction feature is gone entirely — `thumbnail_gen.rs`, `cmd_get_thumbnail`, `cmd_generate_video_thumbnail`, `cmd_delete_image_thumbnail`, the `/thumb/thumbnails` and `/thumb/generated` routes, the `useVideoThumbnail` hook, the Settings toggle, and the `videoThumbnails` key. Frames never rendered for the user, and the extraction path had a real side effect: it fetched the video through `/stream/`, which fires `stream-playback-started` and recorded every thumbnail request as a watch event — corrupting Recent Watch and Next Up. File cards now show their type icon, and Poster Wall renders a 2:3 card wall with the same metadata badges as the grid. Cached `generated_thumbs/` and `thumbnails/` directories are no longer written to; existing files can be cleared from Settings → Storage. Image previews and the preview cache are unaffected.
+
 ## [1.6.5]
 
 ### Fixed

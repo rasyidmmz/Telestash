@@ -14,8 +14,8 @@ export function formatBytes(bytes: number, decimals = 2) {
 
 const VIDEO_EXTENSIONS = [
     'mp4', 'webm', 'ogg', 'mov', 'mkv', 'avi',
-    // Containers MPV also plays; kept in one list so video detection, media
-    // routing and thumbnail generation never disagree.
+    // Containers MPV also plays; kept in one list so video detection and
+    // media routing never disagree.
     'ts', 'm2ts', 'mts', 'm4v', 'mpg', 'mpeg', 'flv', 'wmv',
 ] as const;
 const AUDIO_EXTENSIONS = ['mp3', 'wav', 'aac', 'flac', 'm4a', 'opus'] as const;

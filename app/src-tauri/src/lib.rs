@@ -120,7 +120,6 @@ pub fn restart_api_server(app: &tauri::AppHandle) {
 
     // Resolve cache dirs before the thread spawn since app is a reference
     let preview_dir = app.path().app_cache_dir().unwrap_or_default().join("previews");
-    let thumbnail_dir = app.path().app_data_dir().unwrap_or_default().join("thumbnails");
 
     std::thread::spawn(move || {
         #[cfg(target_os = "windows")]
@@ -132,7 +131,6 @@ pub fn restart_api_server(app: &tauri::AppHandle) {
                 key_hash,
             });
             let cache_dirs = actix_web::web::Data::new(api_routes::CacheDirs {
-                thumbnail_dir,
                 preview_dir,
             });
             let api_bw = actix_web::web::Data::new(bw_manager);
@@ -438,7 +436,6 @@ pub fn run() {
             commands::cmd_check_connection,
             commands::cmd_is_network_available,
             commands::cmd_clean_cache,
-            commands::cmd_get_thumbnail,
             commands::cmd_get_stream_info,
             commands::cmd_play_in_mpv,
             commands::cmd_cancel_transfer,
@@ -449,7 +446,6 @@ pub fn run() {
             commands::cmd_get_api_settings,
             commands::cmd_update_api_settings,
             commands::cmd_regenerate_api_key,
-            commands::cmd_delete_image_thumbnail,
             commands::cmd_delete_temp_zip,
             commands::cmd_create_share,
             commands::cmd_list_shares,
@@ -481,7 +477,6 @@ pub fn run() {
             commands::cmd_watch_history_remove,
             commands::cmd_watch_history_clear,
             commands::cmd_watch_history_import,
-            commands::cmd_generate_video_thumbnail,
             commands::cmd_watch_analytics,
         ])
         .build(tauri::generate_context!())

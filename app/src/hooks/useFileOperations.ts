@@ -29,10 +29,7 @@ export function useFileOperations(
         if (!await confirm({ title: "Delete File", message: "Are you sure you want to delete this file?", confirmText: "Delete", variant: 'danger' })) return;
         try {
             await invoke('cmd_delete_file', { messageId: id, folderId: activeFolderId });
-            await Promise.all([
-                invoke('cmd_delete_image_thumbnail', { messageId: id, folderId: activeFolderId }).catch(() => {}),
-                invoke('cmd_delete_preview_for_message', { messageId: id, folderId: activeFolderId }).catch(() => {}),
-            ]);
+            await invoke('cmd_delete_preview_for_message', { messageId: id, folderId: activeFolderId }).catch(() => {});
             queryClient.invalidateQueries({ queryKey: ['files', activeFolderId] });
             toast.success("File deleted");
         } catch (e) {
@@ -50,10 +47,7 @@ export function useFileOperations(
         for (const id of ids) {
             try {
                 await invoke('cmd_delete_file', { messageId: id, folderId: activeFolderId });
-                await Promise.all([
-                    invoke('cmd_delete_image_thumbnail', { messageId: id, folderId: activeFolderId }).catch(() => {}),
-                    invoke('cmd_delete_preview_for_message', { messageId: id, folderId: activeFolderId }).catch(() => {}),
-                ]);
+                await invoke('cmd_delete_preview_for_message', { messageId: id, folderId: activeFolderId }).catch(() => {});
                 success++;
             } catch {
                 fail++;
@@ -121,13 +115,12 @@ export function useFileOperations(
                 sourceFolderId: activeFolderId,
                 targetFolderId: targetFolderId
             });
-            // Clean up stale thumbnail and preview cache entries for the old message IDs.
+            // Clean up stale preview cache entries for the old message IDs.
             // After a move (forward+delete), the message gets a new ID in the
-            // target folder, so old cached thumbnails are orphaned.
-            await Promise.all(ids.flatMap(id => [
-                invoke('cmd_delete_image_thumbnail', { messageId: id, folderId: activeFolderId }).catch(() => {}),
+            // target folder, so old cached previews are orphaned.
+            await Promise.all(ids.map(id =>
                 invoke('cmd_delete_preview_for_message', { messageId: id, folderId: activeFolderId }).catch(() => {}),
-            ]));
+            ));
             toast.success(`Moved ${ids.length} files.`);
             queryClient.invalidateQueries({ queryKey: ['files', activeFolderId] });
             setSelectedIds([]);

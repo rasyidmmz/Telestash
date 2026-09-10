@@ -186,9 +186,7 @@
     "color_primary": "Primary",
     "color_secondary": "Secondary",
     "color_text": "Text",
-    "color_subtext": "Subtext",
-    "video_thumbnails": "Gerar miniaturas de vídeo",
-    "video_thumbnails_desc": "Extrai um quadro de vídeos sem pré-visualização via MPV embutido. Leve: um trabalho por vez, em cache."
+    "color_subtext": "Subtext"
   },
   "files": {
     "download": "Baixar",

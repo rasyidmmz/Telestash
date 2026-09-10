@@ -613,9 +613,9 @@ async fn stream_media(
     handle_stream_media_request(req, folder_id_str, message_id, query, data, token_data, app_handle).await
 }
 
-/// Serve a cached image straight from disk. Used as the production path
-/// for thumbnails, generated video thumbs and previews because Tauri 2's
-/// asset-protocol approach proved unreliable on Windows in v1.6.2/v1.6.3.
+/// Serve a cached image straight from disk. Used by the preview route,
+/// which replaced the asset-protocol approach that proved unreliable on
+/// Windows in v1.6.2/v1.6.3.
 async fn serve_cached_image(
     base_dir: std::path::PathBuf,
     folder_key: &str,
@@ -648,46 +648,8 @@ async fn serve_cached_image(
     }
 }
 
-fn validate_thumb_token(query: &StreamQuery, token_data: &StreamTokenData) -> bool {
+fn validate_preview_token(query: &StreamQuery, token_data: &StreamTokenData) -> bool {
     query.token.as_deref() == Some(token_data.token.as_str())
-}
-
-#[get("/thumb/thumbnails/{folder_key}/{message_id}.{ext}")]
-async fn thumb_thumbnails_route(
-    path: web::Path<(String, i32, String)>,
-    query: web::Query<StreamQuery>,
-    token_data: web::Data<StreamTokenData>,
-    app_handle: web::Data<tauri::AppHandle>,
-) -> impl Responder {
-    if !validate_thumb_token(&query, &token_data) {
-        return HttpResponse::Forbidden().body("Invalid or missing stream token");
-    }
-    let (folder_key, message_id, ext) = path.into_inner();
-    let dir = app_handle
-        .path()
-        .app_data_dir()
-        .map(|d| d.join("thumbnails"))
-        .unwrap_or_default();
-    serve_cached_image(dir, &folder_key, message_id, &ext).await
-}
-
-#[get("/thumb/generated/{folder_key}/{message_id}.jpg")]
-async fn thumb_generated_route(
-    path: web::Path<(String, i32)>,
-    query: web::Query<StreamQuery>,
-    token_data: web::Data<StreamTokenData>,
-    app_handle: web::Data<tauri::AppHandle>,
-) -> impl Responder {
-    if !validate_thumb_token(&query, &token_data) {
-        return HttpResponse::Forbidden().body("Invalid or missing stream token");
-    }
-    let (folder_key, message_id) = path.into_inner();
-    let dir = app_handle
-        .path()
-        .app_data_dir()
-        .map(|d| d.join("generated_thumbs"))
-        .unwrap_or_default();
-    serve_cached_image(dir, &folder_key, message_id, "jpg").await
 }
 
 #[get("/thumb/preview/{folder_key}/{message_id}.{ext}")]
@@ -697,7 +659,7 @@ async fn thumb_preview_route(
     token_data: web::Data<StreamTokenData>,
     app_handle: web::Data<tauri::AppHandle>,
 ) -> impl Responder {
-    if !validate_thumb_token(&query, &token_data) {
+    if !validate_preview_token(&query, &token_data) {
         return HttpResponse::Forbidden().body("Invalid or missing stream token");
     }
     let (folder_key, message_id, ext) = path.into_inner();
@@ -775,8 +737,6 @@ pub async fn start_server(
             .app_data(app_handle_data.clone())
             .service(stream_media_named)
             .service(stream_media)
-            .service(thumb_thumbnails_route)
-            .service(thumb_generated_route)
             .service(thumb_preview_route)
             .configure(crate::share_routes::configure_share_routes)
     })

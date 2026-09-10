@@ -8,10 +8,6 @@ use crate::TelegramState;
 use crate::bandwidth::BandwidthManager;
 use crate::commands::utils::resolve_peer;
 
-/// Supported image file extensions for thumbnails.
-/// Shared between Tauri commands and the REST API cache cleanup.
-pub const THUMBNAIL_EXTS: &[&str] = &["jpg", "png", "gif", "webp"];
-
 const PREVIEW_CACHE_MAX_FILES: usize = 30;
 const PREVIEW_CACHE_MAX_TOTAL_BYTES: u64 = 256 * 1024 * 1024;
 
@@ -361,186 +357,12 @@ pub async fn cmd_clean_cache(
         .app_cache_dir()
         .map_err(|e: tauri::Error| e.to_string())?
         .join("previews");
-    let thumb_dir = app_handle
-        .path()
-        .app_data_dir()
-        .map_err(|e: tauri::Error| e.to_string())?
-        .join("thumbnails");
-
     let _ = tokio::task::spawn_blocking(move || {
         if cache_dir.exists() {
             let _ = std::fs::remove_dir_all(cache_dir);
         }
-        if thumb_dir.exists() {
-            let _ = std::fs::remove_dir_all(thumb_dir);
-        }
     }).await;
     Ok(())
-}
-
-/// Get a small thumbnail for inline display in file cards.
-/// Returns the cached image's URL (served by the local streaming server with
-/// token auth) for the frontend to load directly via `<img src>`, or an empty
-/// string when no thumbnail is available. Uses same cache as cmd_get_preview.
-#[tauri::command]
-pub async fn cmd_get_thumbnail(
-    message_id: i32,
-    folder_id: Option<i64>,
-    app_handle: tauri::AppHandle,
-    state: State<'_, TelegramState>,
-    config: State<'_, crate::commands::streaming::StreamConfig>,
-) -> Result<String, String> {
-    let token = config.token.clone();
-    let port = config.port;
-    let url_for = |folder_key: &str, msg_id: i32, ext: &str| {
-        format!(
-            "http://localhost:{}/thumb/thumbnails/{}_{}.{}?token={}",
-            port, folder_key, msg_id, ext, token
-        )
-    };
-
-    // Check if thumbnail already in cache
-    let cache_dir = app_handle
-        .path()
-        .app_data_dir()
-        .map_err(|e: tauri::Error| e.to_string())?
-        .join("thumbnails");
-    if tokio::fs::metadata(&cache_dir).await.is_err() {
-        let _ = tokio::fs::create_dir_all(&cache_dir).await;
-    }
-
-    let folder_key = folder_id
-        .map(|id| id.to_string())
-        .unwrap_or_else(|| "home".to_string());
-
-    // Check for any cached thumbnail for this message by checking predicted paths
-    let supported_exts = THUMBNAIL_EXTS;
-    for ext in supported_exts {
-        let path = cache_dir.join(format!("{}_{}.{}", folder_key, message_id, ext));
-        if tokio::fs::metadata(&path).await.is_ok() {
-            return Ok(url_for(&folder_key, message_id, ext));
-        }
-    }
-
-    // No cache, need to fetch from Telegram
-    let client_opt = { state.client.lock().await.clone() };
-    #[cfg(debug_assertions)]
-    if client_opt.is_none() {
-        return Ok("".to_string());
-    }
-    let client = client_opt.ok_or_else(|| "Client not connected".to_string())?;
-
-    let peer = resolve_peer(&client, folder_id, &state.peer_cache).await?;
-    let messages = client.get_messages_by_id(peer, &[message_id])
-        .await.map_err(|e| e.to_string())?;
-    if let Some(m) = messages.into_iter().flatten().next() {
-        if let Some(media) = m.media() {
-            // Only get thumbnails for photos and documents with photo thumbnails
-            let (is_image, ext) = match &media {
-                Media::Photo(_) => (true, "jpg".to_string()),
-                Media::Document(d) => {
-                    let mime = d.mime_type().unwrap_or("");
-                    if mime.starts_with("image/") {
-                        let e = match mime {
-                            "image/png" => "png",
-                            "image/gif" => "gif",
-                            "image/webp" => "webp",
-                            _ => "jpg",
-                        };
-                        (true, e.to_string())
-                    } else {
-                        // Not an image, return empty - FileCard will show icon
-                        return Ok("".to_string());
-                    }
-                },
-                _ => return Ok("".to_string()),
-            };
-
-            if is_image {
-                // Get photo thumbnail (largest available for best quality)
-                let save_path = cache_dir.join(format!("{}_{}.{}", folder_key, message_id, ext));
-
-                let thumbs = match &media {
-                    Media::Photo(p) => p.thumbs(),
-                    Media::Document(d) => d.thumbs(),
-                    _ => vec![],
-                };
-
-                // Download to a temporary .part file to avoid race conditions
-                // with concurrent thumbnail requests for the same file.
-                //
-                // Use a random u64 suffix so concurrent requests for the
-                // same file write to separate .part files — preventing the inter-request
-                // delete/write race that previously produced empty files.
-                let unique_id = rand::rng().random::<u64>();
-                let part_path = save_path.with_extension(format!("{}_{}.part", ext, unique_id));
-
-                let mut download_ok = false;
-
-                // Early-exit: another concurrent request may have already completed
-                // the download and renamed its .part file to the final path.
-                if tokio::fs::metadata(&save_path).await.map_or(false, |m| m.len() > 0) {
-                    download_ok = true;
-                }
-
-                // Attempt 1: download with original media/thumbs (may have stale file reference)
-                if !download_ok {
-                    let _ = tokio::fs::remove_file(&part_path).await;
-                    let ok = if let Some(thumb) = thumbs.iter().filter(|t| t.size() > 0).max_by_key(|t| t.size()) {
-                        download_to_file(&client, thumb, &part_path).await.is_ok()
-                    } else {
-                        download_to_file(&client, &media, &part_path).await.is_ok()
-                    };
-                    if ok {
-                        download_ok = true;
-                    }
-                }
-
-                // Attempt 2: re-fetch the message to get fresh file references, then retry
-                if !download_ok {
-                    tokio::time::sleep(std::time::Duration::from_millis(500)).await;
-                    if let Ok(fresh_messages) = client.get_messages_by_id(peer, &[message_id]).await {
-                        if let Some(fresh_msg) = fresh_messages.into_iter().flatten().next() {
-                            if let Some(fresh_media) = fresh_msg.media() {
-                                let fresh_thumbs = match &fresh_media {
-                                    Media::Photo(p) => p.thumbs(),
-                                    Media::Document(d) => d.thumbs(),
-                                    _ => vec![],
-                                };
-                                let _ = tokio::fs::remove_file(&part_path).await;
-                                let ok = if let Some(fresh_thumb) = fresh_thumbs.iter().filter(|t| t.size() > 0).max_by_key(|t| t.size()) {
-                                    download_to_file(&client, fresh_thumb, &part_path).await.is_ok()
-                                } else {
-                                    download_to_file(&client, &fresh_media, &part_path).await.is_ok()
-                                };
-                                if ok {
-                                    download_ok = true;
-                                }
-                            }
-                        }
-                    }
-                }
-
-                if download_ok {
-                    // Atomically rename part file to final path
-                    match tokio::fs::rename(&part_path, &save_path).await {
-                        Ok(_) => {
-                            return Ok(url_for(&folder_key, message_id, &ext));
-                        },
-                        Err(e) if e.kind() == std::io::ErrorKind::NotFound => {
-                            // Another concurrent request already renamed our part file.
-                            return Ok(url_for(&folder_key, message_id, &ext));
-                        },
-                        Err(_) => {
-                            let _ = tokio::fs::remove_file(&part_path).await;
-                        }
-                    }
-                }
-            }
-        }
-    }
-
-    Ok("".to_string())
 }
 
 /// Delete stale preview cache entries for a specific message in a specific folder.
@@ -580,31 +402,4 @@ pub async fn cmd_delete_preview_for_message(
     }).await;
     Ok(())
 }
-
-#[tauri::command]
-pub async fn cmd_delete_image_thumbnail(
-    message_id: i32,
-    folder_id: Option<i64>,
-    app_handle: tauri::AppHandle,
-) -> Result<(), String> {
-    let cache_dir = app_handle
-        .path()
-        .app_data_dir()
-        .map_err(|e: tauri::Error| e.to_string())?
-        .join("thumbnails");
-        
-    let folder_key = folder_id
-        .map(|id| id.to_string())
-        .unwrap_or_else(|| "home".to_string());
-
-    let _ = tokio::task::spawn_blocking(move || {
-        let supported_exts = THUMBNAIL_EXTS;
-        for ext in supported_exts {
-            let path = cache_dir.join(format!("{}_{}.{}", folder_key, message_id, ext));
-            if path.exists() {
-                let _ = std::fs::remove_file(path);
-            }
-        }
-    }).await;
-    Ok(())
-}
+
