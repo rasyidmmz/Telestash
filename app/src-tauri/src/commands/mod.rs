@@ -75,3 +75,5 @@ pub use watch_analytics::*;
 pub use folder_view_prefs::*;
 pub mod favorites;
 pub use favorites::*;
+pub mod file_tags;
+pub use file_tags::*;

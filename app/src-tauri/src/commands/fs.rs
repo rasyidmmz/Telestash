@@ -1834,6 +1834,7 @@ fn purge_file_side_tables(
     history.next().map_err(|e| e.to_string())?;
 
     let _ = crate::commands::favorites::purge_favorite_for_file(&conn, folder_id, message_id);
+    let _ = crate::commands::file_tags::purge_tags_for_file(&conn, folder_id, message_id);
 
     Ok(())
 }

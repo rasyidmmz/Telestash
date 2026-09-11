@@ -1,5 +1,5 @@
 import { useState, useMemo, useCallback, useRef, useEffect } from 'react';
-import { Plus, ArrowUpDown, ArrowUp, ArrowDown, ZoomIn, ZoomOut, Tv, Play, Sparkles, Subtitles, Star } from '../../shared/icons.tsx';
+import { Plus, ArrowUpDown, ArrowUp, ArrowDown, ZoomIn, ZoomOut, Tv, Play, Sparkles, Subtitles, Star, Tag } from '../../shared/icons.tsx';
 import { useVirtualizer } from '@tanstack/react-virtual';
 import { useTranslation } from 'react-i18next';
 import { useSettings } from '../../../context/SettingsContext';
@@ -54,6 +54,11 @@ interface FileExplorerProps {
     onFavoritesOnlyChange?: (value: boolean) => void;
     /** When showing the virtual All Favorites view, skip upload slot / season UI. */
     isAllFavoritesView?: boolean;
+    tagMap?: Record<number, string[]>;
+    onEditTags?: (file: TelegramFile) => void;
+    activeTagFilter?: string | null;
+    onActiveTagFilterChange?: (tag: string | null) => void;
+    availableTags?: string[];
 }
 
 
@@ -93,7 +98,8 @@ export function FileExplorer({
     files, loading, error, viewMode, selectedIds, activeFolderId,
     onFileClick, onDelete, onDownload, onPreview, onManualUpload, onToggleSelection, onDrop, onDragStart, onDragEnd, onShare, onRename, onFileMove,
     folders, cardScale, onCardScaleChange, searchTerm, onClearSearch, onRetry, watchHistory,
-    favoriteIds, onToggleFavorite, favoritesOnly = false, onFavoritesOnlyChange, isAllFavoritesView = false
+    favoriteIds, onToggleFavorite, favoritesOnly = false, onFavoritesOnlyChange, isAllFavoritesView = false,
+    tagMap = {}, onEditTags, activeTagFilter = null, onActiveTagFilterChange, availableTags = []
 }: FileExplorerProps) {
     const [sortField, setSortField] = useState<SortField>('name');
     const [sortDirection, setSortDirection] = useState<SortDirection>('asc');
@@ -166,9 +172,11 @@ export function FileExplorer({
     // Filter out subtitle sidecars from the general file list to maintain a 100% clean view
     const cleanFiles = useMemo(() => {
         const base = files.filter(f => !f.name.startsWith('#telestash_sub') && !f.name.includes('#telestash_sub'));
-        if (!favoritesOnly || !favoriteIds) return base;
-        return base.filter(f => favoriteIds.has(f.id));
-    }, [files, favoritesOnly, favoriteIds]);
+        let out = base;
+        if (favoritesOnly && favoriteIds) out = out.filter(f => favoriteIds.has(f.id));
+        if (activeTagFilter) out = out.filter(f => (tagMap[f.id] ?? []).includes(activeTagFilter));
+        return out;
+    }, [files, favoritesOnly, favoriteIds, activeTagFilter, tagMap]);
 
     const seriesAnalysis = useMemo(() => {
         return analyzeSeriesFolder(cleanFiles);
@@ -515,6 +523,18 @@ export function FileExplorer({
                                 Favorites
                             </button>
                         )}
+                        {onActiveTagFilterChange && availableTags.length > 0 && !isAllFavoritesView && (
+                            availableTags.map((tag) => (
+                                <button
+                                    key={tag}
+                                    onClick={() => onActiveTagFilterChange(activeTagFilter === tag ? null : tag)}
+                                    className={`px-2 py-1 rounded flex items-center gap-1 hover:bg-white/5 border text-xs ${activeTagFilter === tag ? 'text-cyan-300 border-cyan-400/40 bg-cyan-400/10' : 'border-transparent text-stash-subtext'}`}
+                                >
+                                    <Tag className="w-3 h-3" />
+                                    {tag}
+                                </button>
+                            ))
+                        )}
 
                         {/* Zoom slider */}
                         <div className="ml-auto flex items-center gap-1.5">
@@ -602,6 +622,7 @@ export function FileExplorer({
                                                 selectedIds={selectedIds}
                                                 isFavorite={favoriteIds?.has(file.id) ?? false}
                                                 onToggleFavorite={onToggleFavorite ? () => onToggleFavorite(file) : undefined}
+                                                tags={tagMap[file.id] ?? []}
                                             />
                                         );
                                     })}
@@ -700,6 +721,7 @@ export function FileExplorer({
                     } : undefined}
                     isFavorite={favoriteIds?.has(contextMenu.file.id) ?? false}
                     onToggleFavorite={onToggleFavorite ? () => onToggleFavorite(contextMenu.file) : undefined}
+                    onEditTags={onEditTags ? () => onEditTags(contextMenu.file) : undefined}
                     onRename={onRename ? () => {
                         onRename(contextMenu.file);
                         setContextMenu(null);

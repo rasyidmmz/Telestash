@@ -29,9 +29,10 @@ interface FileCardProps {
     selectedIds?: number[];
     isFavorite?: boolean;
     onToggleFavorite?: () => void;
+    tags?: string[];
 }
 
-export function FileCard({ file, onDelete, onDownload, onPreview, onShare, isSelected, onClick, onContextMenu, onDrop, onDragStart, onDragEnd, height, onToggleSelection, selectedIds, variant = 'grid', isFavorite = false, onToggleFavorite }: FileCardProps) {
+export function FileCard({ file, onDelete, onDownload, onPreview, onShare, isSelected, onClick, onContextMenu, onDrop, onDragStart, onDragEnd, height, onToggleSelection, selectedIds, variant = 'grid', isFavorite = false, onToggleFavorite, tags = [] }: FileCardProps) {
     const isFolder = file.type === 'folder';
     const isPosterVariant = variant === 'poster';
     const [isDragOver, setIsDragOver] = useState(false);
@@ -151,6 +152,15 @@ export function FileCard({ file, onDelete, onDownload, onPreview, onShare, isSel
                         <p className="text-xs text-stash-subtext">{file.sizeStr}</p>
                         <MediaBadgesList filename={file.name} maxBadges={3} />
                         <VideoMetaBadge metadata={videoMeta} isLoading={videoMetaLoading} filename={file.name} />
+                        {tags.slice(0, 3).map((tag) => (
+                            <span
+                                key={tag}
+                                className="inline-flex items-center text-[9px] font-mono font-bold tracking-tight px-1.5 py-0.5 rounded border bg-cyan-950/80 text-cyan-300 border-cyan-500/30"
+                                title={tag}
+                            >
+                                {tag}
+                            </span>
+                        ))}
                         {subtitles && subtitles.length > 0 && (
                             <span className="inline-flex items-center text-[9px] font-mono font-bold tracking-tight px-1.5 py-0.5 rounded border bg-indigo-950/80 text-indigo-400 border-indigo-500/30" title={subtitles.map(s => `${s.label || s.language} (${s.format})`).join(', ')}>
                                 SUB: {Array.from(new Set(subtitles.map(s => s.language.toUpperCase()))).join(', ')}
