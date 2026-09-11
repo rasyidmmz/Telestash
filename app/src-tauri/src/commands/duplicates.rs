@@ -39,11 +39,14 @@ const MAX_GROUPS: usize = 200;
 const MAX_GROUP_FILES: usize = 12;
 
 /// Normalize a filename for the fast duplicate lane:
-/// case-fold, trim, strip common " (1)" / " copy" suffixes from the stem.
+/// case-fold, trim, strip common " (1)" / " copy" suffixes
+/// from the full name or from the stem before the extension.
 pub(crate) fn normalize_duplicate_name(name: &str) -> String {
     let trimmed = name.trim().to_ascii_lowercase();
+    // Handle "movie.mkv (2)" first (suffix after the extension).
+    let trimmed = strip_copy_suffix(&trimmed);
     let Some(dot) = trimmed.rfind('.') else {
-        return strip_copy_suffix(&trimmed).to_string();
+        return strip_copy_suffix(trimmed).to_string();
     };
     let (stem, ext) = trimmed.split_at(dot);
     format!("{}{}", strip_copy_suffix(stem), ext)
