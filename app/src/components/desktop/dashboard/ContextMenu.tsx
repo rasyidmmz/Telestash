@@ -1,5 +1,5 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
-import { Eye, HardDrive, Trash2, FolderOpen, Pencil, Play, FileText, Link, Copy, ArrowRightLeft, Subtitles, Star} from '../../shared/icons.tsx';
+import { Eye, HardDrive, Trash2, FolderOpen, Pencil, Play, FileText, Link, Copy, ArrowRightLeft, Subtitles, Star, Tag} from '../../shared/icons.tsx';
 import { useTranslation } from 'react-i18next';
 import { TelegramFile, TelegramFolder } from '../../../types';
 import { isMediaFile, isPdfFile, isVideoFile } from '../../../utils';
@@ -22,6 +22,7 @@ interface ContextMenuProps {
     subtitleCount?: number;
     isFavorite?: boolean;
     onToggleFavorite?: () => void;
+    onEditTags?: () => void;
 }
 
 export function ContextMenu({
@@ -40,7 +41,8 @@ export function ContextMenu({
     onRemoveSubtitles,
     subtitleCount,
     isFavorite = false,
-    onToggleFavorite
+    onToggleFavorite,
+    onEditTags
 }: ContextMenuProps) {
     const [adjustedPos, setAdjustedPos] = useState({ x, y });
     const menuRef = useRef<HTMLDivElement>(null);
@@ -140,6 +142,16 @@ export function ContextMenu({
                 >
                     <Star className={`w-4 h-4 ${isFavorite ? 'text-amber-400' : 'text-stash-subtext'}`} weight={isFavorite ? 'fill' : 'regular'} />
                     {isFavorite ? 'Unfavorite' : 'Favorite'}
+                </button>
+            )}
+
+            {file.type !== 'folder' && onEditTags && (
+                <button
+                    onClick={() => { onEditTags(); onClose(); }}
+                    className="flex items-center gap-2 px-2 py-1.5 text-sm text-stash-text hover:bg-stash-hover rounded transition-colors text-left w-full"
+                >
+                    <Tag className="w-4 h-4 text-cyan-400" />
+                    Tags…
                 </button>
             )}
 

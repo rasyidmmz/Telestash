@@ -1,4 +1,4 @@
-import { Suspense, lazy, useState, useEffect, useCallback, useRef } from 'react';
+import { Suspense, lazy, useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { AnimatePresence } from 'framer-motion';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { invoke } from '@tauri-apps/api/core';
@@ -40,6 +40,8 @@ import { useFileUpload } from '../../hooks/useFileUpload';
 import { useFileDownload } from '../../hooks/useFileDownload';
 import { useKeyboardShortcuts } from '../../hooks/useKeyboardShortcuts';
 import { useFolderFavorites, useToggleFavorite } from '../../hooks/useFavorites';
+import { useTags, useFolderTagMap } from '../../hooks/useFileTags';
+import { TagEditorModal } from './dashboard/TagEditorModal';
 import { useSettings } from '../../context/SettingsContext';
 import { useTheme } from '../../context/ThemeContext';
 import { useConfirm } from '../../context/ConfirmContext';
@@ -97,6 +99,8 @@ export function Dashboard({ onLogout }: { onLogout: () => void }) {
     const [cardScale, setCardScale] = useState(1.0);
     const [showAllFavorites, setShowAllFavorites] = useState(false);
     const [favoritesOnly, setFavoritesOnly] = useState(false);
+    const [tagEditorFile, setTagEditorFile] = useState<TelegramFile | null>(null);
+    const [activeTagFilter, setActiveTagFilter] = useState<string | null>(null);
     const internalDragRef = useRef<number[] | null>(null);
 
     const setInternalDragIds = (ids: number[] | null) => {
@@ -157,8 +161,20 @@ export function Dashboard({ onLogout }: { onLogout: () => void }) {
     const openFolderFromSidebar = useCallback((id: number | null) => {
         setShowAllFavorites(false);
         setFavoritesOnly(false);
+        setActiveTagFilter(null);
         setActiveFolderId(id);
     }, [setActiveFolderId]);
+
+    const { data: allTags = [] } = useTags();
+    const { data: tagMapRaw = {} } = useFolderTagMap(showAllFavorites ? null : activeFolderId);
+    const tagMap = useMemo(() => {
+        const out: Record<number, string[]> = {};
+        for (const [k, v] of Object.entries(tagMapRaw)) {
+            out[Number(k)] = v;
+        }
+        return out;
+    }, [tagMapRaw]);
+    const availableTags = useMemo(() => allTags.map(t => t.name), [allTags]);
 
     const displayedFiles = searchTerm.length > 2
         ? searchResults
@@ -945,6 +961,11 @@ export function Dashboard({ onLogout }: { onLogout: () => void }) {
                     favoritesOnly={favoritesOnly}
                     onFavoritesOnlyChange={setFavoritesOnly}
                     isAllFavoritesView={showAllFavorites}
+                    tagMap={tagMap}
+                    onEditTags={setTagEditorFile}
+                    activeTagFilter={activeTagFilter}
+                    onActiveTagFilterChange={setActiveTagFilter}
+                    availableTags={availableTags}
                 />
             </main>
 
@@ -1009,6 +1030,14 @@ export function Dashboard({ onLogout }: { onLogout: () => void }) {
                         onClose={() => setShowSettings(false)}
                     />
                 </Suspense>
+            )}
+
+            {tagEditorFile && (
+                <TagEditorModal
+                    file={tagEditorFile}
+                    folderId={showAllFavorites ? (tagEditorFile.folder_id ?? null) : activeFolderId}
+                    onClose={() => setTagEditorFile(null)}
+                />
             )}
 
             <LogsModal

@@ -484,6 +484,12 @@ pub fn run() {
             commands::cmd_list_folder_favorites,
             commands::cmd_list_all_favorites,
             commands::cmd_get_all_favorite_files,
+            commands::cmd_list_tags,
+            commands::cmd_create_tag,
+            commands::cmd_delete_tag,
+            commands::cmd_set_file_tags,
+            commands::cmd_get_folder_tag_map,
+            commands::cmd_get_file_tag_ids,
         ])
         .build(tauri::generate_context!())
         .expect("error while building tauri application");

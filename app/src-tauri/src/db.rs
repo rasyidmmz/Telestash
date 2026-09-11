@@ -116,6 +116,17 @@ pub fn init_db(app: &AppHandle) -> Result<DbConnection, String> {
                     message_id INTEGER NOT NULL,
                     created_at INTEGER NOT NULL DEFAULT 0,
                     PRIMARY KEY (folder_key, message_id)
+                );
+                CREATE TABLE IF NOT EXISTS file_tags (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    name TEXT NOT NULL UNIQUE
+                );
+                CREATE TABLE IF NOT EXISTS file_tag_links (
+                    folder_key TEXT NOT NULL,
+                    message_id INTEGER NOT NULL,
+                    tag_id INTEGER NOT NULL,
+                    PRIMARY KEY (folder_key, message_id, tag_id),
+                    FOREIGN KEY(tag_id) REFERENCES file_tags(id) ON DELETE CASCADE
                 );"
             ) {
                 Ok(_) => {
