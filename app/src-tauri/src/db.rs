@@ -105,6 +105,11 @@ pub fn init_db(app: &AppHandle) -> Result<DbConnection, String> {
                     last_position_secs REAL,
                     total_duration_secs REAL,
                     play_count INTEGER NOT NULL DEFAULT 1
+                );
+                CREATE TABLE IF NOT EXISTS folder_view_prefs (
+                    folder_key TEXT PRIMARY KEY,
+                    sort_field TEXT NOT NULL DEFAULT 'name',
+                    sort_direction TEXT NOT NULL DEFAULT 'asc'
                 );"
             ) {
                 Ok(_) => {
