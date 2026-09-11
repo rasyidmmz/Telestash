@@ -43,11 +43,38 @@ inventarisasi kode internal.
 
 ## Tier 3 — Library Power (v1.7.0)
 
-1. **Favorites + manual tags per file** (SQLite), filter chips per folder.
-2. **Sort/filter persist per folder** + bulk operations (bulk rename/move/tag).
-3. **Collections lintas-folder** — playlist manual level file (bukan group folder).
-4. **Duplicate detector enhancement** — deteksi by-name + size (cepat) di samping
-   hash size+content yang ada.
+Scope final (2026-09-11): bulk rename dan collections lintas-folder dihapus dari tier ini.
+Audit implementasi (2026-09-11, terhadap main v1.6.7) memecah item menjadi PR berurutan
+dan mengunci keputusan identitas file.
+
+### Keputusan wajib (ikat sebelum coding)
+
+- **Kunci file = `(folder_id, message_id)`**, bukan `file_id` saja. Message id unik per
+  chat; file split `>2 GB` = banyak part + 1 manifest → favorit/tag menempel ke
+  **manifest**, bukan part. Folder Saved Messages = sentinel `home`/`None` yang sama
+  dengan stream route.
+- **Purge on delete:** favorites/tags ikut dibersihkan di path delete file (termasuk
+  split), sama seperti `purge_file_side_tables` untuk watch history.
+- **Rename/forward:** verifikasi apakah `message_id` berubah; jika ya, remap row.
+
+### PR sequence (prioritas eksekusi)
+
+| PR | Isi | Catatan |
+|---|---|---|
+| **A** | **Sort/filter persist per folder** | `sortField` + `sortDirection` per folder di SQLite (`folder_view_prefs`); load saat ganti folder di `FileExplorer`. Saat ini hanya `useState` (hilang remount). Quick win. |
+| **B** | **Favorites** | Tabel `file_favorites(folder_id, message_id)`; star di card/context menu; filter “★ saja”; purge on delete. Shippable tanpa tags. |
+| **C** | **Duplicate fast path** | Lane kandidat `(normalized_name, size)` tanpa download; label **“possible duplicate”**; hash 256 KiB tetap sebagai confirm lane. |
+| **D** | **Manual tags + chips** | Tabel many-to-many `tags` / `file_tags`; editor + filter chips. Setelah favorites stabil. |
+
+Catatan: `quality_tag` di `watch_history` adalah badge kualitas media (HEVC/HDR),
+**bukan** tag user — jangan tumpang tindih.
+
+### Asumsi tervalidasi audit
+
+- Sort name/size/date + arah sudah ada di UI; yang kurang hanya persistensi + chips.
+- Duplicates sekarang sudah `size` → hash prefix 256 KiB (`MIN_SIZE` 1 MB); enhancement
+  hanya menambah fast lane di depan, bukan mengganti hash.
+- Semua string baru wajib masuk 13 locale (pola i18n yang ada).
 
 ## Tier 4 — Operations & Resilience (v1.8.0)
 
@@ -68,6 +95,7 @@ inventarisasi kode internal.
 - Metadata TMDB — dihapus di v1.6.3; API key pribadi terlalu rumit untuk user,
   tidak akan ditawarkan kembali.
 - Export library & advanced search — ditolak user (09-05).
+- Bulk rename & collections lintas-folder — dihapus dari Tier 3 (09-11); bukan prioritas.
 - Transcoding/HLS/playback webview — sengaja dibuang (v1.2.3); MPV native = moto.
 - Multi-akun & sharing publik internet — kompleks + bertentangan dengan
   "personal library boundary".
