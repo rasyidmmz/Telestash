@@ -37,6 +37,28 @@ struct CachedSplitPart {
 
 static SPLIT_STREAM_PART_CACHE: OnceLock<Mutex<HashMap<String, CachedSplitPart>>> = OnceLock::new();
 
+/// Sanitize a filename for use inside a quoted Content-Disposition value.
+/// Strips CR/LF (header injection) and replaces `"` so the quoted-string stays intact.
+pub(crate) fn sanitize_content_disposition_filename(name: &str) -> String {
+    name.chars()
+        .filter(|c| *c != '\r' && *c != '\n' && *c != '\0')
+        .map(|c| if c == '"' { '\'' } else { c })
+        .collect()
+}
+
+/// Preview cache folder keys are numeric ids or "home"/"me"-style aliases.
+fn is_safe_preview_folder_key(key: &str) -> bool {
+    !key.is_empty()
+        && key.len() <= 64
+        && key
+            .chars()
+            .all(|c| c.is_ascii_alphanumeric() || c == '_' || c == '-')
+}
+
+fn is_safe_preview_ext(ext: &str) -> bool {
+    matches!(ext, "png" | "jpg" | "jpeg" | "gif" | "webp" | "bmp")
+}
+
 pub fn parse_range_header(header_val: &str, total_size: u64) -> Option<(u64, u64)> {
     if !header_val.starts_with("bytes=") {
         return None;
@@ -224,7 +246,7 @@ pub fn build_media_response(
     if let Some(fname) = filename {
         resp.insert_header((
             "Content-Disposition",
-            format!("inline; filename=\"{}\"", fname),
+            format!("inline; filename=\"{}\"", sanitize_content_disposition_filename(fname)),
         ));
     }
 
@@ -262,7 +284,7 @@ fn build_split_media_response(
     let content_length = if is_range { end_byte - start_byte + 1 } else { size };
     let client = client.clone();
     let mime = manifest.mime_type.clone();
-    let filename = manifest.filename.replace('"', "'");
+    let filename = sanitize_content_disposition_filename(&manifest.filename);
     let log_filename = filename.clone();
     let parts = manifest.parts.clone();
     let stream = async_stream::stream! {
@@ -447,6 +469,31 @@ mod tests {
     fn split_part_cache_key_includes_scope_and_message_id() {
         assert_eq!(super::split_part_cache_key("folder-1", 42), "folder-1:42");
     }
+
+    #[test]
+    fn sanitizes_content_disposition_filename() {
+        assert_eq!(
+            super::sanitize_content_disposition_filename("ok.mkv"),
+            "ok.mkv"
+        );
+        assert_eq!(
+            super::sanitize_content_disposition_filename("evil\".mkv\r\nX: 1"),
+            "evil'.mkvX: 1"
+        );
+    }
+
+    #[test]
+    fn preview_path_components_are_restricted() {
+        assert!(super::is_safe_preview_folder_key("home"));
+        assert!(super::is_safe_preview_folder_key("-100123"));
+        assert!(!super::is_safe_preview_folder_key(".."));
+        assert!(!super::is_safe_preview_folder_key("../..\\x"));
+        assert!(!super::is_safe_preview_folder_key(""));
+        assert!(super::is_safe_preview_ext("jpg"));
+        assert!(super::is_safe_preview_ext("png"));
+        assert!(!super::is_safe_preview_ext("svg"));
+        assert!(!super::is_safe_preview_ext("exe"));
+    }
 }
 
 #[derive(serde::Serialize, Clone)]
@@ -503,7 +550,7 @@ async fn handle_stream_media_request(
             return HttpResponse::Forbidden().body("Invalid or missing stream token")
         },
     }
-    
+
     // Parse folder ID
     let folder_id = if folder_id_str == "me" || folder_id_str == "home" || folder_id_str == "null" {
         log::debug!("Stream request: Using root folder for msg {}", message_id);
@@ -663,6 +710,9 @@ async fn thumb_preview_route(
         return HttpResponse::Forbidden().body("Invalid or missing stream token");
     }
     let (folder_key, message_id, ext) = path.into_inner();
+    if !is_safe_preview_folder_key(&folder_key) || !is_safe_preview_ext(&ext) {
+        return HttpResponse::BadRequest().body("Invalid preview path");
+    }
     let dir = app_handle
         .path()
         .app_cache_dir()
@@ -689,7 +739,7 @@ pub async fn start_server(
     let token_data = web::Data::new(StreamTokenData { token });
     let db_data = web::Data::new(db_pool);
     let app_handle_data = web::Data::new(app_handle);
-    
+
     log::info!("Starting Streaming Server on port {}", port);
 
     // Bind the listener to 127.0.0.1 explicitly.

@@ -127,7 +127,7 @@ pub async fn cmd_get_preview(
     let port = config.port;
     let preview_url = |folder_key: &str, msg_id: i32, ext: &str| {
         format!(
-            "http://localhost:{}/thumb/preview/{}_{}.{}?token={}",
+            "http://localhost:{}/thumb/preview/{}/{}.{}?token={}",
             port, folder_key, msg_id, ext, token
         )
     };
