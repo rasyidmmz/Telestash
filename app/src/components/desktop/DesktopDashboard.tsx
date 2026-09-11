@@ -39,6 +39,7 @@ import { useFileOperations } from '../../hooks/useFileOperations';
 import { useFileUpload } from '../../hooks/useFileUpload';
 import { useFileDownload } from '../../hooks/useFileDownload';
 import { useKeyboardShortcuts } from '../../hooks/useKeyboardShortcuts';
+import { useFolderFavorites, useToggleFavorite } from '../../hooks/useFavorites';
 import { useSettings } from '../../context/SettingsContext';
 import { useTheme } from '../../context/ThemeContext';
 import { useConfirm } from '../../context/ConfirmContext';
@@ -94,6 +95,8 @@ export function Dashboard({ onLogout }: { onLogout: () => void }) {
     const [searchResults, setSearchResults] = useState<TelegramFile[]>([]);
     const [isSearching, setIsSearching] = useState(false);
     const [cardScale, setCardScale] = useState(1.0);
+    const [showAllFavorites, setShowAllFavorites] = useState(false);
+    const [favoritesOnly, setFavoritesOnly] = useState(false);
     const internalDragRef = useRef<number[] | null>(null);
 
     const setInternalDragIds = (ids: number[] | null) => {
@@ -114,14 +117,48 @@ export function Dashboard({ onLogout }: { onLogout: () => void }) {
     const loggedTransferErrors = useRef<Set<string>>(new Set());
 
     const { data: allFiles = [], isLoading, error } = useQuery({
-        queryKey: ['files', activeFolderId],
-        queryFn: () => invoke<Array<{ id: number; name: string; size: number; icon_type: string; folder_id: number | null; created_at: string; mime_type?: string; file_ext?: string }>>('cmd_get_files', { folderId: activeFolderId }).then(res => res.map(f => ({
-            ...f,
-            sizeStr: formatBytes(f.size),
-            type: (f.icon_type as TelegramFile['type']) || 'file'
-        }))),
+        queryKey: showAllFavorites ? ['all-favorite-files'] : ['files', activeFolderId],
+        queryFn: () => {
+            if (showAllFavorites) {
+                return invoke<Array<{ id: number; name: string; size: number; icon_type: string; folder_id: number | null; created_at: string; mime_type?: string; file_ext?: string }>>('cmd_get_all_favorite_files').then(res => res.map(f => ({
+                    ...f,
+                    sizeStr: formatBytes(f.size),
+                    type: (f.icon_type as TelegramFile['type']) || 'file'
+                })));
+            }
+            return invoke<Array<{ id: number; name: string; size: number; icon_type: string; folder_id: number | null; created_at: string; mime_type?: string; file_ext?: string }>>('cmd_get_files', { folderId: activeFolderId }).then(res => res.map(f => ({
+                ...f,
+                sizeStr: formatBytes(f.size),
+                type: (f.icon_type as TelegramFile['type']) || 'file'
+            })));
+        },
         enabled: !!store,
     });
+
+    const { data: folderFavoriteIds = [] } = useFolderFavorites(showAllFavorites ? null : activeFolderId);
+    const toggleFavorite = useToggleFavorite();
+    const favoriteIdSet = new Set(showAllFavorites
+        ? allFiles.map(f => f.id)
+        : folderFavoriteIds);
+
+    const handleToggleFavorite = useCallback(async (file: TelegramFile) => {
+        try {
+            const folderId = file.folder_id ?? (showAllFavorites ? file.folder_id ?? null : activeFolderId);
+            const next = await toggleFavorite(folderId, file.id);
+            toast.success(next ? `Favorited ${file.name}` : `Unfavorited ${file.name}`);
+            if (showAllFavorites) {
+                queryClient.invalidateQueries({ queryKey: ['all-favorite-files'] });
+            }
+        } catch (err) {
+            toast.error(humanizeError(err, 'favorite'));
+        }
+    }, [toggleFavorite, activeFolderId, showAllFavorites, queryClient]);
+
+    const openFolderFromSidebar = useCallback((id: number | null) => {
+        setShowAllFavorites(false);
+        setFavoritesOnly(false);
+        setActiveFolderId(id);
+    }, [setActiveFolderId]);
 
     const displayedFiles = searchTerm.length > 2
         ? searchResults
@@ -649,12 +686,14 @@ export function Dashboard({ onLogout }: { onLogout: () => void }) {
         }
     }
 
-    const currentFolderName = activeFolderId === null
-        ? "Saved Messages"
-        : folders.find(f => f.id === activeFolderId)?.name || "Folder";
+    const currentFolderName = showAllFavorites
+        ? "All Favorites"
+        : activeFolderId === null
+            ? "Saved Messages"
+            : folders.find(f => f.id === activeFolderId)?.name || "Folder";
 
     // TeleStash folders map to Telegram channels via MTProto; label matches the context.
-    const contextLabel = activeFolderId === null ? "Saved Messages" : "Channel";
+    const contextLabel = showAllFavorites ? "Favorites" : activeFolderId === null ? "Saved Messages" : "Channel";
 
 
     const handleRootDragOver = (e: React.DragEvent) => {
@@ -777,7 +816,13 @@ export function Dashboard({ onLogout }: { onLogout: () => void }) {
                                     folders={folders}
                                     groups={groups}
                                     activeFolderId={activeFolderId}
-                                    setActiveFolderId={(id) => { setActiveFolderId(id); setShowFolderDrawer(false); }}
+                                    setActiveFolderId={openFolderFromSidebar}
+                                    showAllFavorites={showAllFavorites}
+                                    onShowAllFavorites={() => {
+                                        setShowAllFavorites(true);
+                                        setFavoritesOnly(false);
+                                        setShowFolderDrawer(false);
+                                    }}
                                     onDrop={handleDropOnFolder}
                                     onDelete={handleFolderDelete}
                                     onRename={(id, name) => setRenameFolder({ id, name })}
@@ -876,7 +921,10 @@ export function Dashboard({ onLogout }: { onLogout: () => void }) {
                     activeFolderId={activeFolderId}
                     onFileClick={handleFileClick}
                     onDelete={handleDelete}
-                    onDownload={(id, name) => queueDownload(id, name, activeFolderId)}
+                    onDownload={(id, name) => {
+                        const f = displayedFiles.find(x => x.id === id);
+                        queueDownload(id, name, showAllFavorites ? (f?.folder_id ?? null) : activeFolderId);
+                    }}
                     onPreview={handlePreview}
                     onManualUpload={handleManualUpload}
                     onToggleSelection={handleToggleSelection}
@@ -890,8 +938,13 @@ export function Dashboard({ onLogout }: { onLogout: () => void }) {
                     onCardScaleChange={setCardScale}
                     searchTerm={searchTerm}
                     onClearSearch={() => setSearchTerm('')}
-                    onRetry={() => queryClient.invalidateQueries({ queryKey: ['files', activeFolderId] })}
+                    onRetry={() => queryClient.invalidateQueries({ queryKey: showAllFavorites ? ['all-favorite-files'] : ['files', activeFolderId] })}
                     watchHistory={watchHistory}
+                    favoriteIds={favoriteIdSet}
+                    onToggleFavorite={handleToggleFavorite}
+                    favoritesOnly={favoritesOnly}
+                    onFavoritesOnlyChange={setFavoritesOnly}
+                    isAllFavoritesView={showAllFavorites}
                 />
             </main>
 

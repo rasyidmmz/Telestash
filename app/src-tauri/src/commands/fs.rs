@@ -1818,9 +1818,13 @@ pub async fn cmd_rename_file(
     Ok(true)
 }
 
-/// Remove a deleted file's rows from the watch-history table.
+/// Remove a deleted file's rows from the watch-history table and favorites.
 /// Takes the pool by value so no state guard is held across an await.
-fn purge_file_side_tables(pool: DbConnection, message_id: i32) -> Result<(), String> {
+fn purge_file_side_tables(
+    pool: DbConnection,
+    message_id: i32,
+    folder_id: Option<i64>,
+) -> Result<(), String> {
     let conn = pool.lock().map_err(|e| e.to_string())?;
 
     let mut history = conn
@@ -1828,6 +1832,8 @@ fn purge_file_side_tables(pool: DbConnection, message_id: i32) -> Result<(), Str
         .map_err(|e| e.to_string())?;
     history.bind((1, message_id as i64)).map_err(|e| e.to_string())?;
     history.next().map_err(|e| e.to_string())?;
+
+    let _ = crate::commands::favorites::purge_favorite_for_file(&conn, folder_id, message_id);
 
     Ok(())
 }
@@ -1909,7 +1915,7 @@ pub async fn cmd_delete_file(
     // and the poster wall stop counting a file that no longer exists.
     {
         let pool = (*app_handle.state::<DbConnection>()).clone();
-        let _ = purge_file_side_tables(pool, message_id);
+        let _ = purge_file_side_tables(pool, message_id, folder_id);
     }
 
     if let Ok(app_dir) = app_handle.path().app_data_dir() {

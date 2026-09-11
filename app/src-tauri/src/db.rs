@@ -110,6 +110,12 @@ pub fn init_db(app: &AppHandle) -> Result<DbConnection, String> {
                     folder_key TEXT PRIMARY KEY,
                     sort_field TEXT NOT NULL DEFAULT 'name',
                     sort_direction TEXT NOT NULL DEFAULT 'asc'
+                );
+                CREATE TABLE IF NOT EXISTS file_favorites (
+                    folder_key TEXT NOT NULL,
+                    message_id INTEGER NOT NULL,
+                    created_at INTEGER NOT NULL DEFAULT 0,
+                    PRIMARY KEY (folder_key, message_id)
                 );"
             ) {
                 Ok(_) => {

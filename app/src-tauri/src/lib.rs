@@ -480,6 +480,10 @@ pub fn run() {
             commands::cmd_watch_analytics,
             commands::cmd_get_folder_view_prefs,
             commands::cmd_set_folder_view_prefs,
+            commands::cmd_toggle_file_favorite,
+            commands::cmd_list_folder_favorites,
+            commands::cmd_list_all_favorites,
+            commands::cmd_get_all_favorite_files,
         ])
         .build(tauri::generate_context!())
         .expect("error while building tauri application");
