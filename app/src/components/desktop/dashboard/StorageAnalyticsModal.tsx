@@ -17,6 +17,7 @@ interface StorageAnalyticsModalProps {
 interface DuplicateGroup {
     size: number;
     hash: string;
+    confirmed?: boolean;
     files: { message_id: number; folder_id: number | null; name: string; size: number; created_at: string; hash: string }[];
 }
 
@@ -26,14 +27,15 @@ export function StorageAnalyticsModal({ files, folders, onClose }: StorageAnalyt
     const [dupGroups, setDupGroups] = useState<DuplicateGroup[] | null>(null);
     const [dupSelected, setDupSelected] = useState<Set<string>>(new Set());
 
-    const handleFindDuplicates = async () => {
+    const handleFindDuplicates = async (confirm: boolean) => {
         setDupScanning(true);
         setDupGroups(null);
         try {
             const folderIds: (number | null)[] = [null, ...folders.map((f) => f.id)];
-            const groups = await invoke<DuplicateGroup[]>('cmd_find_duplicates', { folderIds });
+            const groups = await invoke<DuplicateGroup[]>('cmd_find_duplicates', { folderIds, confirm });
             setDupGroups(groups);
             if (groups.length === 0) toast.success('No duplicates found.');
+            else if (!confirm) toast.success(`Found ${groups.length} possible duplicate group(s) by name+size.`);
         } catch (err) {
             toast.error(humanizeError(err, i18n.t('errors.action_duplicate_scan')));
         } finally {
@@ -261,17 +263,28 @@ export function StorageAnalyticsModal({ files, folders, onClose }: StorageAnalyt
                                 <Copy className="w-3.5 h-3.5 text-amber-400" />
                                 DUPLICATE FILES
                             </div>
-                            <button
-                                onClick={handleFindDuplicates}
-                                disabled={dupScanning}
-                                className="px-3 py-1.5 bg-amber-500/10 border border-amber-500/30 text-amber-400 rounded-lg hover:bg-amber-500/20 text-xs font-mono disabled:opacity-50"
-                            >
-                                {dupScanning ? 'SCANNING...' : 'FIND DUPLICATES'}
-                            </button>
+                            <div className="flex items-center gap-2">
+                                <button
+                                    onClick={() => handleFindDuplicates(false)}
+                                    disabled={dupScanning}
+                                    className="px-3 py-1.5 bg-amber-500/10 border border-amber-500/30 text-amber-400 rounded-lg hover:bg-amber-500/20 text-xs font-mono disabled:opacity-50"
+                                    title="Fast: match by name+size only (no download)"
+                                >
+                                    {dupScanning ? 'SCANNING...' : 'QUICK SCAN'}
+                                </button>
+                                <button
+                                    onClick={() => handleFindDuplicates(true)}
+                                    disabled={dupScanning}
+                                    className="px-3 py-1.5 bg-amber-500/10 border border-amber-500/30 text-amber-400 rounded-lg hover:bg-amber-500/20 text-xs font-mono disabled:opacity-50"
+                                    title="Confirm with content hash of first 256 KiB"
+                                >
+                                    {dupScanning ? 'SCANNING...' : 'FIND DUPLICATES'}
+                                </button>
+                            </div>
                         </div>
 
                         {dupScanning && (
-                            <p className="text-xs text-gray-500 font-mono">Streaming file prefixes from Telegram — this can take a while for large folders.</p>
+                            <p className="text-xs text-gray-500 font-mono">Quick scan is instant; full scan streams file prefixes from Telegram and can take a while.</p>
                         )}
 
                         {dupGroups && dupGroups.length === 0 && (
@@ -283,7 +296,14 @@ export function StorageAnalyticsModal({ files, folders, onClose }: StorageAnalyt
                                 {dupGroups.map((group, gi) => (
                                     <div key={gi} className="border border-gray-800 rounded-lg p-3">
                                         <div className="flex items-center justify-between mb-2">
-                                            <span className="text-xs font-mono text-amber-400">{group.files.length} copies</span>
+                                            <span className="text-xs font-mono text-amber-400">
+                                                {group.files.length} copies
+                                                {group.confirmed === false && (
+                                                    <span className="ml-2 text-[10px] px-1.5 py-0.5 rounded border border-amber-500/40 text-amber-300/90">
+                                                        possible
+                                                    </span>
+                                                )}
+                                            </span>
                                             <span className="text-xs font-mono text-gray-500">{formatBytes(group.size)} each</span>
                                         </div>
                                         <div className="space-y-1.5">
