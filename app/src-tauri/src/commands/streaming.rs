@@ -91,6 +91,23 @@ pub fn resolve_mpv_binary(app_handle: &tauri::AppHandle) -> Option<std::path::Pa
     None
 }
 
+/// True when a caption filename belongs to the video title stem.
+/// Requires an exact stem match or a dotted language/suffix variant
+/// (`Matrix.en.srt`), not a bare prefix (`Matrix Reloaded.srt`).
+fn caption_matches_title(file_name: &str, title_stem: &str) -> bool {
+    if title_stem.is_empty() {
+        return false;
+    }
+    let Some(stem) = Path::new(file_name).file_stem().and_then(|s| s.to_str()) else {
+        return false;
+    };
+    if stem == title_stem {
+        return true;
+    }
+    stem.strip_prefix(title_stem)
+        .is_some_and(|rest| rest.starts_with('.'))
+}
+
 fn attach_matching_subtitles(
     args: &mut Vec<String>,
     app_handle: &tauri::AppHandle,
@@ -122,7 +139,7 @@ fn attach_matching_subtitles(
                         let is_match = file_name.starts_with(&prefix_folder)
                             || file_name.starts_with(&prefix_msg)
                             || file_name.starts_with(&prefix_msg_exact)
-                            || (!title_stem.is_empty() && file_name.starts_with(title_stem));
+                            || caption_matches_title(file_name, title_stem);
 
                         if is_match {
                             args.push(format!("--sub-file={}", path.to_string_lossy()));
@@ -385,5 +402,16 @@ mod tests {
             title: Some("Movie Title 2024.mkv".to_string()),
         };
         assert_eq!(item.title.as_deref(), Some("Movie Title 2024.mkv"));
+    }
+
+    #[test]
+    fn caption_title_match_requires_exact_stem_or_dotted_suffix() {
+        assert!(super::caption_matches_title("Matrix.srt", "Matrix"));
+        assert!(super::caption_matches_title("Matrix.en.srt", "Matrix"));
+        assert!(super::caption_matches_title("Matrix.id.srt", "Matrix"));
+        assert!(!super::caption_matches_title("Matrix Reloaded.srt", "Matrix"));
+        assert!(!super::caption_matches_title("Matrix12.srt", "Matrix"));
+        assert!(!super::caption_matches_title("Other.srt", "Matrix"));
+        assert!(!super::caption_matches_title("anything.srt", ""));
     }
 }

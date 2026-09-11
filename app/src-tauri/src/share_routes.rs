@@ -4,8 +4,9 @@ use crate::commands::utils::resolve_peer;
 use crate::db::DbConnection;
 use grammers_client::media::Media;
 use sha2::{Sha256, Digest};
-use std::sync::Arc;
+use std::sync::{Arc, OnceLock};
 use serde::Deserialize;
+use rand::Rng;
 
 #[derive(Clone)]
 struct SharedLinkRow {
@@ -30,8 +31,24 @@ fn verify_password(password: &str, hash: &str) -> bool {
     bcrypt::verify(password, hash).unwrap_or(false)
 }
 
+/// Per-process secret mixed into share-auth cookies. Reading `shares.db`
+/// alone is not enough to mint a valid cookie; the secret dies with the app.
+static SHARE_COOKIE_SECRET: OnceLock<[u8; 32]> = OnceLock::new();
+
+fn share_cookie_secret() -> &'static [u8; 32] {
+    SHARE_COOKIE_SECRET.get_or_init(|| {
+        let mut rng = rand::rng();
+        let mut bytes = [0u8; 32];
+        for b in &mut bytes {
+            *b = rng.random();
+        }
+        bytes
+    })
+}
+
 fn generate_cookie_val(token: &str, password_hash: &str) -> String {
     let mut hasher = Sha256::new();
+    hasher.update(share_cookie_secret());
     hasher.update(token.as_bytes());
     hasher.update(password_hash.as_bytes());
     format!("{:x}", hasher.finalize())
@@ -41,11 +58,11 @@ fn get_share_by_token(db: &DbConnection, token: &str) -> Result<Option<SharedLin
     let conn = db.lock().map_err(|e| e.to_string())?;
     let mut stmt = conn
         .prepare(
-            "SELECT id, folder_id, message_id, file_name, file_size, password_hash, password_salt, expires_at, revoked 
+            "SELECT id, folder_id, message_id, file_name, file_size, password_hash, password_salt, expires_at, revoked
              FROM shared_links WHERE id = ?"
         )
         .map_err(|e| e.to_string())?;
-    
+
     stmt.bind((1, token)).map_err(|e| e.to_string())?;
 
     if let sqlite::State::Row = stmt.next().map_err(|e| e.to_string())? {
@@ -105,7 +122,7 @@ fn render_password_form(file_name: &str, token: &str, error: Option<&str>) -> Ht
         Some(err) => format!("<div class=\"error\">{}</div>", escape_html(err)),
         None => "".to_string(),
     };
-    
+
     let html = format!(
         r#"<!DOCTYPE html>
 <html>
@@ -209,7 +226,7 @@ async fn get_shared_file(
     tg_state: web::Data<Arc<TelegramState>>,
 ) -> impl Responder {
     let token = path.into_inner();
-    
+
     let row = match get_share_by_token(&db_conn, &token) {
         Ok(Some(r)) => r,
         Ok(None) => return HttpResponse::NotFound().body("Shared link not found"),
@@ -218,19 +235,19 @@ async fn get_shared_file(
             return HttpResponse::InternalServerError().body("Internal server error")
         }
     };
-    
+
     // Check validation (revocation and expiration)
     if row.revoked {
         return HttpResponse::NotFound().body("This shared link has been revoked");
     }
-    
+
     if let Some(expiry) = row.expires_at {
         let now = chrono::Utc::now().timestamp();
         if expiry < now {
             return HttpResponse::Gone().body("This shared link has expired");
         }
     }
-    
+
     // Check password protection
     if let Some(hash) = &row.password_hash {
         let mut authenticated = false;
@@ -240,19 +257,19 @@ async fn get_shared_file(
                 authenticated = true;
             }
         }
-        
+
         if !authenticated {
             return render_password_form(&row.file_name, &token, None);
         }
     }
-    
+
     // Retrieve and stream the file from Telegram
     let client_opt = { tg_state.client.lock().await.clone() };
     let client = match client_opt {
         Some(c) => c,
         None => return HttpResponse::ServiceUnavailable().body("Telegram client is not connected"),
     };
-    
+
     let peer = match resolve_peer(&client, row.folder_id, &tg_state.peer_cache).await {
         Ok(p) => p,
         Err(e) => {
@@ -260,7 +277,7 @@ async fn get_shared_file(
             return HttpResponse::InternalServerError().body("Failed to locate folder");
         }
     };
-    
+
     match client.get_messages_by_id(peer, &[row.message_id]).await {
         Ok(messages) => {
             if let Some(Some(msg)) = messages.first() {
@@ -296,7 +313,7 @@ async fn verify_shared_file_password(
     db_conn: web::Data<DbConnection>,
 ) -> impl Responder {
     let token = path.into_inner();
-    
+
     let row = match get_share_by_token(&db_conn, &token) {
         Ok(Some(r)) => r,
         Ok(None) => return HttpResponse::NotFound().body("Shared link not found"),
@@ -305,22 +322,22 @@ async fn verify_shared_file_password(
             return HttpResponse::InternalServerError().body("Internal server error")
         }
     };
-    
+
     if row.revoked {
         return HttpResponse::NotFound().body("This shared link has been revoked");
     }
-    
+
     let hash = match &row.password_hash {
         Some(h) => h,
         None => return HttpResponse::BadRequest().body("No password required for this link"),
     };
-    
+
     if verify_password(&form.password, hash) {
         // Set session cookie (30 min).
-        // NOTE: The streaming share server binds to 0.0.0.0 over plain HTTP (not HTTPS),
+        // NOTE: The share server binds to 127.0.0.1 over plain HTTP (not HTTPS),
         // so the cookie cannot use `.secure(true)` without becoming unusable.
         // The cookie is protected by `.http_only(true)` and `.same_site(Strict)`
-        // to mitigate XSS and CSRF within the constraints of a local-network HTTP service.
+        // and mixed with a per-process secret so a DB dump alone cannot mint it.
         let val = generate_cookie_val(&token, hash);
         let cookie = Cookie::build(format!("share_auth_{}", token), val)
             .path(format!("/d/{}", token))
@@ -328,7 +345,7 @@ async fn verify_shared_file_password(
             .same_site(actix_web::cookie::SameSite::Strict)
             .max_age(actix_web::cookie::time::Duration::minutes(30))
             .finish();
-            
+
         HttpResponse::Found()
             .insert_header(("Location", format!("/d/{}", token)))
             .cookie(cookie)
