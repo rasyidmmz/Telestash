@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { HardDrive, Folder, Plus, RefreshCw, LogOut, ChevronLeft, ChevronRight, Settings2, Trash2, Check, X, Eye, EyeOff } from '../../shared/icons.tsx';
+import { HardDrive, Folder, Plus, RefreshCw, LogOut, ChevronLeft, ChevronRight, Settings2, Trash2, Check, X, Eye, EyeOff, Star } from '../../shared/icons.tsx';
 import { useTranslation } from 'react-i18next';
 import { version as appVersion } from '../../../../package.json';
 import { SidebarItem } from './SidebarItem';
@@ -123,12 +123,16 @@ interface SidebarProps {
     onCreateGroup: (name: string, colorHex: string) => Promise<void>;
     onUpdateGroup: (groupId: number, name: string, colorHex: string) => Promise<void>;
     onDeleteGroup: (groupId: number) => Promise<void>;
+    /** Virtual "All Favorites" view (not a Telegram folder). */
+    showAllFavorites?: boolean;
+    onShowAllFavorites?: () => void;
 }
 
 export function Sidebar({
     folders, groups = [], activeFolderId, setActiveFolderId, onDrop, onDelete, onRename, onToggleVisibility, onExportInvite, onCreate,
     isSyncing, isConnected, onSync, onLogout, bandwidth,
-    onAssignFolderToGroup, onReorderFolders, onUpdateGroupOrder, onCreateGroup, onUpdateGroup, onDeleteGroup
+    onAssignFolderToGroup, onReorderFolders, onUpdateGroupOrder, onCreateGroup, onUpdateGroup, onDeleteGroup,
+    showAllFavorites = false, onShowAllFavorites
 }: SidebarProps) {
     const [showNewFolderInput, setShowNewFolderInput] = useState(false);
     const [newFolderName, setNewFolderName] = useState("");
@@ -475,10 +479,21 @@ export function Sidebar({
 
                 {/* Scrollable folder list */}
                 <nav className="flex-1 px-2 py-4 space-y-1 overflow-y-auto min-h-0">
+                    {onShowAllFavorites && (
+                        <SidebarItem
+                            icon={Star}
+                            label={t('common.all_favorites') || "All Favorites"}
+                            active={showAllFavorites}
+                            onClick={onShowAllFavorites}
+                            onDrop={() => { /* favorites view accepts no drops */ }}
+                            folderId={-1}
+                            collapsed={settings.sidebarCollapsed}
+                        />
+                    )}
                     <SidebarItem
                         icon={HardDrive}
                         label={t('common.saved_messages')}
-                        active={activeFolderId === null}
+                        active={!showAllFavorites && activeFolderId === null}
                         onClick={() => setActiveFolderId(null)}
                         onDrop={(e: React.DragEvent) => onDrop(e, null)}
                         folderId={null}
@@ -493,7 +508,7 @@ export function Sidebar({
                                 key={folder.id}
                                 icon={Folder}
                                 label={folder.name}
-                                active={activeFolderId === folder.id}
+                                active={!showAllFavorites && activeFolderId === folder.id}
                                 onClick={() => setActiveFolderId(folder.id)}
                                 onDrop={(e: React.DragEvent) => onDrop(e, folder.id)}
                                 onDelete={() => onDelete(folder.id, folder.name)}

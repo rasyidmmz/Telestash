@@ -1,5 +1,5 @@
 import { useState, useMemo, useCallback, useRef, useEffect } from 'react';
-import { Plus, ArrowUpDown, ArrowUp, ArrowDown, ZoomIn, ZoomOut, Tv, Play, Sparkles, Subtitles } from '../../shared/icons.tsx';
+import { Plus, ArrowUpDown, ArrowUp, ArrowDown, ZoomIn, ZoomOut, Tv, Play, Sparkles, Subtitles, Star } from '../../shared/icons.tsx';
 import { useVirtualizer } from '@tanstack/react-virtual';
 import { useTranslation } from 'react-i18next';
 import { useSettings } from '../../../context/SettingsContext';
@@ -46,6 +46,14 @@ interface FileExplorerProps {
     onClearSearch: () => void;
     onRetry: () => void;
     watchHistory?: WatchHistoryEntry[];
+    /** Message ids favorited in the active folder (or all ids when showAllFavorites). */
+    favoriteIds?: Set<number>;
+    onToggleFavorite?: (file: TelegramFile) => void;
+    /** Hide non-favorite files (chip filter). */
+    favoritesOnly?: boolean;
+    onFavoritesOnlyChange?: (value: boolean) => void;
+    /** When showing the virtual All Favorites view, skip upload slot / season UI. */
+    isAllFavoritesView?: boolean;
 }
 
 
@@ -84,7 +92,8 @@ function useGridColumns(containerRef: React.RefObject<HTMLDivElement | null>) {
 export function FileExplorer({
     files, loading, error, viewMode, selectedIds, activeFolderId,
     onFileClick, onDelete, onDownload, onPreview, onManualUpload, onToggleSelection, onDrop, onDragStart, onDragEnd, onShare, onRename, onFileMove,
-    folders, cardScale, onCardScaleChange, searchTerm, onClearSearch, onRetry, watchHistory
+    folders, cardScale, onCardScaleChange, searchTerm, onClearSearch, onRetry, watchHistory,
+    favoriteIds, onToggleFavorite, favoritesOnly = false, onFavoritesOnlyChange, isAllFavoritesView = false
 }: FileExplorerProps) {
     const [sortField, setSortField] = useState<SortField>('name');
     const [sortDirection, setSortDirection] = useState<SortDirection>('asc');
@@ -156,8 +165,10 @@ export function FileExplorer({
 
     // Filter out subtitle sidecars from the general file list to maintain a 100% clean view
     const cleanFiles = useMemo(() => {
-        return files.filter(f => !f.name.startsWith('#telestash_sub') && !f.name.includes('#telestash_sub'));
-    }, [files]);
+        const base = files.filter(f => !f.name.startsWith('#telestash_sub') && !f.name.includes('#telestash_sub'));
+        if (!favoritesOnly || !favoriteIds) return base;
+        return base.filter(f => favoriteIds.has(f.id));
+    }, [files, favoritesOnly, favoriteIds]);
 
     const seriesAnalysis = useMemo(() => {
         return analyzeSeriesFolder(cleanFiles);
@@ -256,20 +267,21 @@ export function FileExplorer({
     // Upload entry leads the grid so it stays visible above the fold — but not
     // during search, where results span folders and upload targets the active one.
     const isSearchActive = searchTerm.trim().length > 2;
+    const showUploadSlot = !isSearchActive && !isAllFavoritesView && !favoritesOnly;
 
     const gridRows = useMemo(() => {
         const rows: (TelegramFile | 'upload')[][] = [];
-        const itemsWithUpload: (TelegramFile | 'upload')[] = isSearchActive ? sortedFiles : ['upload', ...sortedFiles];
+        const itemsWithUpload: (TelegramFile | 'upload')[] = showUploadSlot ? ['upload', ...sortedFiles] : sortedFiles;
         for (let i = 0; i < itemsWithUpload.length; i += columns) {
             rows.push(itemsWithUpload.slice(i, i + columns));
         }
         return rows;
-    }, [sortedFiles, columns, isSearchActive]);
+    }, [sortedFiles, columns, showUploadSlot]);
 
 
     const listItems = useMemo(() => {
-        return isSearchActive ? sortedFiles : (['upload' as const, ...sortedFiles]);
-    }, [sortedFiles, activeFolderId, isSearchActive]);
+        return showUploadSlot ? (['upload' as const, ...sortedFiles]) : sortedFiles;
+    }, [sortedFiles, showUploadSlot]);
 
 
     const gridVirtualizer = useVirtualizer({
@@ -493,6 +505,16 @@ export function FileExplorer({
                         >
                             Date <SortIcon field="date" />
                         </button>
+                        {onFavoritesOnlyChange && !isAllFavoritesView && (
+                            <button
+                                onClick={() => onFavoritesOnlyChange(!favoritesOnly)}
+                                className={`px-2 py-1 rounded flex items-center gap-1 hover:bg-white/5 border ${favoritesOnly ? 'text-amber-400 border-amber-400/40 bg-amber-400/10' : 'border-transparent text-stash-subtext'}`}
+                                title="Show only favorites"
+                            >
+                                <Star className="w-3 h-3" weight={favoritesOnly ? 'fill' : 'regular'} />
+                                Favorites
+                            </button>
+                        )}
 
                         {/* Zoom slider */}
                         <div className="ml-auto flex items-center gap-1.5">
@@ -578,6 +600,8 @@ export function FileExplorer({
                                                 onToggleSelection={() => onToggleSelection(file.id)}
                                                 onShare={onShare ? () => onShare(file) : undefined}
                                                 selectedIds={selectedIds}
+                                                isFavorite={favoriteIds?.has(file.id) ?? false}
+                                                onToggleFavorite={onToggleFavorite ? () => onToggleFavorite(file) : undefined}
                                             />
                                         );
                                     })}
@@ -674,6 +698,8 @@ export function FileExplorer({
                         onShare(contextMenu.file);
                         setContextMenu(null);
                     } : undefined}
+                    isFavorite={favoriteIds?.has(contextMenu.file.id) ?? false}
+                    onToggleFavorite={onToggleFavorite ? () => onToggleFavorite(contextMenu.file) : undefined}
                     onRename={onRename ? () => {
                         onRename(contextMenu.file);
                         setContextMenu(null);

@@ -1,5 +1,5 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
-import { Eye, HardDrive, Trash2, FolderOpen, Pencil, Play, FileText, Link, Copy, ArrowRightLeft, Subtitles} from '../../shared/icons.tsx';
+import { Eye, HardDrive, Trash2, FolderOpen, Pencil, Play, FileText, Link, Copy, ArrowRightLeft, Subtitles, Star} from '../../shared/icons.tsx';
 import { useTranslation } from 'react-i18next';
 import { TelegramFile, TelegramFolder } from '../../../types';
 import { isMediaFile, isPdfFile, isVideoFile } from '../../../utils';
@@ -20,6 +20,8 @@ interface ContextMenuProps {
     activeFolderId?: number | null;
     onRemoveSubtitles?: () => void;
     subtitleCount?: number;
+    isFavorite?: boolean;
+    onToggleFavorite?: () => void;
 }
 
 export function ContextMenu({
@@ -36,7 +38,9 @@ export function ContextMenu({
     folders,
     activeFolderId,
     onRemoveSubtitles,
-    subtitleCount
+    subtitleCount,
+    isFavorite = false,
+    onToggleFavorite
 }: ContextMenuProps) {
     const [adjustedPos, setAdjustedPos] = useState({ x, y });
     const menuRef = useRef<HTMLDivElement>(null);
@@ -128,6 +132,16 @@ export function ContextMenu({
                 <HardDrive className="w-4 h-4 text-green-500" />
                 {t('files.download')}
             </button>
+
+            {file.type !== 'folder' && onToggleFavorite && (
+                <button
+                    onClick={() => { onToggleFavorite(); onClose(); }}
+                    className="flex items-center gap-2 px-2 py-1.5 text-sm text-stash-text hover:bg-stash-hover rounded transition-colors text-left w-full"
+                >
+                    <Star className={`w-4 h-4 ${isFavorite ? 'text-amber-400' : 'text-stash-subtext'}`} weight={isFavorite ? 'fill' : 'regular'} />
+                    {isFavorite ? 'Unfavorite' : 'Favorite'}
+                </button>
+            )}
 
             {file.type !== 'folder' && onShare && (
                 <button onClick={onShare} className="flex items-center gap-2 px-2 py-1.5 text-sm text-stash-text hover:bg-stash-hover rounded transition-colors text-left w-full">

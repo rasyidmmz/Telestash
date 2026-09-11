@@ -1,6 +1,6 @@
 import { motion } from 'framer-motion';
 import { useState, useRef } from 'react';
-import { Folder, Eye, Trash2, Link, Download } from '../../shared/icons.tsx';
+import { Folder, Eye, Trash2, Link, Download, Star } from '../../shared/icons.tsx';
 import { TelegramFile } from '../../../types';
 import { createDragGhost } from '../../../utils';
 import { FileTypeIcon } from '../../shared/FileTypeIcon';
@@ -27,9 +27,11 @@ interface FileCardProps {
     height?: number;
     onToggleSelection?: () => void;
     selectedIds?: number[];
+    isFavorite?: boolean;
+    onToggleFavorite?: () => void;
 }
 
-export function FileCard({ file, onDelete, onDownload, onPreview, onShare, isSelected, onClick, onContextMenu, onDrop, onDragStart, onDragEnd, height, onToggleSelection, selectedIds, variant = 'grid' }: FileCardProps) {
+export function FileCard({ file, onDelete, onDownload, onPreview, onShare, isSelected, onClick, onContextMenu, onDrop, onDragStart, onDragEnd, height, onToggleSelection, selectedIds, variant = 'grid', isFavorite = false, onToggleFavorite }: FileCardProps) {
     const isFolder = file.type === 'folder';
     const isPosterVariant = variant === 'poster';
     const [isDragOver, setIsDragOver] = useState(false);
@@ -135,6 +137,13 @@ export function FileCard({ file, onDelete, onDownload, onPreview, onShare, isSel
                     {isSelected && <div className="w-1.5 h-1.5 bg-black rounded-full" />}
                 </button>
 
+                {/* Persistent favorite indicator when favorited */}
+                {isFavorite && !isFolder && (
+                    <div className="absolute top-2 right-2 z-[5] pointer-events-none">
+                        <Star className="w-3.5 h-3.5 text-amber-400 drop-shadow" weight="fill" />
+                    </div>
+                )}
+
                 {/* File info overlay at bottom */}
                 <div className="absolute bottom-0 left-0 right-0 p-3 text-stash-text">
                     <h3 className="text-sm font-medium truncate w-full" title={file.name}>{file.name}</h3>
@@ -152,6 +161,17 @@ export function FileCard({ file, onDelete, onDownload, onPreview, onShare, isSel
 
                 {/* Quick actions on hover */}
                 <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity flex gap-1 z-10">
+                    {!isFolder && onToggleFavorite && (
+                        <button
+                            onClick={(e) => { e.stopPropagation(); onToggleFavorite(); }}
+                            className={`file-action-btn p-1 bg-black/50 rounded-full transition-colors ${isFavorite ? 'text-amber-400 hover:bg-amber-500/20' : 'text-white/70 hover:bg-stash-primary hover:text-white'}`}
+                            title={isFavorite ? 'Unfavorite' : 'Favorite'}
+                            aria-label={`${isFavorite ? 'Unfavorite' : 'Favorite'} ${file.name}`}
+                            aria-pressed={isFavorite}
+                        >
+                            <Star className="w-3 h-3" weight={isFavorite ? 'fill' : 'regular'} />
+                        </button>
+                    )}
                     <button onClick={(e) => { e.stopPropagation(); if (onPreview) onPreview() }} className="file-action-btn p-1 bg-black/50 rounded-full hover:bg-stash-primary hover:text-white text-white/70" title="Preview" aria-label={`Preview ${file.name}`}>
                         <Eye className="w-3 h-3" />
                     </button>
