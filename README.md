@@ -98,7 +98,10 @@ The data path is intentionally short and deterministic: the Windows application 
 * 🎬 **Subtitle Sidecar Manager**: Attach SRT/ASS/SSA/VTT/VobSub to videos as hidden sidecars, with in-app review and removal.
 * 🛡️ **Bounded Streaming Prefetch**: 16 MiB in-memory forward buffer per active stream; no full media download is retained by the stream path.
 * 📁 **Folder & Channel Storage**: Organize movies and TV series using Saved Messages and private channels as folders.
-* 🔍 **Duplicate Finder**: Detects duplicate files across folders by exact size + content hash, with manual multi-select cleanup.
+* 🔍 **Duplicate Finder**: Quick Scan by name+size (no download, labeled *possible*), or full scan with a 256 KiB content hash; manual multi-select cleanup.
+* ⭐ **Favorites & All Favorites**: Star files per folder; filter ★ only, or open a virtual All Favorites view across folders (no extra Telegram folder).
+* 🏷️ **Manual Tags**: Assign custom tags to files, badge them on cards, and filter with chips.
+* 🔃 **Per-folder Sort Memory**: Name/size/date sort and direction persist per folder in local SQLite.
 * ⏱️ **MPV-accurate Resume**: Continue Watching reads MPV watch-later positions for true playback progress.
 * 📤 **Single-Path Upload Console**: One file-picker upload flow into the active folder, always visible as the first item in the file grid/list — no drag-drop, folder, or URL ingestion paths.
 * 📊 **Transfer Diagnostics**: Detailed error classification, attempt history, part indexes, and retry decisions in the desktop logs view.

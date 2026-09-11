@@ -1,5 +1,14 @@
 # Changelog
 
+## [1.7.0]
+
+### Added
+
+- **Per-folder sort preferences**: sort field and direction (name/size/date) persist in SQLite and restore when you reopen a folder (`folder_view_prefs`).
+- **Favorites**: star files from the card or context menu. Filter a folder to favorites only, or open the virtual **All Favorites** view in the sidebar (no Telegram folder is created). Identity is `(folder_id, message_id)`; split files favorite the manifest.
+- **Manual tags**: create tags, assign them to files via the Tags… dialog, show badges on cards, and filter with chips. Distinct from media quality badges. Tags are removed when a file is deleted.
+- **Duplicate Quick Scan**: find possible duplicates by exact size + normalized filename (case, ` (1)`, ` copy`) without downloading. Full scan still confirms with a 256 KiB content hash, now only for name+size candidates (faster). Unconfirmed groups are labeled **possible**.
+
 ## [1.6.7]
 
 ### Fixed
