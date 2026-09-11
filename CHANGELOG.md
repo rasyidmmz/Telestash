@@ -1,5 +1,15 @@
 # Changelog
 
+## [1.6.7]
+
+### Fixed
+
+- **Stored XSS on the share password page**: `render_password_form` interpolated the stored filename into HTML without escaping, so a crafted library name such as `<img src=x onerror=…>.mkv` became live markup on `http://127.0.0.1:14201/d/{token}`. Filenames, error text, and the share token are now HTML-escaped.
+- **Content-Disposition header injection**: stream and share download responses now strip CR/LF and neutralize quotes in filenames before building the `Content-Disposition` header (normal and split paths).
+- **Wrong subtitles auto-attached in MPV**: title-based caption matching no longer accepts a bare prefix (`Matrix` would pull in `Matrix Reloaded.srt`). Match requires an exact stem or a dotted suffix (`Matrix.en.srt`); folder/message-id prefixes still work.
+- **Share session cookie forgeable from the database alone**: the cookie value now mixes in a per-process random secret, so reading `shares.db` is not enough to mint a valid `share_auth_*` cookie.
+- **Preview route path hardening**: `folder_key` and `ext` are validated against a safe character/extension set; the preview URL builder uses `/folder/msg.ext` so it actually matches the Actix route (previously built `folder_msg.ext` as a single segment).
+
 ## [1.6.6]
 
 ### Removed
