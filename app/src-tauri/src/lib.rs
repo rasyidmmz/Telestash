@@ -478,6 +478,8 @@ pub fn run() {
             commands::cmd_watch_history_clear,
             commands::cmd_watch_history_import,
             commands::cmd_watch_analytics,
+            commands::cmd_get_folder_view_prefs,
+            commands::cmd_set_folder_view_prefs,
         ])
         .build(tauri::generate_context!())
         .expect("error while building tauri application");

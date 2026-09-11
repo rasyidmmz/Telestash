@@ -129,6 +129,31 @@ export function FileExplorer({
         setSelectedSeasonKey('all');
     }, [activeFolderId]);
 
+    // Restore per-folder sort prefs (SQLite) when the active folder changes
+    useEffect(() => {
+        let cancelled = false;
+        invoke<{ sort_field: string; sort_direction: string }>('cmd_get_folder_view_prefs', {
+            folderId: activeFolderId,
+        })
+            .then((prefs) => {
+                if (cancelled) return;
+                const field = (['name', 'size', 'date'] as const).includes(
+                    prefs.sort_field as SortField,
+                )
+                    ? (prefs.sort_field as SortField)
+                    : 'name';
+                const direction = prefs.sort_direction === 'desc' ? 'desc' : 'asc';
+                setSortField(field);
+                setSortDirection(direction);
+            })
+            .catch((err) => {
+                console.error('Failed to load sort prefs', err);
+            });
+        return () => {
+            cancelled = true;
+        };
+    }, [activeFolderId]);
+
     // Filter out subtitle sidecars from the general file list to maintain a 100% clean view
     const cleanFiles = useMemo(() => {
         return files.filter(f => !f.name.startsWith('#telestash_sub') && !f.name.includes('#telestash_sub'));
@@ -276,12 +301,20 @@ export function FileExplorer({
     }, [columns, cardHeight, gridVirtualizer]);
 
     const handleSort = (field: SortField) => {
+        let nextField: SortField = field;
+        let nextDirection: SortDirection = 'asc';
         if (sortField === field) {
-            setSortDirection(d => d === 'asc' ? 'desc' : 'asc');
+            nextDirection = sortDirection === 'asc' ? 'desc' : 'asc';
+            setSortDirection(nextDirection);
         } else {
             setSortField(field);
             setSortDirection('asc');
         }
+        void invoke('cmd_set_folder_view_prefs', {
+            folderId: activeFolderId,
+            sortField: nextField,
+            sortDirection: nextDirection,
+        }).catch((err) => console.error('Failed to persist sort prefs', err));
     };
 
     const SortIcon = ({ field }: { field: SortField }) => {
