@@ -274,6 +274,18 @@ pub fn run() {
     let server_handle_for_setup = server_handle.clone();
 
     let builder = tauri::Builder::default()
+        // Must be the first plugin: it owns the OS-level single-instance lock.
+        // A second launch (double-click, autostart + manual open, misclicks)
+        // never spawns a duplicate process — this callback runs instead and
+        // surfaces the already-running window (the app hides to tray on close).
+        .plugin(tauri_plugin_single_instance::init(|app, _argv, _cwd| {
+            use tauri::Manager;
+            if let Some(window) = app.get_webview_window("main") {
+                let _ = window.show();
+                let _ = window.unminimize();
+                let _ = window.set_focus();
+            }
+        }))
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_store::Builder::default().build())
         .plugin(tauri_plugin_shell::init())

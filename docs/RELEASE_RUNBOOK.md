@@ -8,8 +8,8 @@
    `app/src-tauri/tauri.conf.json`.
 3. Add a nonempty exact `## [x.y.z]` entry to `CHANGELOG.md`.
 4. Update `README.md` for material user-facing changes.
-5. Run frontend checks, focused Rust checks where the local toolchain permits,
-   and `git diff --check`.
+5. Run frontend checks locally (tsc + npm test). Rust validation and build
+   happen in GitHub Actions CI. Run `git diff --check` before committing.
 
 ## Publishing
 

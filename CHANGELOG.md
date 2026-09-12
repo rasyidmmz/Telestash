@@ -8,6 +8,11 @@
 - **Favorites**: star files from the card or context menu. Filter a folder to favorites only, or open the virtual **All Favorites** view in the sidebar (no Telegram folder is created). Identity is `(folder_id, message_id)`; split files favorite the manifest.
 - **Manual tags**: create tags, assign them to files via the Tags… dialog, show badges on cards, and filter with chips. Distinct from media quality badges. Tags are removed when a file is deleted.
 - **Duplicate Quick Scan**: find possible duplicates by exact size + normalized filename (case, ` (1)`, ` copy`) without downloading. Full scan still confirms with a 256 KiB content hash, now only for name+size candidates (faster). Unconfirmed groups are labeled **possible**.
+- **Single-instance enforcement**: launching TeleStash while it is already running (tray, autostart, misclicks) no longer spawns a duplicate process — the existing instance is shown and focused instead. Uses `tauri-plugin-single-instance` with the OS-level mutex on the app identifier.
+
+### Changed
+
+- **Local build toolchain removed from the dev machine**: MSVC Build Tools 2022, Rust toolchain, `.cargo/config.toml`, and `run-debug-stable.bat` removed (~11 GB disk freed). All Rust compilation and installer builds happen exclusively via GitHub Actions — see `docs/CICD.md`.
 
 ## [1.6.7]
 
