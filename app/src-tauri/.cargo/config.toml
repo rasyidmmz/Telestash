@@ -1,0 +1,10 @@
+# MSVC linker configuration for TeleStash.
+# /FORCE:MULTIPLE — libsql (grammers-session storage) and the `sqlite` crate
+#   both statically bundle sqlite3, producing duplicate symbols. Without this
+#   flag the MSVC linker treats them as hard errors (LNK2005) and the build
+#   fails. This config is read by BOTH local cargo and GitHub Actions CI.
+# /STACK:16777216 — 16 MB stack for the main thread; the tauri invoke handler
+#   chains 67+ commands through deeply inlined release wrappers and overflows
+#   the default 1 MB stack (0xC00000FD, tauri#14167 class).
+[target.x86_64-pc-windows-msvc]
+rustflags = ["-C", "link-arg=/FORCE:MULTIPLE", "-C", "link-arg=/STACK:16777216"]
