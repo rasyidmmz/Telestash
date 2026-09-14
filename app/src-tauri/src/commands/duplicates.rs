@@ -93,7 +93,8 @@ async fn hash_file_prefix(
             break; // short file
         }
     }
-    Ok(format!("{:x}", hasher.finalize()))
+    let digest = hasher.finalize();
+    Ok(digest.iter().map(|b| format!("{:02x}", b)).collect())
 }
 
 /// Find duplicate documents across the given folders.
