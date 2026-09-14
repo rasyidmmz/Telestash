@@ -56,7 +56,8 @@ fn save_settings(app: &AppHandle, settings: &ApiSettingsFile) -> Result<(), Stri
 fn hash_key(key: &str) -> String {
     let mut hasher = Sha256::new();
     hasher.update(key.as_bytes());
-    format!("{:x}", hasher.finalize())
+    let digest = hasher.finalize();
+    digest.iter().map(|b| format!("{:02x}", b)).collect()
 }
 
 /// Verify a plaintext key against a stored hash using constant-time comparison

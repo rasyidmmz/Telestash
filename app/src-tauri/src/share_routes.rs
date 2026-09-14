@@ -51,7 +51,8 @@ fn generate_cookie_val(token: &str, password_hash: &str) -> String {
     hasher.update(share_cookie_secret());
     hasher.update(token.as_bytes());
     hasher.update(password_hash.as_bytes());
-    format!("{:x}", hasher.finalize())
+    let digest = hasher.finalize();
+    digest.iter().map(|b| format!("{:02x}", b)).collect()
 }
 
 fn get_share_by_token(db: &DbConnection, token: &str) -> Result<Option<SharedLinkRow>, String> {
