@@ -1,0 +1,46 @@
+name: Regen Cargo.lock
+
+# One-shot helper: regenerate app/src-tauri/Cargo.lock on a runner (no local
+# Rust toolchain by policy) and commit the result back to the invoking branch.
+# Usage: dispatch with ref = branch that has the Cargo.toml changes.
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  regen-lock:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ github.ref_name }}
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@2c7215f132e9ebf062739d9130488b56d53c060c
+        with:
+          toolchain: stable-x86_64-pc-windows-msvc
+
+      - name: Regenerate lockfile
+        working-directory: app/src-tauri
+        run: cargo generate-lockfile
+
+      - name: Verify the crate still resolves
+        working-directory: app/src-tauri
+        run: cargo metadata --no-deps --format-version 1 > $null
+
+      - name: Commit updated lockfile
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add app/src-tauri/Cargo.lock
+          if (git diff --cached --quiet) {
+            Write-Host "Cargo.lock unchanged"
+          } else {
+            git commit -m "chore: regenerate Cargo.lock [skip ci]"
+            git push
+          }
+        shell: pwsh
