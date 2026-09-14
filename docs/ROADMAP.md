@@ -1,8 +1,9 @@
-# TeleStash Roadmap — Stabilisasi & Polish (dibuat 2026-09-13)
+# TeleStash Roadmap — Stabilisasi & Polish (dibuat 2026-09-13, scope CPU/RAM ditambah 2026-09-14)
 
 Roadmap pasca-v1.7.1. Disusun dari audit kode berlapis (3 auditor spesialis paralel:
 correctness/perf, security, over-engineering — semua temuan terverifikasi dengan
-supervisi manual, file:line tercantum) + keputusan user via sesi grilling dua ronde.
+supervisi manual, file:line tercantum) + keputusan user via sesi grilling dua ronde
++ ronde riset CPU/RAM (Search Cascade: mpv bundelan, MS WebView2 docs, wry changelog).
 
 ## Prinsip
 
@@ -108,8 +109,24 @@ un-tray, badai re-render, dan badai unduhan metadata.
    sama secara senyap; tambah sufiks `(1)` atau prompt. `useFileDownload.ts:143-152`,
    `fs.rs:2026`
 
+Scope CPU/RAM (hasil riset Search Cascade 2026-09-14; default diverifikasi langsung
+dari binary mpv bundelan `mpv.exe --list-options` + MS WebView2 docs + wry changelog):
+
+9. **Aktifkan hardware decoding mpv** — `--hwdec` default `no` dan TeleStash tidak
+   mengirim flag hwdec apa pun, jadi semua video didekode CPU murni. Tambah
+   `--hwdec=auto-safe` di `cmd_play_in_mpv` (decode pindah ke GPU, hanya metode
+   ter-whitelist, fallback software otomatis). `streaming.rs:179-187`
+10. **WebView2 MemoryUsageTargetLevel=Low saat di tray** — panggil
+    `set_memory_usage_level` via trait wry `WebViewExtWindows` (wry 0.55.1 sudah
+    ada di lockfile) saat window hide-to-tray, restore `Normal` saat dibuka lagi
+    (user sering minimize; browser engine didorong drop cache/swap saat idle).
+    Titik integrasi: `lib.rs:510` CloseRequested → tray + handler tray show.
+    Catatan: cache demuxer mpv (150+50 MiB default) sengaja dipertahankan
+    (keputusan user — prioritas seek mulus di koneksi lambat).
+
 Testing R2: unit test delta-sync + penamaan; tsc; CI; verifikasi manual folder
-besar (500+ file) terbuka instan, scroll mulus dengan upload aktif.
+besar (500+ file) terbuka instan, scroll mulus dengan upload aktif, playback
+dengan hwdec aktif (cek CPU di Task Manager turun), RAM app turun saat di tray.
 
 ---
 
