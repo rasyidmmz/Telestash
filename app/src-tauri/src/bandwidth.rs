@@ -63,12 +63,6 @@ impl BandwidthManager {
         }
     }
 
-    pub fn can_transfer(&self, bytes: u64) -> Result<(), String> {
-        self.check_and_reset();
-        let _ = bytes;
-        Ok(())
-    }
-
     /// Atomically check the limit AND reserve bandwidth for an upload.
     /// Call release_up() if the transfer fails to avoid permanently consuming quota.
     pub fn try_reserve_up(&self, bytes: u64) -> Result<(), String> {

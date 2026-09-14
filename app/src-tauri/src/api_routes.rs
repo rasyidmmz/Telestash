@@ -175,13 +175,11 @@ struct FilesQuery {
     created_before: Option<String>,
     size_min: Option<u64>,
     size_max: Option<u64>,
-    fields: Option<String>,
 }
 
 #[derive(Serialize)]
 struct FilesResponse {
     data: Vec<serde_json::Value>,
-    files: Vec<serde_json::Value>, // For backwards compatibility
     page: u32,
     limit: u32,
     total: usize,
@@ -388,44 +386,20 @@ async fn api_list_files(
     let has_next = page < total_pages;
     let has_prev = page > 1;
 
-    // Sparse fieldsets
-    let mut final_data = Vec::new();
-    let fields_list: Option<Vec<String>> = query.fields.as_ref().map(|f| {
-        f.split(',')
-            .map(|s| s.trim().to_string())
-            .collect()
-    });
-
-    for file in paginated_files {
-        let mut map = serde_json::Map::new();
-        let include_all = fields_list.is_none();
-        let fields = fields_list.as_ref();
-
-        if include_all || fields.map_or(false, |f| f.contains(&"id".to_string())) {
-            map.insert("id".to_string(), serde_json::json!(file.id));
-        }
-        if include_all || fields.map_or(false, |f| f.contains(&"folder_id".to_string())) {
-            map.insert("folder_id".to_string(), serde_json::json!(file.folder_id));
-        }
-        if include_all || fields.map_or(false, |f| f.contains(&"name".to_string())) {
-            map.insert("name".to_string(), serde_json::json!(file.name));
-        }
-        if include_all || fields.map_or(false, |f| f.contains(&"size".to_string())) {
-            map.insert("size".to_string(), serde_json::json!(file.size));
-        }
-        if include_all || fields.map_or(false, |f| f.contains(&"mime_type".to_string())) {
-            map.insert("mime_type".to_string(), serde_json::json!(file.mime_type));
-        }
-        if include_all || fields.map_or(false, |f| f.contains(&"created_at".to_string())) {
-            map.insert("created_at".to_string(), serde_json::json!(file.created_at));
-        }
-
-        final_data.push(serde_json::Value::Object(map));
-    }
+    let final_data: Vec<serde_json::Value> = paginated_files
+        .into_iter()
+        .map(|file| serde_json::json!({
+            "id": file.id,
+            "folder_id": file.folder_id,
+            "name": file.name,
+            "size": file.size,
+            "mime_type": file.mime_type,
+            "created_at": file.created_at,
+        }))
+        .collect();
 
     let res_body = FilesResponse {
-        data: final_data.clone(),
-        files: final_data,
+        data: final_data,
         page,
         limit,
         total,

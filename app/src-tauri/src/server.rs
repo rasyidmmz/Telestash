@@ -4,7 +4,7 @@ use tauri::Manager;
 use crate::commands::TelegramState;
 use crate::commands::fs::split_manifest_from_media;
 use crate::commands::streaming::stream_token_header_name;
-use crate::commands::utils::resolve_peer;
+use crate::commands::utils::{resolve_peer, media_size, mime_type_from_media};
 use grammers_client::media::Media;
 use grammers_client::peer::Peer;
 use crate::models::SplitManifest;
@@ -422,13 +422,6 @@ fn build_split_media_response(
     resp.streaming(stream)
 }
 
-fn media_size(media: &Media) -> Option<u64> {
-    match media {
-        Media::Document(d) => Some(d.size().unwrap_or(0) as u64),
-        _ => None,
-    }
-}
-
 fn split_part_cache_key(scope: &str, message_id: i32) -> String {
     format!("{}:{}", scope, message_id)
 }
@@ -719,13 +712,6 @@ async fn thumb_preview_route(
         .map(|d| d.join("previews"))
         .unwrap_or_default();
     serve_cached_image(dir, &folder_key, message_id, &ext).await
-}
-
-fn mime_type_from_media(media: &Media) -> String {
-    match media {
-        Media::Document(d) => d.mime_type().unwrap_or("application/octet-stream").to_string(),
-        _ => "application/octet-stream".to_string(),
-    }
 }
 
 pub async fn start_server(
