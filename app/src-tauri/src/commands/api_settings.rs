@@ -133,7 +133,7 @@ pub async fn cmd_regenerate_api_key(
 
     // Generate a secure 32-byte random key as hex
     let mut rng = rand::rng();
-    let bytes: Vec<u8> = (0..32).map(|_| rand::Rng::random(&mut rng)).collect();
+    let bytes: Vec<u8> = (0..32).map(|_| rand::RngExt::random(&mut rng)).collect();
     let plaintext_key: String = bytes.iter().map(|b| format!("{:02x}", b)).collect();
 
     // Store only the hash

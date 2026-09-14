@@ -1,6 +1,6 @@
 use serde::Serialize;
 use tauri::State;
-use rand::Rng;
+use rand::RngExt;
 use crate::db::DbConnection;
 
 #[derive(Debug, Serialize)]
