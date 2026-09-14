@@ -55,7 +55,7 @@ use std::sync::Arc;
 use std::collections::{HashMap, HashSet};
 use commands::TelegramState;
 use commands::streaming::StreamConfig;
-use rand::Rng;
+use rand::RngExt;
 
 
 pub mod server;

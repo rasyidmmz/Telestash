@@ -6,7 +6,7 @@ use grammers_client::media::Media;
 use sha2::{Sha256, Digest};
 use std::sync::{Arc, OnceLock};
 use serde::Deserialize;
-use rand::Rng;
+use rand::RngExt;
 
 #[derive(Clone)]
 struct SharedLinkRow {

@@ -2,7 +2,7 @@ use tauri::State;
 use tauri::Manager;
 use std::sync::Arc;
 use grammers_client::media::Media;
-use rand::Rng;
+use rand::RngExt;
 use tokio::io::AsyncWriteExt;
 use crate::TelegramState;
 use crate::bandwidth::BandwidthManager;
