@@ -12,7 +12,7 @@ use crate::models::{
     is_split_part_caption,
 };
 use crate::bandwidth::BandwidthManager;
-use crate::commands::utils::{resolve_peer, map_error};
+use crate::commands::utils::{resolve_peer, map_error, media_size};
 use crate::transfer_policy::{TransferPolicy, backoff_ms};
 use crate::transfer_retry::{flood_wait_retry_attempts, should_retry_upload_error, upload_error_kind, upload_stream_retry_attempts};
 use crate::split_manifest::{
@@ -505,13 +505,6 @@ pub(crate) async fn validate_split_parts_present(
     }
 
     Ok(())
-}
-
-fn media_size(media: &Media) -> Option<u64> {
-    match media {
-        Media::Document(d) => Some(d.size().unwrap_or(0) as u64),
-        _ => None,
-    }
 }
 
 async fn upload_path_and_send(

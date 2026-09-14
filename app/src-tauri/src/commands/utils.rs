@@ -1,4 +1,5 @@
 use grammers_client::Client;
+use grammers_client::media::Media;
 use grammers_client::peer::Peer;
 use grammers_session::types::PeerRef;
 use grammers_tl_types as tl;
@@ -7,6 +8,23 @@ use crate::bandwidth::BandwidthManager;
 use std::collections::HashMap;
 use std::sync::Arc;
 use tokio::sync::RwLock;
+
+/// Document size in bytes for a media attachment, if it has one.
+pub fn media_size(media: &Media) -> Option<u64> {
+    match media {
+        Media::Document(d) => Some(d.size().unwrap_or(0) as u64),
+        _ => None,
+    }
+}
+
+/// Document MIME type for a media attachment, defaulting to octet-stream.
+pub fn mime_type_from_media(media: &Media) -> String {
+    match media {
+        Media::Document(d) => d.mime_type().unwrap_or("application/octet-stream").to_string(),
+        _ => "application/octet-stream".to_string(),
+    }
+}
+
 
 /// Convert a resolved wrapper Peer into the PeerRef accepted by client methods.
 async fn peer_to_ref(peer: &Peer) -> Result<PeerRef, String> {

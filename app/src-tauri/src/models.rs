@@ -1,15 +1,6 @@
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
-#[serde(tag = "status", content = "data")]
-pub enum AuthState {
-    LoggedOut,
-    AwaitingCode { phone: String, phone_code_hash: String },
-    AwaitingPassword { phone: String },
-    LoggedIn,
-}
-
-#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct AuthResult {
     pub success: bool,
     pub next_step: Option<String>, // "code", "password", "dashboard"
@@ -101,11 +92,4 @@ pub struct FolderGroup {
     pub name: String,
     pub color_hex: String,
     pub display_order: i32,
-}
-
-#[derive(Debug, Serialize, Deserialize, Clone)]
-pub struct Drive {
-    pub chat_id: i64,
-    pub name: String,
-    pub icon: Option<String>,
 }

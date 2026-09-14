@@ -2,7 +2,6 @@ use actix_web::{get, post, web, HttpRequest, HttpResponse, Responder, cookie::Co
 use crate::commands::TelegramState;
 use crate::commands::utils::resolve_peer;
 use crate::db::DbConnection;
-use grammers_client::media::Media;
 use sha2::{Sha256, Digest};
 use std::sync::{Arc, OnceLock};
 use serde::Deserialize;
@@ -282,10 +281,7 @@ async fn get_shared_file(
         Ok(messages) => {
             if let Some(Some(msg)) = messages.first() {
                 if let Some(media) = msg.media() {
-                    let mime = match &media {
-                        Media::Document(d) => d.mime_type().unwrap_or("application/octet-stream").to_string(),
-                        _ => "application/octet-stream".to_string(),
-                    };
+                    let mime = crate::commands::utils::mime_type_from_media(&media);
                     let filename = &row.file_name;
 
                     return crate::server::build_media_response(
