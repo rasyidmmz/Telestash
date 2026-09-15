@@ -40,7 +40,7 @@ jobs:
           if (git diff --cached --quiet) {
             Write-Host "Cargo.lock unchanged"
           } else {
-            git commit -m "chore: regenerate Cargo.lock [skip ci]"
+            git commit -m "chore: regenerate Cargo.lock"
             git push
           }
         shell: pwsh
