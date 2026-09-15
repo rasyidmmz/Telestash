@@ -18,7 +18,6 @@ tauri-build = { version = "2", features = [] }
 [dependencies]
 tauri = { version = "2", features = ["tray-icon"] }
 tauri-plugin-opener = "2"
-tauri-plugin-os = "2"
 tauri-plugin-single-instance = "2"
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
@@ -47,16 +46,17 @@ tauri-plugin-process = "2"
 tauri-plugin-clipboard-manager = "2"
 rand = "0.10"
 sha2 = "0.11"
+# Pin rc0: grammers-crypto 0.10.0 is written against this API; 2.0.0-rc1
+# breaks it (Result-returning mt:: API + num-bigint 0.5), and grammers'
+# loose ^2.0.0-rc0 range would otherwise resolve the broken release candidate.
+glass_pumpkin = "=2.0.0-rc0"
 bcrypt = "0.19"
 constant_time_eq = "0.6"
 zip = { version = "8", default-features = false, features = ["deflate"] }
 rar = "0.4"
 sevenz-rust2 = "0.22"
-walkdir = "2"
 sqlite = { version = "0.37.0", features = ["bundled"] }
 mp4parse = "0.17"
-urlencoding = "2"
-sysinfo = "0.39"
 
 [package.metadata.tauri.bundle.windows]
 # Embed the WebView2 bootstrapper so the app works on Windows systems
