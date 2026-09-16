@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion';
-import { useState, useRef } from 'react';
+import { useState, useRef, memo } from 'react';
 import { Folder, Eye, Trash2, Link, Download, Star } from '../../shared/icons.tsx';
 import { TelegramFile } from '../../../types';
 import { createDragGhost } from '../../../utils';
@@ -32,7 +32,7 @@ interface FileCardProps {
     tags?: string[];
 }
 
-export function FileCard({ file, onDelete, onDownload, onPreview, onShare, isSelected, onClick, onContextMenu, onDrop, onDragStart, onDragEnd, height, onToggleSelection, selectedIds, variant = 'grid', isFavorite = false, onToggleFavorite, tags = [] }: FileCardProps) {
+function FileCardComponent({ file, onDelete, onDownload, onPreview, onShare, isSelected, onClick, onContextMenu, onDrop, onDragStart, onDragEnd, height, onToggleSelection, selectedIds, variant = 'grid', isFavorite = false, onToggleFavorite, tags = [] }: FileCardProps) {
     const isFolder = file.type === 'folder';
     const isPosterVariant = variant === 'poster';
     const [isDragOver, setIsDragOver] = useState(false);
@@ -201,3 +201,5 @@ export function FileCard({ file, onDelete, onDownload, onPreview, onShare, isSel
         </div>
     )
 }
+
+export const FileCard = memo(FileCardComponent);

@@ -141,9 +141,9 @@ export function Dashboard({ onLogout }: { onLogout: () => void }) {
 
     const { data: folderFavoriteIds = [] } = useFolderFavorites(showAllFavorites ? null : activeFolderId);
     const toggleFavorite = useToggleFavorite();
-    const favoriteIdSet = new Set(showAllFavorites
+    const favoriteIdSet = useMemo(() => new Set(showAllFavorites
         ? allFiles.map(f => f.id)
-        : folderFavoriteIds);
+        : folderFavoriteIds), [showAllFavorites, allFiles, folderFavoriteIds]);
 
     const handleToggleFavorite = useCallback(async (file: TelegramFile) => {
         try {
@@ -176,9 +176,9 @@ export function Dashboard({ onLogout }: { onLogout: () => void }) {
     }, [tagMapRaw]);
     const availableTags = useMemo(() => allTags.map(t => t.name), [allTags]);
 
-    const displayedFiles = searchTerm.length > 2
+    const displayedFiles = useMemo(() => searchTerm.length > 2
         ? searchResults
-        : allFiles.filter((f: TelegramFile) => f.name.toLowerCase().includes(searchTerm.toLowerCase()));
+        : allFiles.filter((f: TelegramFile) => f.name.toLowerCase().includes(searchTerm.toLowerCase())), [searchTerm, searchResults, allFiles]);
 
     const { data: bandwidth } = useQuery({
         queryKey: ['bandwidth'],

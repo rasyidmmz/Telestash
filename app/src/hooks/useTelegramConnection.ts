@@ -44,27 +44,31 @@ export function useTelegramConnection(onLogoutParent: () => void) {
                 }
                 setStore(_store);
 
-                // Fetch local-first SQLite enriched folders
-                try {
-                    const dbFolders = await invoke<TelegramFolder[]>('cmd_get_enriched_folders');
-                    if (dbFolders && dbFolders.length > 0) {
-                        setFolders(dbFolders);
-                    } else {
-                        const savedFolders = await _store.get<TelegramFolder[]>('folders');
-                        if (savedFolders) setFolders(savedFolders);
-                    }
-                } catch {
-                    const savedFolders = await _store.get<TelegramFolder[]>('folders');
-                    if (savedFolders) setFolders(savedFolders);
-                }
-
-                // Fetch local-first SQLite groups
-                try {
-                    const list = await invoke<FolderGroup[]>('cmd_get_groups');
-                    setGroups(list);
-                } catch (e) {
-                    console.error("Failed to load groups:", e);
-                }
+                // Enriched folders and groups are independent — fetch in parallel.
+                await Promise.all([
+                    (async () => {
+                        try {
+                            const dbFolders = await invoke<TelegramFolder[]>('cmd_get_enriched_folders');
+                            if (dbFolders && dbFolders.length > 0) {
+                                setFolders(dbFolders);
+                            } else {
+                                const savedFolders = await _store.get<TelegramFolder[]>('folders');
+                                if (savedFolders) setFolders(savedFolders);
+                            }
+                        } catch {
+                            const savedFolders = await _store.get<TelegramFolder[]>('folders');
+                            if (savedFolders) setFolders(savedFolders);
+                        }
+                    })(),
+                    (async () => {
+                        try {
+                            const list = await invoke<FolderGroup[]>('cmd_get_groups');
+                            setGroups(list);
+                        } catch (e) {
+                            console.error("Failed to load groups:", e);
+                        }
+                    })(),
+                ]);
 
                 const savedActiveFolderId = await _store.get<number | null>('activeFolderId');
                 if (savedActiveFolderId !== undefined) setActiveFolderId(savedActiveFolderId);

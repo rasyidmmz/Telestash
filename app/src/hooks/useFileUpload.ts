@@ -91,6 +91,7 @@ export function useFileUpload(activeFolderId: number | null, store: Store | null
     };
 
     const processItem = async (item: QueueItem) => {
+        const itemStart = Date.now();
         activeCountRef.current++;
         setUploadQueue(q => q.map(i => i.id === item.id ? { ...i, status: 'uploading', progress: 0 } : i));
         try {
@@ -123,8 +124,12 @@ export function useFileUpload(activeFolderId: number | null, store: Store | null
             // Clean up temp zip even on failure
             await cleanupTempZip(item);
         } finally {
-            // ponytail: 2s cooldown to prevent Telegram flooding
-            await new Promise(resolve => setTimeout(resolve, 2000));
+            // Adaptive cooldown: only pace uploads that finished faster than the
+            // 2s anti-flood window. Slow uploads already spaced themselves out.
+            const remaining = 2000 - (Date.now() - itemStart);
+            if (remaining > 0) {
+                await new Promise(resolve => setTimeout(resolve, remaining));
+            }
             activeCountRef.current--;
             setUploadQueue(q => [...q]); // trigger queue effect to check for next item
         }
