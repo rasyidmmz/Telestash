@@ -15,7 +15,7 @@
     }
   },
   "productName": "TeleStash",
-  "version": "1.7.1",
+  "version": "1.8.0",
   "identifier": "com.rasyidmmz.telestash",
   "build": {
     "beforeDevCommand": "npm run dev",

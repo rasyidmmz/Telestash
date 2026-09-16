@@ -28,7 +28,7 @@ Built with **Tauri v2, Rust, React, and an MPV sidecar**, TeleStash supports per
 
 **TeleStash** is a dedicated Windows 11 personal media and file-management application that connects directly to Telegram using MTProto. It provides a personal-library workflow without hosting a separate streaming server or using an application proxy or VPN. Telegram account capacity and service rules still apply.
 
-Unlike a browser-only media workflow, TeleStash is a native 64-bit Rust/Tauri application integrated with a bundled **MPV media engine**. MPV handles compatible media formats, including HEVC/H.265, 10-bit HDR, MKV, and MP4; hardware decoding availability depends on the local MPV and Windows graphics-driver configuration.
+Unlike a browser-only media workflow, TeleStash is a native 64-bit Rust/Tauri application integrated with a bundled **MPV media engine**. MPV handles compatible media formats, including HEVC/H.265, 10-bit HDR, MKV, and MP4. Playback requests GPU decoding (`--hwdec=auto-safe`) using whitelisted methods, and falls back to software automatically when the local Windows graphics driver does not support a method.
 
 ---
 
@@ -41,6 +41,7 @@ Unlike a browser-only media workflow, TeleStash is a native 64-bit Rust/Tauri ap
 | **Binge-Watching** | Reopens player window per episode | **Native MPV Playlist**: Automatic episode-to-episode auto-play |
 | **Subtitles** | Manual download and sync may be required | **Attach & manage sidecars**: SRT/ASS/SSA/VTT/VobSub files attach to videos as hidden Telegram sidecars, cached locally, auto-selected by MPV, and removable in-app |
 | **Upload Transfer** | Retry behavior varies | **Transfer integrity**: SQLite resumable checkpoints and validated large-file manifests |
+| **Folder Browsing** | Re-lists the folder from the server on every open | **Local SQLite folder cache**: instant reopen, delta-synced in the background |
 | **Connection Path** | Often routed through a provider service | **Direct Telegram MTProto**: no application proxy or VPN route |
 
 ### 🛡️ 1. Absolute Privacy & Security
@@ -73,7 +74,8 @@ The data path is intentionally short and deterministic: the Windows application 
 ### Core Architectural Layers:
 1. **Tauri v2 + Rust Core**: Manages high-performance native process execution, IPC command routing, system tray integration, and SQLite checkpoint state.
 2. **Direct MTProto Engine**: Multithreaded Grammers 0.10 client (crates.io, session-backed `PeerRef` identity with libsql storage) communicating directly with Telegram cloud infrastructure without intermediate proxy servers.
-3. **Bundled MPV Sidecar Engine**: Zero-copy 4K/10-bit HDR video rendering, multi-channel surround audio, embedded subtitle selection, and natural episode playlist auto-play.
+3. **Bundled MPV Sidecar Engine**: Zero-copy 4K/10-bit HDR video rendering with GPU decoding (`--hwdec=auto-safe`), multi-channel surround audio, embedded subtitle selection, and natural episode playlist auto-play.
+4. **Local SQLite Library Cache**: Per-folder file metadata (`folder_files`) is cached locally so folder browsing and search are instant, with a background delta sync keeping the cache aligned with Telegram.
 
 ---
 
@@ -97,6 +99,9 @@ The data path is intentionally short and deterministic: the Windows application 
 * 📊 **Watch Analytics**: titles watched, total watch time, current streak, a 30-day activity strip, and your top 10 titles, aggregated from the local SQLite watch history.
 * 🎬 **Subtitle Sidecar Manager**: Attach SRT/ASS/SSA/VTT/VobSub to videos as hidden sidecars, with in-app review and removal.
 * 🛡️ **Bounded Streaming Prefetch**: 16 MiB in-memory forward buffer per active stream; no full media download is retained by the stream path.
+* ⚡ **Instant Folder Browsing**: each folder's file list is cached locally in SQLite, so reopening a folder shows the list immediately and a background delta sync reconciles it with Telegram (new, renamed, and deleted files) without a full re-scan.
+* 🔍 **Local Search**: search runs against the local folder cache first — instant and no longer capped at 50 results — and only falls back to a Telegram-wide search for folders that were never opened.
+* 🎮 **GPU Video Decoding**: MPV is launched with `--hwdec=auto-safe`, offloading video decode to the GPU with an automatic software fallback, instead of decoding every video on the CPU.
 * 📁 **Folder & Channel Storage**: Organize movies and TV series using Saved Messages and private channels as folders.
 * 🔍 **Duplicate Finder**: Quick Scan by name+size (no download, labeled *possible*), or full scan with a 256 KiB content hash; manual multi-select cleanup.
 * ⭐ **Favorites & All Favorites**: Star files per folder; filter ★ only, or open a virtual All Favorites view across folders (no extra Telegram folder).

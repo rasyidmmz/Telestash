@@ -1,5 +1,32 @@
 # Changelog
 
+## [1.8.0]
+
+### Added
+
+- **Instant folder cache (SQLite)**: each folder's file list is cached locally in a new `folder_files` table keyed by `(folder_key, message_id)`. Reopening a folder serves the local list immediately instead of re-pulling the whole channel from Telegram, and a background delta sync reconciles it (upsert live rows, prune deleted ones). The cache is refreshed on folder open, when returning from the tray, and after every mutation (upload, delete, rename, move).
+- **Local search**: searching now queries the local cache first — instant and no longer capped at the 50 results Telegram-wide search returns. Folders that were never opened fall back to the Telegram search automatically.
+- **GPU video decoding**: the bundled MPV is now launched with `--hwdec=auto-safe`, so playback decodes on the GPU using whitelisted methods and still falls back to software when a method is unavailable. Previously no `--hwdec` flag was passed, so every video was decoded on the CPU.
+- **Responsive dashboard during transfers**: the derived file lists and favorite lookup are memoized, so the sort/filter/series-analysis chain no longer recomputes several times per second while an upload is running. File cards are also memoized as a first step.
+
+### Changed
+
+- **Non-destructive downloads**: downloading to a path that already exists no longer truncates the existing file; a ` (1)`, ` (2)`, … suffix is appended instead. Applies to single and split downloads.
+- **Header-only video metadata**: reading MP4 duration/resolution stops as soon as the `moov` box is complete rather than always fetching the full 2 MB header cap.
+- **Adaptive upload cooldown**: the fixed 2-second anti-flood pause per upload now only waits the remaining part of that window, so slow uploads no longer add dead time between files.
+- **Parallel startup**: folder and group lists load concurrently instead of sequentially.
+- **Leaner transfer core**: the fixed `TransferPolicy` indirection was replaced with plain constants, and the REST upload endpoint now reuses the shared upload path instead of duplicating ~255 lines of retry/FLOOD_WAIT logic.
+
+### Fixed
+
+- **Download chunk retry budget**: chunk errors previously reused a retry budget of 0, so a single transient error killed the whole download and deleted the partial file. Chunk errors now have their own budget of 3 attempts, and the partial file is kept while retries remain.
+- **Download stall watchdog**: a download that silently stopped producing chunks could wait forever; it now fails after 30 seconds without a chunk and retries.
+- **Streaming retry**: an error mid-stream (after `Content-Length` was already sent) now re-fetches the media with a fresh file reference and resumes from the current position instead of truncating the stream. Applies to single and split streams.
+- **Download queue stall after cancel**: cancelling a download no longer leaves the remaining queue items stuck forever.
+- **Mutex poisoning hardening**: transfer-path mutex locks recover from a poisoned lock instead of panicking every subsequent transfer.
+- **Dependency reproducibility**: pinned `glass_pumpkin` to `=2.0.0-rc0`, which `grammers-crypto 0.10.0` is written against; the looser range resolved to a release candidate that no longer compiles.
+- **Repository hygiene**: removed four unused dependencies (`sysinfo`, `walkdir`, `urlencoding`, `tauri-plugin-os`), 90 unused translation keys across 13 locales, and dead types/parameters (`ThemeToggle`, `AuthState`, `Drive`, `BandwidthManager::can_transfer`, the unused `?fields=` parameter).
+
 ## [1.7.1]
 
 ### Added
