@@ -1894,6 +1894,32 @@ pub struct DownloadFileRequest {
     transfer_id: Option<String>,
 }
 
+/// Avoid silently truncating an existing local file: if the target exists,
+/// append " (1)", " (2)", ... before the extension until a free name is found.
+fn unique_save_path(path: &str) -> String {
+    let p = std::path::Path::new(path);
+    if !p.exists() {
+        return path.to_string();
+    }
+    let parent = p.parent();
+    let stem = p.file_stem().and_then(|s| s.to_str()).unwrap_or("download");
+    let ext = p.extension().and_then(|s| s.to_str());
+    for n in 1..1000u32 {
+        let candidate = match ext {
+            Some(e) => format!("{stem} ({n}).{e}"),
+            None => format!("{stem} ({n})"),
+        };
+        let full = match parent {
+            Some(dir) => dir.join(&candidate),
+            None => std::path::PathBuf::from(&candidate),
+        };
+        if !full.exists() {
+            return full.to_string_lossy().to_string();
+        }
+    }
+    path.to_string()
+}
+
 #[tauri::command]
 pub async fn cmd_download_file(
     req: DownloadFileRequest,
@@ -1906,7 +1932,7 @@ pub async fn cmd_download_file(
     let folder_id = req.folder_id;
     let message_id = req.message_id;
 
-    let actual_save_path = save_path.clone();
+    let actual_save_path = unique_save_path(&save_path);
 
     let client_opt = { state.client.lock().await.clone() };
     #[cfg(debug_assertions)]

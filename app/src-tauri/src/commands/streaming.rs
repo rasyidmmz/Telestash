@@ -181,6 +181,9 @@ pub fn cmd_play_in_mpv(
         "--write-filename-in-watch-later-config=yes".to_string(),
         "--keep-open=no".to_string(),
         "--input-default-bindings=yes".to_string(),
+        // Decode on the GPU (whitelisted methods only, software fallback stays automatic).
+        // Default is `no`, which decoded every video on the CPU.
+        "--hwdec=auto-safe".to_string(),
         "--slang=id,ind,Indonesian,en,eng,enUS,en-US,enGB,en-GB,en-UK,enUK,English,eng-US,eng-GB".to_string(),
         "--sub-auto=fuzzy".to_string(),
         "--sub-visibility=yes".to_string(),

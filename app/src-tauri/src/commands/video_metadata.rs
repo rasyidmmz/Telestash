@@ -43,7 +43,7 @@ pub async fn cmd_get_video_metadata(
         _ => "file".to_string(),
     };
 
-    let buffer = download_bytes(&client, &media, size).await?;
+    let buffer = download_bytes(&client, &media, size, file_name.ends_with(".mp4")).await?;
 
     if file_name.ends_with(".mkv") {
         let (duration_secs, width, height) = crate::mp4_utils::parse_mkv_metadata(&buffer).unwrap_or((None, None, None));
@@ -79,11 +79,32 @@ pub struct ParsedMetadata {
     pub track_count: usize,
 }
 
-/// Download at most the first 2 MB from a Telegram document.
+/// True once the buffer holds a complete top-level MP4 `moov` box. `moov` is
+/// all `mp4parse` needs, so a faststart file can stop well before the 2 MB cap.
+fn mp4_moov_complete(buf: &[u8]) -> bool {
+    let mut i = 0usize;
+    while i + 8 <= buf.len() {
+        let size = u32::from_be_bytes([buf[i], buf[i + 1], buf[i + 2], buf[i + 3]]) as usize;
+        let kind = &buf[i + 4..i + 8];
+        if kind == b"moov" {
+            // size == 1 means a 64-bit box; not worth special-casing here.
+            return size >= 8 && i.checked_add(size).is_some_and(|end| end <= buf.len());
+        }
+        if size < 8 {
+            return false;
+        }
+        i += size;
+    }
+    false
+}
+
+/// Download the header region of a Telegram document. MP4 files stop as soon
+/// as the `moov` box is complete; everything else is capped at 2 MB.
 async fn download_bytes(
     client: &grammers_client::Client,
     media: &Media,
     file_size: u64,
+    is_mp4: bool,
 ) -> Result<Vec<u8>, String> {
     let max_bytes = std::cmp::min(2 * 1024 * 1024, file_size) as usize;
     let mut buffer: Vec<u8> = Vec::with_capacity(max_bytes);
@@ -96,6 +117,9 @@ async fn download_bytes(
                 let remaining = max_bytes.saturating_sub(buffer.len());
                 let take = std::cmp::min(chunk.len(), remaining);
                 buffer.extend_from_slice(&chunk[..take]);
+                if is_mp4 && mp4_moov_complete(&buffer) {
+                    break;
+                }
             }
             Ok(None) => break,
             Err(e) => return Err(format!("Download error: {e}")),
