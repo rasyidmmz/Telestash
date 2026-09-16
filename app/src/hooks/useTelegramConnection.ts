@@ -22,6 +22,8 @@ export function useTelegramConnection(onLogoutParent: () => void) {
 
     const networkIsOnline = useNetworkStatus();
     const handleSyncFoldersRef = useRef<((silentParam?: boolean | unknown) => Promise<void>) | null>(null);
+    const activeFolderIdRef = useRef<number | null>(null);
+    activeFolderIdRef.current = activeFolderId;
 
     // Fetch groups list from DB
     const fetchGroups = useCallback(async () => {
@@ -95,9 +97,15 @@ export function useTelegramConnection(onLogoutParent: () => void) {
         syncAndRefresh();
 
         const handleVisibilityChange = () => {
-            if (document.visibilityState === 'visible') {
-                syncAndRefresh();
-            }
+            if (document.visibilityState !== 'visible') return;
+            // Returning from tray only needs the active folder refreshed: show the
+            // cached list instantly, then reconcile in the background. This
+            // replaces the old full cmd_scan_folders + invalidate-everything pass.
+            const folderId = activeFolderIdRef.current;
+            queryClient.invalidateQueries({ queryKey: ['files', folderId] });
+            invoke('cmd_sync_folder', { folderId })
+                .then(() => queryClient.invalidateQueries({ queryKey: ['files', folderId] }))
+                .catch(() => { /* offline: keep showing the cached list */ });
         };
 
         document.addEventListener('visibilitychange', handleVisibilityChange);

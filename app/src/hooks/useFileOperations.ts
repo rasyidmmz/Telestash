@@ -30,6 +30,8 @@ export function useFileOperations(
         try {
             await invoke('cmd_delete_file', { messageId: id, folderId: activeFolderId });
             await invoke('cmd_delete_preview_for_message', { messageId: id, folderId: activeFolderId }).catch(() => {});
+            // Reconcile the folder cache, then refresh the list from it.
+            await invoke('cmd_sync_folder', { folderId: activeFolderId }).catch(() => {});
             queryClient.invalidateQueries({ queryKey: ['files', activeFolderId] });
             toast.success("File deleted");
         } catch (e) {
@@ -54,6 +56,7 @@ export function useFileOperations(
             }
         }
         setSelectedIds([]);
+        await invoke('cmd_sync_folder', { folderId: activeFolderId }).catch(() => {});
         queryClient.invalidateQueries({ queryKey: ['files', activeFolderId] });
         if (success > 0) toast.success(`Deleted ${success} files.`);
         if (fail > 0) toast.error(`Failed to delete ${fail} files.`);
@@ -122,7 +125,15 @@ export function useFileOperations(
                 invoke('cmd_delete_preview_for_message', { messageId: id, folderId: activeFolderId }).catch(() => {}),
             ));
             toast.success(`Moved ${ids.length} files.`);
+            // Both folders changed: reconcile source and destination caches.
+            await Promise.all([
+                invoke('cmd_sync_folder', { folderId: activeFolderId }).catch(() => {}),
+                invoke('cmd_sync_folder', { folderId: targetFolderId }).catch(() => {}),
+            ]);
             queryClient.invalidateQueries({ queryKey: ['files', activeFolderId] });
+            if (targetFolderId !== activeFolderId) {
+                queryClient.invalidateQueries({ queryKey: ['files', targetFolderId] });
+            }
             setSelectedIds([]);
             if (onSuccess) onSuccess();
         } catch {
@@ -180,6 +191,11 @@ export function useFileOperations(
 
     const handleGlobalSearch = useCallback(async (query: string) => {
         try {
+            // Local cache first: instant and no longer capped at 50 results.
+            // Folders never opened are not cached yet, so fall back to the
+            // Telegram-wide search when the local query comes up empty.
+            const local = await invoke<TelegramFile[]>('cmd_search_cached_files', { query });
+            if (local.length > 0) return local;
             return await invoke<TelegramFile[]>('cmd_search_global', { query });
         } catch {
             return [];

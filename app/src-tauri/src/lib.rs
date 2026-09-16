@@ -421,6 +421,8 @@ pub fn run() {
             commands::cmd_auth_sign_in,
             commands::cmd_auth_check_password,
             commands::cmd_get_files,
+            commands::cmd_sync_folder,
+            commands::cmd_search_cached_files,
             commands::cmd_upload_file,
             cmd_open_file_externally,
             commands::settings::cmd_set_autostart,
