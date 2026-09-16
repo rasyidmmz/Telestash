@@ -127,7 +127,19 @@ pub fn init_db(app: &AppHandle) -> Result<DbConnection, String> {
                     tag_id INTEGER NOT NULL,
                     PRIMARY KEY (folder_key, message_id, tag_id),
                     FOREIGN KEY(tag_id) REFERENCES file_tags(id) ON DELETE CASCADE
-                );"
+                );
+                CREATE TABLE IF NOT EXISTS folder_files (
+                    folder_key TEXT NOT NULL,
+                    message_id INTEGER NOT NULL,
+                    name TEXT NOT NULL,
+                    size INTEGER NOT NULL DEFAULT 0,
+                    mime_type TEXT,
+                    file_ext TEXT,
+                    created_at TEXT NOT NULL DEFAULT '',
+                    icon_type TEXT NOT NULL DEFAULT 'file',
+                    PRIMARY KEY (folder_key, message_id)
+                );
+                CREATE INDEX IF NOT EXISTS idx_folder_files_name ON folder_files(name);"
             ) {
                 Ok(_) => {
                     last_err.clear();

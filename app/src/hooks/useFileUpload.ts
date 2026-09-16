@@ -100,6 +100,9 @@ export function useFileUpload(activeFolderId: number | null, store: Store | null
                 cancelledRef.current.delete(item.id);
             } else {
                 setUploadQueue(q => q.map(i => i.id === item.id ? { ...i, status: 'success', progress: 100 } : i));
+                // Reconcile the folder cache so the new file appears even though
+                // cmd_get_files now serves the cached list.
+                await invoke('cmd_sync_folder', { folderId: item.folderId }).catch(() => {});
                 queryClient.invalidateQueries({ queryKey: ['files', item.folderId] });
             }
             // Clean up temp zip on success

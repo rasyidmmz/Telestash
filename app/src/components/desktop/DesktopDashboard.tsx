@@ -494,6 +494,7 @@ export function Dashboard({ onLogout }: { onLogout: () => void }) {
                 folderId: activeFolderId,
                 newName,
             });
+            await invoke('cmd_sync_folder', { folderId: activeFolderId }).catch(() => {});
             queryClient.invalidateQueries({ queryKey: ['files', activeFolderId] });
             toast.success(`Renamed to "${newName}"`);
         } catch (e) {
@@ -693,7 +694,14 @@ export function Dashboard({ onLogout }: { onLogout: () => void }) {
                 invoke('cmd_delete_preview_for_message', { messageId: id, folderId: activeFolderId }).catch(() => {}),
             ));
 
+            await Promise.all([
+                invoke('cmd_sync_folder', { folderId: activeFolderId }).catch(() => {}),
+                invoke('cmd_sync_folder', { folderId: targetFolderId }).catch(() => {}),
+            ]);
             queryClient.invalidateQueries({ queryKey: ['files', activeFolderId] });
+            if (targetFolderId !== activeFolderId) {
+                queryClient.invalidateQueries({ queryKey: ['files', targetFolderId] });
+            }
             setSelectedIds([]);
             toast.success(`Moved ${idsToMove.length} file(s).`);
             setInternalDragIds(null);
@@ -759,7 +767,14 @@ export function Dashboard({ onLogout }: { onLogout: () => void }) {
                                     });
                                     // Clean up stale preview cache for the old message ID
                                     await invoke('cmd_delete_preview_for_message', { messageId: moveFileTarget.id, folderId: activeFolderId }).catch(() => {});
+                                    await Promise.all([
+                                        invoke('cmd_sync_folder', { folderId: activeFolderId }).catch(() => {}),
+                                        invoke('cmd_sync_folder', { folderId: targetFolderId }).catch(() => {}),
+                                    ]);
                                     queryClient.invalidateQueries({ queryKey: ['files', activeFolderId] });
+                                    if (targetFolderId !== activeFolderId) {
+                                        queryClient.invalidateQueries({ queryKey: ['files', targetFolderId] });
+                                    }
                                     toast.success(`Moved "${moveFileTarget.name}"`);
                                     setMoveFileTarget(null);
                                     setShowMoveModal(false);

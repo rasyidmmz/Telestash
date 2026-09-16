@@ -2193,10 +2193,11 @@ pub async fn cmd_move_files(
     Ok(true)
 }
 
-#[tauri::command]
-pub async fn cmd_get_files(
+/// Pull a folder's full file list straight from Telegram. Shared by the
+/// cache-first read and the background delta sync.
+pub(crate) async fn fetch_files_from_telegram(
     folder_id: Option<i64>,
-    state: State<'_, TelegramState>,
+    state: &TelegramState,
 ) -> Result<Vec<FileMetadata>, String> {
     let client_opt = { state.client.lock().await.clone() };
     #[cfg(debug_assertions)]
@@ -2258,6 +2259,187 @@ pub async fn cmd_get_files(
         }
     }
 
+    Ok(files)
+}
+
+/// Cache key for a folder's file list. Mirrors favorites: None (home) -> "home".
+pub(crate) fn folder_cache_key(folder_id: Option<i64>) -> String {
+    match folder_id {
+        Some(id) => id.to_string(),
+        None => "home".to_string(),
+    }
+}
+
+fn parse_folder_cache_key(key: &str) -> Option<i64> {
+    if key == "home" { None } else { key.parse::<i64>().ok() }
+}
+
+fn read_cached_files(
+    db_pool: &DbConnection,
+    folder_id: Option<i64>,
+) -> Result<Vec<FileMetadata>, String> {
+    let key = folder_cache_key(folder_id);
+    let conn = db_pool.lock().map_err(|e| e.to_string())?;
+    let mut stmt = conn
+        .prepare(
+            "SELECT message_id, name, size, mime_type, file_ext, created_at, icon_type
+             FROM folder_files WHERE folder_key = ?1 ORDER BY message_id DESC",
+        )
+        .map_err(|e| e.to_string())?;
+    stmt.bind((1, key.as_str())).map_err(|e| e.to_string())?;
+    let mut files = Vec::new();
+    while let sqlite::State::Row = stmt.next().map_err(|e| e.to_string())? {
+        let id = stmt.read::<i64, _>("message_id").map_err(|e| e.to_string())?;
+        let name = stmt.read::<String, _>("name").map_err(|e| e.to_string())?;
+        let size = stmt.read::<i64, _>("size").map_err(|e| e.to_string())? as u64;
+        let mime_type = stmt.read::<Option<String>, _>("mime_type").ok().flatten();
+        let file_ext = stmt.read::<Option<String>, _>("file_ext").ok().flatten();
+        let created_at = stmt.read::<String, _>("created_at").map_err(|e| e.to_string())?;
+        let icon_type = stmt.read::<String, _>("icon_type").map_err(|e| e.to_string())?;
+        files.push(FileMetadata {
+            id,
+            folder_id,
+            name,
+            size,
+            mime_type,
+            file_ext,
+            created_at,
+            icon_type,
+        });
+    }
+    Ok(files)
+}
+
+/// Upsert the freshly fetched list and prune rows that no longer exist on
+/// Telegram — the delta half of the folder cache.
+fn write_folder_cache(
+    db_pool: &DbConnection,
+    folder_id: Option<i64>,
+    files: &[FileMetadata],
+) -> Result<(), String> {
+    let key = folder_cache_key(folder_id);
+    let conn = db_pool.lock().map_err(|e| e.to_string())?;
+
+    for f in files {
+        let mut upsert = conn
+            .prepare(
+                "INSERT INTO folder_files
+                    (folder_key, message_id, name, size, mime_type, file_ext, created_at, icon_type)
+                 VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8)
+                 ON CONFLICT(folder_key, message_id) DO UPDATE SET
+                    name = excluded.name,
+                    size = excluded.size,
+                    mime_type = excluded.mime_type,
+                    file_ext = excluded.file_ext,
+                    created_at = excluded.created_at,
+                    icon_type = excluded.icon_type",
+            )
+            .map_err(|e| e.to_string())?;
+        upsert.bind((1, key.as_str())).map_err(|e| e.to_string())?;
+        upsert.bind((2, f.id)).map_err(|e| e.to_string())?;
+        upsert.bind((3, f.name.as_str())).map_err(|e| e.to_string())?;
+        upsert.bind((4, f.size as i64)).map_err(|e| e.to_string())?;
+        upsert.bind((5, f.mime_type.as_deref())).map_err(|e| e.to_string())?;
+        upsert.bind((6, f.file_ext.as_deref())).map_err(|e| e.to_string())?;
+        upsert.bind((7, f.created_at.as_str())).map_err(|e| e.to_string())?;
+        upsert.bind((8, f.icon_type.as_str())).map_err(|e| e.to_string())?;
+        upsert.next().map_err(|e| e.to_string())?;
+    }
+
+    let live: HashSet<i64> = files.iter().map(|f| f.id).collect();
+    let mut stale_ids: Vec<i64> = Vec::new();
+    {
+        let mut stmt = conn
+            .prepare("SELECT message_id FROM folder_files WHERE folder_key = ?1")
+            .map_err(|e| e.to_string())?;
+        stmt.bind((1, key.as_str())).map_err(|e| e.to_string())?;
+        while let sqlite::State::Row = stmt.next().map_err(|e| e.to_string())? {
+            let id = stmt.read::<i64, _>("message_id").map_err(|e| e.to_string())?;
+            if !live.contains(&id) {
+                stale_ids.push(id);
+            }
+        }
+    }
+    for id in stale_ids {
+        let mut del = conn
+            .prepare("DELETE FROM folder_files WHERE folder_key = ?1 AND message_id = ?2")
+            .map_err(|e| e.to_string())?;
+        del.bind((1, key.as_str())).map_err(|e| e.to_string())?;
+        del.bind((2, id)).map_err(|e| e.to_string())?;
+        del.next().map_err(|e| e.to_string())?;
+    }
+    Ok(())
+}
+
+/// Instant folder open: serve the local cache when present, otherwise pull
+/// once from Telegram and populate it.
+#[tauri::command]
+pub async fn cmd_get_files(
+    folder_id: Option<i64>,
+    db_pool: State<'_, DbConnection>,
+    state: State<'_, TelegramState>,
+) -> Result<Vec<FileMetadata>, String> {
+    let cached = read_cached_files(db_pool.inner(), folder_id)?;
+    if !cached.is_empty() {
+        return Ok(cached);
+    }
+    let files = fetch_files_from_telegram(folder_id, state.inner()).await?;
+    write_folder_cache(db_pool.inner(), folder_id, &files)?;
+    Ok(files)
+}
+
+/// Background delta sync: pull the folder from Telegram and reconcile the cache.
+#[tauri::command]
+pub async fn cmd_sync_folder(
+    folder_id: Option<i64>,
+    db_pool: State<'_, DbConnection>,
+    state: State<'_, TelegramState>,
+) -> Result<Vec<FileMetadata>, String> {
+    let files = fetch_files_from_telegram(folder_id, state.inner()).await?;
+    write_folder_cache(db_pool.inner(), folder_id, &files)?;
+    Ok(files)
+}
+
+/// Local search over the folder cache — instant and not capped at 50 results.
+#[tauri::command]
+pub fn cmd_search_cached_files(
+    query: String,
+    db_pool: State<'_, DbConnection>,
+) -> Result<Vec<FileMetadata>, String> {
+    let needle = query.trim().to_lowercase();
+    if needle.is_empty() {
+        return Ok(Vec::new());
+    }
+    let pattern = format!("%{needle}%");
+    let conn = db_pool.lock().map_err(|e| e.to_string())?;
+    let mut stmt = conn
+        .prepare(
+            "SELECT folder_key, message_id, name, size, mime_type, file_ext, created_at, icon_type
+             FROM folder_files WHERE lower(name) LIKE ?1 ORDER BY created_at DESC LIMIT 1000",
+        )
+        .map_err(|e| e.to_string())?;
+    stmt.bind((1, pattern.as_str())).map_err(|e| e.to_string())?;
+    let mut files = Vec::new();
+    while let sqlite::State::Row = stmt.next().map_err(|e| e.to_string())? {
+        let folder_key = stmt.read::<String, _>("folder_key").map_err(|e| e.to_string())?;
+        let id = stmt.read::<i64, _>("message_id").map_err(|e| e.to_string())?;
+        let name = stmt.read::<String, _>("name").map_err(|e| e.to_string())?;
+        let size = stmt.read::<i64, _>("size").map_err(|e| e.to_string())? as u64;
+        let mime_type = stmt.read::<Option<String>, _>("mime_type").ok().flatten();
+        let file_ext = stmt.read::<Option<String>, _>("file_ext").ok().flatten();
+        let created_at = stmt.read::<String, _>("created_at").map_err(|e| e.to_string())?;
+        let icon_type = stmt.read::<String, _>("icon_type").map_err(|e| e.to_string())?;
+        files.push(FileMetadata {
+            id,
+            folder_id: parse_folder_cache_key(&folder_key),
+            name,
+            size,
+            mime_type,
+            file_ext,
+            created_at,
+            icon_type,
+        });
+    }
     Ok(files)
 }
 
