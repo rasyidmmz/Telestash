@@ -40,7 +40,6 @@ fn init_com_on_worker_thread() {
 
 pub mod commands;
 pub mod bandwidth;
-pub mod transfer_policy;
 pub mod transfer_retry;
 pub mod split_manifest;
 pub mod transfer_log;
@@ -112,7 +111,7 @@ pub fn restart_api_server(app: &tauri::AppHandle) {
     // Need TelegramState to share with the API server
     let tg_state = Arc::new(app.state::<TelegramState>().inner().clone());
     let bw_manager = app.state::<Arc<bandwidth::BandwidthManager>>().inner().clone();
-    let net_config = app.state::<Arc<transfer_policy::TransferPolicy>>().inner().clone();
+    let app_handle = app.clone();
     let db_pool = app.state::<db::DbConnection>().inner().clone();
     let api_port = settings.port;
     let key_hash = settings.key_hash.clone();
@@ -134,7 +133,7 @@ pub fn restart_api_server(app: &tauri::AppHandle) {
                 preview_dir,
             });
             let api_bw = actix_web::web::Data::new(bw_manager);
-            let api_net = actix_web::web::Data::new(net_config);
+            let api_app_handle = actix_web::web::Data::new(app_handle);
             let api_db = actix_web::web::Data::new(db_pool);
 
             log::info!("Starting REST API server on port {}", api_port);
@@ -161,7 +160,7 @@ pub fn restart_api_server(app: &tauri::AppHandle) {
                     .app_data(api_state.clone())
                     .app_data(cache_dirs.clone())
                     .app_data(api_bw.clone())
-                    .app_data(api_net.clone())
+                    .app_data(api_app_handle.clone())
                     .app_data(api_db.clone())
                     .configure(api_routes::configure_api)
             })
@@ -316,9 +315,6 @@ pub fn run() {
             app.manage(ApiServerHandle(Arc::new(std::sync::Mutex::new(None))));
             app.manage(ApiServerRunning(Arc::new(std::sync::atomic::AtomicBool::new(false))));
 
-            let net_config = Arc::new(transfer_policy::TransferPolicy::new());
-            app.manage(net_config.clone());
-
             // Initialize SQLite Database
             let db_pool = db::init_db(app.handle()).map_err(|e| {
                 log::error!("Failed to initialize SQLite database: {}", e);
@@ -426,7 +422,6 @@ pub fn run() {
             commands::cmd_auth_check_password,
             commands::cmd_get_files,
             commands::cmd_upload_file,
-            commands::initiate_upload,
             cmd_open_file_externally,
             commands::settings::cmd_set_autostart,
             commands::cmd_connect,

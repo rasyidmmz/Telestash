@@ -123,6 +123,7 @@ export function useFileDownload(store: Store | null) {
             }
         } finally {
             activeCountRef.current--;
+            setDownloadQueue(q => [...q]); // trigger queue effect to check for next item
         }
     };
 
