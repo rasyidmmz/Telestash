@@ -1894,7 +1894,6 @@ pub struct DownloadFileRequest {
     transfer_id: Option<String>,
 }
 
-#[tauri::command]
 /// Avoid silently truncating an existing local file: if the target exists,
 /// append " (1)", " (2)", ... before the extension until a free name is found.
 fn unique_save_path(path: &str) -> String {
@@ -1921,6 +1920,7 @@ fn unique_save_path(path: &str) -> String {
     path.to_string()
 }
 
+#[tauri::command]
 pub async fn cmd_download_file(
     req: DownloadFileRequest,
     app_handle: tauri::AppHandle,
