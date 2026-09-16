@@ -1,11 +1,10 @@
-use std::sync::Arc;
 use std::io::{Cursor, Read};
 use serde::Serialize;
 use tauri::State;
 use tokio::io::AsyncWriteExt;
 use crate::commands::TelegramState;
 use crate::commands::utils::resolve_peer;
-use crate::transfer_policy::TransferPolicy;
+use crate::transfer_retry::ARCHIVE_MAX_BYTES;
 use grammers_client::media::Media;
 
 #[derive(Debug, Clone, Serialize)]
@@ -56,10 +55,9 @@ pub async fn cmd_list_archive_contents(
     message_id: i32,
     folder_id: Option<i64>,
     state: State<'_, TelegramState>,
-    net_config: State<'_, Arc<TransferPolicy>>,
 ) -> Result<Vec<ArchiveEntry>, String> {
     let (client, media, filename, max_bytes) =
-        prepare_archive_operation(message_id, folder_id, &state, &net_config).await?;
+        prepare_archive_operation(message_id, folder_id, &state).await?;
     let archive_type = detect_archive_type(&filename);
 
     match archive_type {
@@ -77,10 +75,9 @@ pub async fn cmd_extract_archive_entry(
     folder_id: Option<i64>,
     entry_index: usize,
     state: State<'_, TelegramState>,
-    net_config: State<'_, Arc<TransferPolicy>>,
 ) -> Result<ExtractedFile, String> {
     let (client, media, filename, max_bytes) =
-        prepare_archive_operation(message_id, folder_id, &state, &net_config).await?;
+        prepare_archive_operation(message_id, folder_id, &state).await?;
     let archive_type = detect_archive_type(&filename);
 
     match archive_type {
@@ -96,7 +93,6 @@ async fn prepare_archive_operation(
     message_id: i32,
     folder_id: Option<i64>,
     state: &TelegramState,
-    net_config: &Arc<TransferPolicy>,
 ) -> Result<(grammers_client::Client, Media, String, u64), String> {
     let client_opt = { state.client.lock().await.clone() };
     let client = match client_opt {
@@ -131,7 +127,7 @@ async fn prepare_archive_operation(
         _ => 0,
     };
 
-    let max_bytes = net_config.archive_max_bytes();
+    let max_bytes = ARCHIVE_MAX_BYTES;
     if max_bytes > 0 && file_size > max_bytes {
         return Err(format!(
             "Archive file ({} MiB) exceeds the {} MiB archive size limit",

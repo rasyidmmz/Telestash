@@ -170,7 +170,7 @@ export function ArchiveViewerModal({
                 if (extractAllCancelledRef.current) { wasCancelled = true; break; }
 
                 // Step 2: Upload
-                await invoke('initiate_upload', {
+                await invoke('cmd_upload_file', {
                     path: extracted.temp_path,
                     folderId: extractAllTargetFolderId,
                     transferId,
@@ -669,7 +669,7 @@ function ExtractButton({ file, activeFolderId, folders, entryIndex, entryName, e
             setUploading(true);
 
             // Step 2: Upload to the selected target folder
-            await invoke('initiate_upload', {
+            await invoke('cmd_upload_file', {
                 path: extracted.temp_path,
                 folderId: targetFolderId,
                 transferId,

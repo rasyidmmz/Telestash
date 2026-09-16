@@ -97,6 +97,7 @@ pub fn build_media_response(
     mime: &str,
     filename: Option<&str>,
     extras: StreamingExtras,
+    refresh: Option<(grammers_session::types::PeerRef, i32)>,
 ) -> HttpResponse {
     let size = match media {
         Media::Document(d) => d.size().unwrap_or(0) as u64,
@@ -142,28 +143,22 @@ pub fn build_media_response(
     //
     // Fix: always align to 512 KB boundaries, then slice off the leading
     // bytes to serve the exact byte range the client requested.
-    let mut download_iter = client.iter_download(media);
+    /// MTProto chunk size (must be divisible by grammers' MIN_CHUNK_SIZE).
+    /// 65536 is safe — it is the default and widely tested.
+    const CHUNK_SIZE: i32 = 65536;
+    /// Telegram CDN alignment boundary. 512 KB is the largest observed
+    /// CDN chunk size; aligning to this boundary prevents ANY rounding.
+    const CDN_ALIGNMENT: u64 = 524288; // 512 KB
+
     let mut bytes_to_skip: usize = 0;
+    let mut chunk_index: i32 = 0;
 
     if start_byte > 0 {
-        /// MTProto chunk size (must be divisible by grammers' MIN_CHUNK_SIZE).
-        /// 65536 is safe — it is the default and widely tested.
-        const CHUNK_SIZE: i32 = 65536;
-        /// Telegram CDN alignment boundary. 512 KB is the largest observed
-        /// CDN chunk size; aligning to this boundary prevents ANY rounding.
-        const CDN_ALIGNMENT: u64 = 524288; // 512 KB
-
         // 1) Round the requested start down to a CDN-safe boundary.
         let cdn_aligned_start = (start_byte / CDN_ALIGNMENT) * CDN_ALIGNMENT;
 
         // 2) Compute how many 64 KB chunks to skip to reach that boundary.
-        let chunk_index = (cdn_aligned_start / CHUNK_SIZE as u64) as i32;
-
-        // Always set chunk size for predictable download behaviour.
-        download_iter = download_iter.chunk_size(CHUNK_SIZE);
-        if chunk_index > 0 {
-            download_iter = download_iter.skip_chunks(chunk_index);
-        }
+        chunk_index = (cdn_aligned_start / CHUNK_SIZE as u64) as i32;
 
         // 3) Leading bytes between the CDN-aligned offset and the client's
         //    actual requested start must be discarded.
@@ -183,9 +178,21 @@ pub fn build_media_response(
     }
 
     let label = extras.log_label;
+    let stream_client = client.clone();
+    let stream_media = media.clone();
     let stream = async_stream::stream! {
         let mut skipped: usize = 0;
         let mut total_yielded: u64 = 0;
+        let mut resume_discard: u64 = 0;
+        let mut retried = false;
+
+        let mut download_iter = stream_client.iter_download(&stream_media);
+        if start_byte > 0 {
+            download_iter = download_iter.chunk_size(CHUNK_SIZE);
+            if chunk_index > 0 {
+                download_iter = download_iter.skip_chunks(chunk_index);
+            }
+        }
 
         while let Some(chunk) = download_iter.next().await.transpose() {
             match chunk {
@@ -200,6 +207,15 @@ pub fn build_media_response(
                         } else {
                             bytes = bytes.slice(to_skip..);
                             skipped = bytes_to_skip;
+                        }
+                    }
+
+                    if resume_discard > 0 {
+                        let drop_n = std::cmp::min(resume_discard, bytes.len() as u64) as usize;
+                        bytes = bytes.slice(drop_n..);
+                        resume_discard -= drop_n as u64;
+                        if bytes.is_empty() {
+                            continue;
                         }
                     }
 
@@ -221,6 +237,34 @@ pub fn build_media_response(
                     }
                 }
                 Err(e) => {
+                    // One retry with a fresh media object: Telegram file
+                    // references expire, so a mid-stream error often means the
+                    // reference went stale. Re-fetch the message and resume
+                    // from the same logical position instead of truncating
+                    // the response (Content-Length was already sent).
+                    if !retried {
+                        if let Some((peer, message_id)) = &refresh {
+                            retried = true;
+                            if let Ok(messages) = stream_client.get_messages_by_id(*peer, &[*message_id]).await {
+                                if let Some(Some(msg)) = messages.first() {
+                                    if let Some(fresh_media) = msg.media() {
+                                        log::warn!("{} stream error: {} — re-fetching media and retrying once", label, e);
+                                        let mut fresh_iter = stream_client.iter_download(&fresh_media);
+                                        if start_byte > 0 {
+                                            fresh_iter = fresh_iter.chunk_size(CHUNK_SIZE);
+                                            if chunk_index > 0 {
+                                                fresh_iter = fresh_iter.skip_chunks(chunk_index);
+                                            }
+                                        }
+                                        download_iter = fresh_iter;
+                                        skipped = 0;
+                                        resume_discard = total_yielded;
+                                        continue;
+                                    }
+                                }
+                            }
+                        }
+                    }
                     log::error!("{} stream error: {}", label, e);
                     break;
                 }
@@ -368,12 +412,40 @@ fn build_split_media_response(
             if chunk_index > 0 {
                 iter = iter.skip_chunks(chunk_index);
             }
+            let mut part_retried = false;
+            let mut resume_discard: u64 = 0;
 
             while remaining > 0 {
                 let next = iter.next().await.transpose();
                 let chunk = match next {
                     Some(Ok(c)) => c,
                     Some(Err(e)) => {
+                        // One retry with a fresh part message: stale Telegram
+                        // file references are the usual mid-stream killer, and
+                        // the response Content-Length was already sent, so a
+                        // truncated stream is a broken video for MPV.
+                        if !part_retried {
+                            part_retried = true;
+                            match client.get_messages_by_id(peer, &[part.message_id]).await {
+                                Ok(messages) => {
+                                    if let Some(Some(msg)) = messages.first() {
+                                        if let Some(fresh_media) = msg.media() {
+                                            put_cached_split_part(&cache_key, fresh_media.clone(), media_size(&fresh_media));
+                                            log::warn!("Split stream part {} error: {} — re-fetching part and retrying once", part.message_id, e);
+                                            let mut fresh_iter = client.iter_download(&fresh_media).chunk_size(CHUNK_SIZE);
+                                            if chunk_index > 0 {
+                                                fresh_iter = fresh_iter.skip_chunks(chunk_index);
+                                            }
+                                            iter = fresh_iter;
+                                            bytes_to_skip = (part_offset - aligned_start) as usize;
+                                            resume_discard = (wanted_end - wanted_start + 1) - remaining;
+                                            continue;
+                                        }
+                                    }
+                                }
+                                Err(_) => {}
+                            }
+                        }
                         remove_cached_split_part(&cache_key);
                         let err = format!("Split stream part {} error: {}", part.message_id, e);
                         log::error!("{}", err);
@@ -392,6 +464,15 @@ fn build_split_media_response(
                     }
                     data = data[bytes_to_skip..].to_vec();
                     bytes_to_skip = 0;
+                }
+
+                if resume_discard > 0 {
+                    let drop_n = std::cmp::min(resume_discard, data.len() as u64) as usize;
+                    data = data[drop_n..].to_vec();
+                    resume_discard -= drop_n as u64;
+                    if data.is_empty() {
+                        continue;
+                    }
                 }
 
                 if data.len() as u64 > remaining {
@@ -427,7 +508,7 @@ fn split_part_cache_key(scope: &str, message_id: i32) -> String {
 }
 
 fn get_cached_split_part(key: &str) -> Option<(Media, Option<u64>)> {
-    let mut cache = split_stream_part_cache().lock().unwrap();
+    let mut cache = split_stream_part_cache().lock().unwrap_or_else(|p| p.into_inner());
     if let Some(entry) = cache.get(key) {
         if entry.stored_at.elapsed() <= SPLIT_STREAM_PART_CACHE_TTL {
             return Some((entry.media.clone(), entry.size));
@@ -438,7 +519,7 @@ fn get_cached_split_part(key: &str) -> Option<(Media, Option<u64>)> {
 }
 
 fn put_cached_split_part(key: &str, media: Media, size: Option<u64>) {
-    let mut cache = split_stream_part_cache().lock().unwrap();
+    let mut cache = split_stream_part_cache().lock().unwrap_or_else(|p| p.into_inner());
     // ponytail: tiny arbitrary eviction; use a real LRU only if seek-heavy streaming proves it matters.
     if cache.len() >= SPLIT_STREAM_PART_CACHE_LIMIT {
         if let Some(old_key) = cache.keys().next().cloned() {
@@ -449,7 +530,7 @@ fn put_cached_split_part(key: &str, media: Media, size: Option<u64>) {
 }
 
 fn remove_cached_split_part(key: &str) {
-    split_stream_part_cache().lock().unwrap().remove(key);
+    split_stream_part_cache().lock().unwrap_or_else(|p| p.into_inner()).remove(key);
 }
 
 fn split_stream_part_cache() -> &'static Mutex<HashMap<String, CachedSplitPart>> {
@@ -601,6 +682,7 @@ async fn handle_stream_media_request(
                                         extra_headers: vec![("Cache-Control", "private, max-age=120".to_string())],
                                         log_label: "Stream",
                                     },
+                                    Some((peer, message_id)),
                                 );
                             } else {
                                 log::error!("Stream request failed: Media not found in message {}", message_id);

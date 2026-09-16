@@ -13,8 +13,11 @@ use crate::models::{
 };
 use crate::bandwidth::BandwidthManager;
 use crate::commands::utils::{resolve_peer, map_error, media_size};
-use crate::transfer_policy::{TransferPolicy, backoff_ms};
-use crate::transfer_retry::{flood_wait_retry_attempts, should_retry_upload_error, upload_error_kind, upload_stream_retry_attempts};
+use crate::transfer_retry::{
+    backoff_ms, flood_wait_retry_attempts, should_retry_upload_error, upload_error_kind,
+    upload_stream_retry_attempts, DOWNLOAD_CHUNK_RETRY_ATTEMPTS, DOWNLOAD_STALL_TIMEOUT_SECS,
+    RETRY_ATTEMPTS, RETRY_BASE_BACKOFF_MS, RETRY_MAX_BACKOFF_MS,
+};
 use crate::split_manifest::{
     is_split_manifest_candidate, validate_split_manifest, MAX_SPLIT_MANIFEST_BYTES,
 };
@@ -507,25 +510,22 @@ pub(crate) async fn validate_split_parts_present(
     Ok(())
 }
 
-async fn upload_path_and_send(
+pub(crate) async fn upload_path_and_send(
     client: &grammers_client::Client,
     peer: PeerRef,
     path: &str,
     upload_name: String,
     caption: String,
-    limit: u64,
-    net_config: &TransferPolicy,
     tid: &str,
     state: &TelegramState,
     app_handle: &tauri::AppHandle,
     progress_base: u64,
     progress_total: u64,
 ) -> Result<i32, String> {
-    let configured_attempts = net_config.retry_attempts();
+    let configured_attempts = RETRY_ATTEMPTS;
     let max_attempts = upload_stream_retry_attempts(configured_attempts);
-    let base_ms = net_config.retry_base_backoff_ms();
-    let max_ms = net_config.retry_max_backoff_ms();
-    let respect_flood = net_config.should_respect_flood_wait();
+    let base_ms = RETRY_BASE_BACKOFF_MS;
+    let max_ms = RETRY_MAX_BACKOFF_MS;
     let flood_wait_attempts = flood_wait_retry_attempts(configured_attempts);
     let mut attempt = 0;
     let mut attempts_made = 0;
@@ -539,7 +539,7 @@ async fn upload_path_and_send(
             return Err("Transfer cancelled".to_string());
         }
 
-        let (mut reader, file_size, bytes_counter) = ProgressReader::new_with_pause(path, limit, Some(state.paused_transfers.clone()), tid).await?;
+        let (mut reader, file_size, bytes_counter) = ProgressReader::new_with_pause(path, 0, Some(state.paused_transfers.clone()), tid).await?;
         let progress_handle = app_handle.clone();
         let progress_tid = tid.to_string();
         let progress_task = if !tid.is_empty() {
@@ -570,7 +570,7 @@ async fn upload_path_and_send(
 
         let (cancel_tx, cancel_rx) = tokio::sync::oneshot::channel::<()>();
         if !tid.is_empty() {
-            get_upload_cancellations().lock().unwrap().insert(tid.to_string(), cancel_tx);
+            get_upload_cancellations().lock().unwrap_or_else(|p| p.into_inner()).insert(tid.to_string(), cancel_tx);
         }
 
         let client_clone = client.clone();
@@ -584,7 +584,7 @@ async fn upload_path_and_send(
         let upload_result = tokio::select! {
             res = &mut upload_task => {
                 if !tid.is_empty() {
-                    get_upload_cancellations().lock().unwrap().remove(tid);
+                    get_upload_cancellations().lock().unwrap_or_else(|p| p.into_inner()).remove(tid);
                 }
                 res.map_err(|e| format!("Task join error: {}", e))
             }
@@ -620,7 +620,7 @@ async fn upload_path_and_send(
                         err
                     )),
                 );
-                if respect_flood && err.starts_with("FLOOD_WAIT_") {
+                if err.starts_with("FLOOD_WAIT_") {
                     if let Ok(secs) = err.trim_start_matches("FLOOD_WAIT_").parse::<u64>() {
                         flood_wait_count += 1;
                         if flood_wait_count > flood_wait_attempts {
@@ -667,11 +667,7 @@ async fn upload_path_and_send(
     let message = InputMessage::new().text(caption).file(uploaded_file);
     let mut last_err = String::new();
 
-    let max_send_attempts = if respect_flood {
-        flood_wait_attempts
-    } else {
-        configured_attempts
-    };
+    let max_send_attempts = flood_wait_attempts;
     let mut send_attempts_made = 0;
     for attempt in 0..=max_send_attempts {
         send_attempts_made = attempt + 1;
@@ -679,7 +675,7 @@ async fn upload_path_and_send(
             Ok(msg) => return Ok(msg.id()),
             Err(e) => {
                 let err = map_error(e);
-                if respect_flood && err.starts_with("FLOOD_WAIT_") {
+                if err.starts_with("FLOOD_WAIT_") {
                     if let Ok(secs) = err.trim_start_matches("FLOOD_WAIT_").parse::<u64>() {
                         last_err = err;
                         if attempt < max_send_attempts {
@@ -773,7 +769,6 @@ async fn move_split_file(
     manifest: SplitManifest,
     app_handle: &tauri::AppHandle,
     state: &TelegramState,
-    net_config: &TransferPolicy,
 ) -> Result<(), String> {
     validate_split_parts_present(client, source_peer, &manifest, "Split move").await?;
 
@@ -809,8 +804,6 @@ async fn move_split_file(
         &manifest_path_str,
         SPLIT_MANIFEST_UPLOAD_NAME.to_string(),
         target_manifest.filename.clone(),
-        net_config.upload_limit_bytes_per_sec(),
-        net_config,
         "",
         state,
         app_handle,
@@ -881,8 +874,6 @@ async fn upload_large_file_split(
     app_handle: &tauri::AppHandle,
     state: &TelegramState,
     client: &grammers_client::Client,
-    net_config: &TransferPolicy,
-    limit: u64,
 ) -> Result<String, String> {
     let peer = resolve_peer(client, folder_id, &state.peer_cache).await?;
     let total_parts = ((size + SPLIT_PART_SIZE - 1) / SPLIT_PART_SIZE) as usize;
@@ -974,8 +965,6 @@ async fn upload_large_file_split(
             &part_path_str,
             upload_name,
             caption,
-            limit,
-            net_config,
             tid,
             state,
             app_handle,
@@ -1078,8 +1067,6 @@ async fn upload_large_file_split(
         &manifest_path_str,
         SPLIT_MANIFEST_UPLOAD_NAME.to_string(),
         file_name.clone(),
-        limit,
-        net_config,
         tid,
         state,
         app_handle,
@@ -1130,7 +1117,6 @@ async fn download_split_file(
     app_handle: &tauri::AppHandle,
     state: &TelegramState,
     bw_state: &BandwidthManager,
-    net_config: &TransferPolicy,
 ) -> Result<String, String> {
     validate_split_parts_present(client, peer, &manifest, "Split download").await?;
     bw_state.try_reserve_down(manifest.size)?;
@@ -1172,9 +1158,9 @@ async fn download_split_file(
             .ok_or_else(|| format!("Split part {} not found", part.message_id))?;
         let media = msg.media().ok_or_else(|| format!("Split part {} has no media", part.message_id))?;
         let mut iter = client.iter_download(&media);
-        let mut chunk_retry_budget = net_config.retry_attempts();
+        let mut chunk_retry_budget = DOWNLOAD_CHUNK_RETRY_ATTEMPTS;
 
-        while let Some(chunk) = iter.next().await.transpose() {
+        loop {
             if state.cancelled_transfers.read().await.contains(tid) {
                 state.cancelled_transfers.write().await.remove(tid);
                 drop(file);
@@ -1185,7 +1171,7 @@ async fn download_split_file(
 
             while state.paused_transfers.read().await.contains(tid) {
                 let notifier = {
-                    let mut map = state.pause_notifiers.lock().unwrap();
+                    let mut map = state.pause_notifiers.lock().unwrap_or_else(|p| p.into_inner());
                     map.entry(tid.to_string())
                         .or_insert_with(|| Arc::new(tokio::sync::Notify::new()))
                         .clone()
@@ -1200,40 +1186,60 @@ async fn download_split_file(
                 }
             }
 
-            let bytes = match chunk {
-                Ok(b) => {
-                    chunk_retry_budget = net_config.retry_attempts();
-                    b
-                }
-                Err(e) => {
-                    let err = map_error(&e);
-                    record_transfer_log(
-                        "Split download",
-                        format!("Split download chunk error for {}", manifest.filename),
-                        Some(format!(
-                            "transfer_id: {}\nfile_size: {}\ndownloaded: {}\nretries_left: {}\nerror: {}",
-                            tid,
-                            manifest.size,
-                            downloaded,
-                            chunk_retry_budget,
-                            err
-                        )),
-                    );
-                    if chunk_retry_budget > 0 {
-                        chunk_retry_budget -= 1;
-                        tokio::time::sleep(std::time::Duration::from_millis(backoff_ms(
-                            0,
-                            net_config.retry_base_backoff_ms(),
-                            net_config.retry_max_backoff_ms(),
-                        )))
-                        .await;
-                        continue;
+            // Stall watchdog: a download that silently stops producing chunks
+            // previously hung forever. Time out, treat as a chunk error, and
+            // let the retry budget decide when to give up.
+            let timed = tokio::time::timeout(
+                std::time::Duration::from_secs(DOWNLOAD_STALL_TIMEOUT_SECS),
+                iter.next(),
+            )
+            .await;
+
+            let (bytes, chunk_err) = match timed {
+                Err(_) => (
+                    None,
+                    Some(format!("no chunk for {}s (stalled)", DOWNLOAD_STALL_TIMEOUT_SECS)),
+                ),
+                Ok(res) => match res.transpose() {
+                    None => break,
+                    Some(Ok(b)) => {
+                        chunk_retry_budget = DOWNLOAD_CHUNK_RETRY_ATTEMPTS;
+                        (Some(b), None)
                     }
-                    drop(file);
-                    cleanup_partial_file(save_path);
-                    bw_state.release_down(manifest.size);
-                    return Err(format!("Split download chunk error: {}", err));
+                    Some(Err(e)) => (None, Some(map_error(&e))),
+                },
+            };
+
+            let bytes = if let Some(b) = bytes {
+                b
+            } else {
+                let err = chunk_err.expect("missing chunk must carry an error");
+                record_transfer_log(
+                    "Split download",
+                    format!("Split download chunk error for {}", manifest.filename),
+                    Some(format!(
+                        "transfer_id: {}\nfile_size: {}\ndownloaded: {}\nretries_left: {}\nerror: {}",
+                        tid,
+                        manifest.size,
+                        downloaded,
+                        chunk_retry_budget,
+                        err
+                    )),
+                );
+                if chunk_retry_budget > 0 {
+                    chunk_retry_budget -= 1;
+                    tokio::time::sleep(std::time::Duration::from_millis(backoff_ms(
+                        0,
+                        RETRY_BASE_BACKOFF_MS,
+                        RETRY_MAX_BACKOFF_MS,
+                    )))
+                    .await;
+                    continue;
                 }
+                drop(file);
+                cleanup_partial_file(save_path);
+                bw_state.release_down(manifest.size);
+                return Err(format!("Split download chunk error: {}", err));
             };
 
             file.write_all(&bytes).await.map_err(|e| e.to_string())?;
@@ -1317,10 +1323,10 @@ pub async fn cmd_cancel_transfer(
     log::info!("Cancelling transfer: {}", transfer_id);
     state.cancelled_transfers.write().await.insert(transfer_id.clone());
     state.paused_transfers.write().await.remove(&transfer_id);
-    if let Some(notifier) = state.pause_notifiers.lock().unwrap().remove(&transfer_id) {
+    if let Some(notifier) = state.pause_notifiers.lock().unwrap_or_else(|p| p.into_inner()).remove(&transfer_id) {
         notifier.notify_waiters();
     }
-    if let Some(tx) = get_upload_cancellations().lock().unwrap().remove(&transfer_id) {
+    if let Some(tx) = get_upload_cancellations().lock().unwrap_or_else(|p| p.into_inner()).remove(&transfer_id) {
         let _ = tx.send(());
     }
     Ok(true)
@@ -1343,7 +1349,7 @@ pub async fn cmd_resume_transfer(
 ) -> Result<bool, String> {
     log::info!("Resuming transfer: {}", transfer_id);
     state.paused_transfers.write().await.remove(&transfer_id);
-    if let Some(notifier) = state.pause_notifiers.lock().unwrap().remove(&transfer_id) {
+    if let Some(notifier) = state.pause_notifiers.lock().unwrap_or_else(|p| p.into_inner()).remove(&transfer_id) {
         notifier.notify_waiters();
     }
     Ok(true)
@@ -1357,29 +1363,7 @@ pub async fn cmd_upload_file(
     app_handle: tauri::AppHandle,
     state: State<'_, TelegramState>,
     bw_state: State<'_, Arc<BandwidthManager>>,
-    net_config: State<'_, std::sync::Arc<TransferPolicy>>,
 ) -> Result<String, String> {
-    cmd_upload_file_inner(
-        path,
-        folder_id,
-        transfer_id,
-        app_handle,
-        state,
-        bw_state,
-        net_config,
-    ).await
-}
-
-async fn cmd_upload_file_inner(
-    path: String,
-    folder_id: Option<i64>,
-    transfer_id: Option<String>,
-    app_handle: tauri::AppHandle,
-    state: State<'_, TelegramState>,
-    bw_state: State<'_, Arc<BandwidthManager>>,
-    net_config: State<'_, std::sync::Arc<TransferPolicy>>,
-) -> Result<String, String> {
-
     let size = tokio::fs::metadata(&path).await.map_err(|e| e.to_string())?.len();
     bw_state.try_reserve_up(size)?;
 
@@ -1409,11 +1393,6 @@ async fn cmd_upload_file_inner(
         .map(|n| n.to_string_lossy().to_string())
         .unwrap_or_else(|| "file".to_string());
 
-    let mut limit = 0;
-    let user_limit = net_config.upload_limit_bytes_per_sec();
-    if user_limit > 0 {
-        limit = user_limit;
-    }
     if requires_split_upload(size) {
         let result = upload_large_file_split(
             &path,
@@ -1424,8 +1403,6 @@ async fn cmd_upload_file_inner(
             &app_handle,
             state.inner(),
             &client,
-            net_config.inner().as_ref(),
-            limit,
         )
         .await;
         if result.is_err() {
@@ -1435,11 +1412,10 @@ async fn cmd_upload_file_inner(
     }
 
     let mut attempt = 0;
-    let configured_attempts = net_config.retry_attempts();
+    let configured_attempts = RETRY_ATTEMPTS;
     let max_attempts = upload_stream_retry_attempts(configured_attempts);
-    let base_ms = net_config.retry_base_backoff_ms();
-    let max_ms = net_config.retry_max_backoff_ms();
-    let respect_flood = net_config.should_respect_flood_wait();
+    let base_ms = RETRY_BASE_BACKOFF_MS;
+    let max_ms = RETRY_MAX_BACKOFF_MS;
     let flood_wait_attempts = flood_wait_retry_attempts(configured_attempts);
     let mut last_err = String::new();
     let mut attempts_made = 0;
@@ -1454,7 +1430,7 @@ async fn cmd_upload_file_inner(
         }
 
         // Create progress-tracking reader
-        let (mut reader, file_size, bytes_counter) = match ProgressReader::new_with_pause(&path, limit, Some(state.paused_transfers.clone()), &tid).await {
+        let (mut reader, file_size, bytes_counter) = match ProgressReader::new_with_pause(&path, 0, Some(state.paused_transfers.clone()), &tid).await {
             Ok(res) => res,
             Err(e) => {
                 bw_state.release_up(size);
@@ -1496,7 +1472,7 @@ async fn cmd_upload_file_inner(
 
         let (cancel_tx, cancel_rx) = tokio::sync::oneshot::channel::<()>();
         if !tid.is_empty() {
-            get_upload_cancellations().lock().unwrap().insert(tid.clone(), cancel_tx);
+            get_upload_cancellations().lock().unwrap_or_else(|p| p.into_inner()).insert(tid.clone(), cancel_tx);
         }
 
         let client_clone = client.clone();
@@ -1511,7 +1487,7 @@ async fn cmd_upload_file_inner(
             tokio::select! {
                 res = &mut upload_task => {
                     if !tid.is_empty() {
-                        get_upload_cancellations().lock().unwrap().remove(&tid);
+                        get_upload_cancellations().lock().unwrap_or_else(|p| p.into_inner()).remove(&tid);
                     }
                     res.map_err(|e| format!("Task join error: {}", e))
                 }
@@ -1550,7 +1526,7 @@ async fn cmd_upload_file_inner(
                     )),
                 );
 
-                if respect_flood && err.starts_with("FLOOD_WAIT_") {
+                if err.starts_with("FLOOD_WAIT_") {
                     if let Ok(secs) = err.trim_start_matches("FLOOD_WAIT_").parse::<u64>() {
                         flood_wait_count += 1;
                         if flood_wait_count > flood_wait_attempts {
@@ -1661,15 +1637,10 @@ async fn cmd_upload_file_inner(
     let peer = resolve_peer(&client, folder_id, &state.peer_cache).await?;
 
     // Shared retry logic for send_message.
-    let configured_retries = net_config.retry_attempts();
-    let base_ms = net_config.retry_base_backoff_ms();
-    let max_ms = net_config.retry_max_backoff_ms();
-    let respect_flood = net_config.should_respect_flood_wait();
-    let max_retries = if respect_flood {
-        flood_wait_retry_attempts(configured_retries)
-    } else {
-        configured_retries
-    };
+    let configured_retries = RETRY_ATTEMPTS;
+    let base_ms = RETRY_BASE_BACKOFF_MS;
+    let max_ms = RETRY_MAX_BACKOFF_MS;
+    let max_retries = flood_wait_retry_attempts(configured_retries);
     let mut last_err = String::new();
     let mut send_attempts_made = 0;
 
@@ -1690,7 +1661,7 @@ async fn cmd_upload_file_inner(
                 log::warn!("send_message attempt {}/{}: {}", attempt + 1, max_retries + 1, err);
 
                 // Handle FLOOD_WAIT: sleep the requested time if configured
-                if respect_flood && err.starts_with("FLOOD_WAIT_") {
+                if err.starts_with("FLOOD_WAIT_") {
                     if let Ok(secs) = err.trim_start_matches("FLOOD_WAIT_").parse::<u64>() {
                         last_err = err;
                         if attempt < max_retries {
@@ -1717,27 +1688,6 @@ async fn cmd_upload_file_inner(
     }
 
     Err(format!("Upload failed after {} attempts: {}", send_attempts_made, last_err))
-}
-
-#[tauri::command]
-pub async fn initiate_upload(
-    path: String,
-    folder_id: Option<i64>,
-    transfer_id: Option<String>,
-    app_handle: tauri::AppHandle,
-    state: State<'_, TelegramState>,
-    bw_state: State<'_, Arc<BandwidthManager>>,
-    net_config: State<'_, std::sync::Arc<TransferPolicy>>,
-) -> Result<String, String> {
-    cmd_upload_file(
-        path,
-        folder_id,
-        transfer_id,
-        app_handle,
-        state,
-        bw_state,
-        net_config,
-    ).await
 }
 
 #[tauri::command]
@@ -1950,7 +1900,6 @@ pub async fn cmd_download_file(
     app_handle: tauri::AppHandle,
     state: State<'_, TelegramState>,
     bw_state: State<'_, Arc<BandwidthManager>>,
-    net_config: State<'_, std::sync::Arc<TransferPolicy>>,
 ) -> Result<String, String> {
     let tid = req.transfer_id.unwrap_or_default();
     let save_path = req.save_path;
@@ -1991,7 +1940,6 @@ pub async fn cmd_download_file(
             &app_handle,
             state.inner(),
             bw_state.inner().as_ref(),
-            net_config.inner().as_ref(),
         )
         .await;
     }
@@ -2023,9 +1971,9 @@ pub async fn cmd_download_file(
     let mut downloaded: u64 = 0;
     let mut last_emit_time = std::time::Instant::now();
     let mut last_emit_bytes: u64 = 0;
-    let mut chunk_retry_budget = net_config.retry_attempts();
+    let mut chunk_retry_budget = DOWNLOAD_CHUNK_RETRY_ATTEMPTS;
 
-    while let Some(chunk) = download_iter.next().await.transpose() {
+    loop {
         // Check cancellation
         if state.cancelled_transfers.read().await.contains(&tid) {
             state.cancelled_transfers.write().await.remove(&tid);
@@ -2038,7 +1986,7 @@ pub async fn cmd_download_file(
         // Check pause
         while state.paused_transfers.read().await.contains(&tid) {
             let notifier = {
-                let mut map = state.pause_notifiers.lock().unwrap();
+                let mut map = state.pause_notifiers.lock().unwrap_or_else(|p| p.into_inner());
                 map.entry(tid.clone())
                     .or_insert_with(|| Arc::new(tokio::sync::Notify::new()))
                     .clone()
@@ -2053,25 +2001,45 @@ pub async fn cmd_download_file(
             }
         }
 
-        let bytes = match chunk {
-            Ok(b) => {
-                chunk_retry_budget = net_config.retry_attempts(); // reset on success
-                b
-            },
-            Err(e) => {
-                let err = map_error(&e);
-                if chunk_retry_budget > 0 {
-                    chunk_retry_budget -= 1;
-                    log::warn!("Download chunk error (retries left: {}): {}", chunk_retry_budget, err);
-                    let delay = backoff_ms(0, net_config.retry_base_backoff_ms(), net_config.retry_max_backoff_ms());
-                    tokio::time::sleep(std::time::Duration::from_millis(delay)).await;
-                    continue;
+        // Stall watchdog: a download that silently stops producing chunks
+        // previously hung forever. Time out, treat as a chunk error, and let
+        // the retry budget decide when to give up.
+        let timed = tokio::time::timeout(
+            std::time::Duration::from_secs(DOWNLOAD_STALL_TIMEOUT_SECS),
+            download_iter.next(),
+        )
+        .await;
+
+        let (bytes, chunk_err) = match timed {
+            Err(_) => (
+                None,
+                Some(format!("no chunk for {}s (stalled)", DOWNLOAD_STALL_TIMEOUT_SECS)),
+            ),
+            Ok(res) => match res.transpose() {
+                None => break,
+                Some(Ok(b)) => {
+                    chunk_retry_budget = DOWNLOAD_CHUNK_RETRY_ATTEMPTS; // reset on success
+                    (Some(b), None)
                 }
-                drop(file);
-                cleanup_partial_file(&actual_save_path);
-                bw_state.release_down(total_size);
-                return Err(format!("Download chunk error: {}", err));
+                Some(Err(e)) => (None, Some(map_error(&e))),
+            },
+        };
+
+        let bytes = if let Some(b) = bytes {
+            b
+        } else {
+            let err = chunk_err.expect("missing chunk must carry an error");
+            if chunk_retry_budget > 0 {
+                chunk_retry_budget -= 1;
+                log::warn!("Download chunk error (retries left: {}): {}", chunk_retry_budget, err);
+                let delay = backoff_ms(0, RETRY_BASE_BACKOFF_MS, RETRY_MAX_BACKOFF_MS);
+                tokio::time::sleep(std::time::Duration::from_millis(delay)).await;
+                continue;
             }
+            drop(file);
+            cleanup_partial_file(&actual_save_path);
+            bw_state.release_down(total_size);
+            return Err(format!("Download chunk error: {}", err));
         };
         tokio::io::AsyncWriteExt::write_all(&mut file, &bytes).await.map_err(|e| e.to_string())?;
         downloaded += bytes.len() as u64;
@@ -2158,7 +2126,6 @@ pub async fn cmd_move_files(
     target_folder_id: Option<i64>,
     app_handle: tauri::AppHandle,
     state: State<'_, TelegramState>,
-    net_config: State<'_, std::sync::Arc<TransferPolicy>>,
 ) -> Result<bool, String> {
     if source_folder_id == target_folder_id { return Ok(true); }
     let client_opt = { state.client.lock().await.clone() };
@@ -2200,7 +2167,6 @@ pub async fn cmd_move_files(
             manifest,
             &app_handle,
             state.inner(),
-            net_config.inner().as_ref(),
         )
         .await?;
     }

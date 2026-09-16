@@ -5,19 +5,17 @@ use tokio::io::{AsyncRead, AsyncWriteExt};
 use actix_web::web::Bytes;
 use std::task::{Context, Poll};
 use crate::commands::TelegramState;
-use crate::commands::utils::{resolve_peer, map_error};
+use crate::commands::utils::resolve_peer;
 use crate::commands::fs::{
-    delete_message_ids, split_manifest_from_media, validate_split_parts_present, ProgressReader,
+    delete_message_ids, split_manifest_from_media, upload_path_and_send,
+    validate_split_parts_present,
 };
 use crate::commands::{create_folder_inner, delete_folder_inner, rename_folder_inner};
 use crate::models::FolderMetadata;
 use crate::bandwidth::BandwidthManager;
-use crate::transfer_policy::TransferPolicy;
-use crate::transfer_retry::{flood_wait_retry_attempts, should_retry_upload_error, upload_error_kind, upload_stream_retry_attempts};
-use crate::transfer_log::record_transfer_log;
+use crate::transfer_retry::ARCHIVE_MAX_BYTES;
 use grammers_client::media::Media;
 use grammers_client::peer::Peer;
-use grammers_client::message::InputMessage;
 use grammers_tl_types as tl;
 use serde::Serialize;
 use std::sync::Arc;
@@ -519,6 +517,7 @@ async fn api_download_file(
                             extra_headers: vec![],
                             log_label: "API download",
                         },
+                        Some((peer, message_id)),
                     );
                 }
             }
@@ -553,7 +552,6 @@ async fn api_bulk_files(
     body: web::Json<BulkRequest>,
     tg_state: web::Data<Arc<TelegramState>>,
     api_state: web::Data<ApiState>,
-    net_config: web::Data<Arc<TransferPolicy>>,
     cache_dirs: web::Data<CacheDirs>,
 ) -> impl Responder {
     if let Err(e) = check_auth(&req, &api_state) {
@@ -694,7 +692,7 @@ async fn api_bulk_files(
             // Download all files in async context, then delegate zip I/O
             // to spawn_blocking so we never block an Actix worker thread.
             let mut entries: Vec<(String, Vec<u8>)> = Vec::new();                        let mut total_bytes: u64 = 0;
-                        let max_bytes = net_config.archive_max_bytes();
+                        let max_bytes = ARCHIVE_MAX_BYTES;
 
                         for mid in &ids {
                 let messages = match client.get_messages_by_id(peer, &[*mid]).await {
@@ -1132,7 +1130,7 @@ async fn api_upload_file(
     tg_state: web::Data<Arc<TelegramState>>,
     api_state: web::Data<ApiState>,
     bw_manager: web::Data<Arc<BandwidthManager>>,
-    net_config: web::Data<Arc<TransferPolicy>>,
+    app_handle: web::Data<tauri::AppHandle>,
 ) -> impl Responder {
     if let Err(e) = check_auth(&req, &api_state) {
         return e;
@@ -1225,146 +1223,47 @@ async fn api_upload_file(
         }
     };
 
-    let mut limit = 0;
-    let user_limit = net_config.upload_limit_bytes_per_sec();
-    if user_limit > 0 {
-        limit = user_limit;
-    }
-    let mut attempt = 0;
-    let configured_attempts = net_config.retry_attempts();
-    let max_attempts = upload_stream_retry_attempts(configured_attempts);
-    let respect_flood = net_config.should_respect_flood_wait();
-    let flood_wait_attempts = flood_wait_retry_attempts(configured_attempts);
-    let base_ms = net_config.retry_base_backoff_ms();
-    let max_ms = net_config.retry_max_backoff_ms();
-    let mut last_err = String::new();
-    let mut attempts_made = 0;
-    let mut uploaded_file = None;
-    let mut flood_wait_count = 0;
+    let temp_path_str = temp_path.to_string_lossy().to_string();
 
-    while attempt <= max_attempts {
-        let (mut open_file, _, _) = match ProgressReader::new(temp_path.to_str().unwrap(), limit).await {
-            Ok(res) => res,
-            Err(e) => {
-                bw_manager.release_up(file_size);
-                let _ = tokio::fs::remove_file(&temp_path).await;
-                return json_error("OPEN_ERROR", &e.to_string(), 500);
-            }
-        };
-
-        attempts_made = attempt + 1;
-
-        match client.upload_stream(&mut open_file, file_size as usize, filename.clone()).await {
-            Ok(uf) => {
-                uploaded_file = Some(uf);
-                break;
-            }
-            Err(e) => {
-                let err = map_error(e);
-                log::warn!("API upload_stream attempt {}/{}: {}", attempt + 1, max_attempts + 1, err);
-                last_err = format!("{}: {}", upload_error_kind(&err), err);
-                record_transfer_log(
-                    "API upload",
-                    format!("API upload attempt {}/{} failed for {}", attempt + 1, max_attempts + 1, filename),
-                    Some(format!(
-                        "file_size: {}\nerror_kind: {}\nretry: {}\nerror: {}",
-                        file_size,
-                        upload_error_kind(&err),
-                        should_retry_upload_error(&err, attempt, configured_attempts),
-                        err
-                    )),
-                );
-
-                if respect_flood && err.starts_with("FLOOD_WAIT_") {
-                    if let Ok(secs) = err.trim_start_matches("FLOOD_WAIT_").parse::<u64>() {
-                        flood_wait_count += 1;
-                        if flood_wait_count > flood_wait_attempts {
-                            break;
-                        }
-                        let wait = secs.min(300);
-                        log::info!("Respecting FLOOD_WAIT for API upload ({}/{}): sleeping {}s", flood_wait_count, flood_wait_attempts, wait);
-                        tokio::time::sleep(std::time::Duration::from_secs(wait)).await;
-                        continue;
-                    }
-                }
-
-                if should_retry_upload_error(&err, attempt, configured_attempts) {
-                    let delay = crate::transfer_policy::backoff_ms(attempt, base_ms, max_ms);
-                    log::info!("Retrying API upload in {}ms...", delay);
-                    tokio::time::sleep(std::time::Duration::from_millis(delay)).await;
-                } else {
-                    break;
-                }
-            }
-        }
-
-        attempt += 1;
-    }
-
-    let uploaded_file = match uploaded_file {
-        Some(uf) => uf,
-        None => {
+    // Shared upload + send path (retry / FLOOD_WAIT / backoff) — the same
+    // helper as the local upload queue, so both ingestion paths stay consistent.
+    let message_id = match upload_path_and_send(
+        &client,
+        peer.clone(),
+        &temp_path_str,
+        filename.clone(),
+        filename.clone(),
+        "",
+        tg_state.get_ref().as_ref(),
+        app_handle.get_ref(),
+        0,
+        file_size,
+    )
+    .await
+    {
+        Ok(id) => id,
+        Err(e) => {
             bw_manager.release_up(file_size);
             let _ = tokio::fs::remove_file(&temp_path).await;
-            return json_error("UPLOAD_FAILED", &format!("Upload failed after {} attempts: {}", attempts_made, last_err), 500);
+            return json_error("UPLOAD_FAILED", &e, 500);
         }
     };
-
-    let message = InputMessage::new().text(filename.clone()).file(uploaded_file);
-
-    let configured_retries = net_config.retry_attempts();
-    let base_ms = net_config.retry_base_backoff_ms();
-    let max_ms = net_config.retry_max_backoff_ms();
-    let respect_flood = net_config.should_respect_flood_wait();
-    let max_retries = if respect_flood {
-        flood_wait_retry_attempts(configured_retries)
-    } else {
-        configured_retries
-    };
-    let mut last_err = String::new();
-    let mut sent_msg = None;
-
-    for attempt in 0..=max_retries {
-        match client.send_message(peer, message.clone()).await {
-            Ok(msg) => {
-                sent_msg = Some(msg);
-                break;
-            }
-            Err(e) => {
-                let err = map_error(e);
-                log::warn!("send_message attempt {}/{}: {}", attempt + 1, max_retries + 1, err);
-
-                if respect_flood && err.starts_with("FLOOD_WAIT_") {
-                    if let Ok(secs) = err.trim_start_matches("FLOOD_WAIT_").parse::<u64>() {
-                        last_err = err;
-                        if attempt < max_retries {
-                            let wait = secs.min(300);
-                            log::info!("Respecting FLOOD_WAIT: sleeping {}s", wait);
-                            tokio::time::sleep(std::time::Duration::from_secs(wait)).await;
-                            continue;
-                        }
-                        break;
-                    }
-                }
-
-                if attempt < configured_retries {
-                    let wait = crate::transfer_policy::backoff_ms(attempt, base_ms, max_ms);
-                    tokio::time::sleep(std::time::Duration::from_millis(wait)).await;
-                } else {
-                    break;
-                }
-                last_err = err;
-            }
-        }
-    }
 
     let _ = tokio::fs::remove_file(&temp_path).await;
 
-    let msg = match sent_msg {
-        Some(m) => m,
-        None => {
+    // upload_path_and_send returns only the message id; fetch the sent message
+    // for its timestamp to build the API response.
+    let msg = match client.get_messages_by_id(peer, &[message_id]).await {
+        Ok(msgs) => match msgs.into_iter().flatten().next() {
+            Some(m) => m,
+            None => {
+                bw_manager.release_up(file_size);
+                return json_error("FETCH_ERROR", "Uploaded message not found after send", 500);
+            }
+        },
+        Err(e) => {
             bw_manager.release_up(file_size);
-            return json_error("SEND_MESSAGE_FAILED", &last_err, 500);
+            return json_error("FETCH_ERROR", &e.to_string(), 500);
         }
     };
 

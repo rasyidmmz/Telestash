@@ -1,7 +1,25 @@
 const TRANSIENT_UPLOAD_RETRY_ATTEMPTS: u32 = 2;
 
+// Fixed transfer policy (direct Telegram transfers only — no user-configurable
+// throttle). These replace the old `TransferPolicy` struct + DI plumbing.
+pub(crate) const RETRY_ATTEMPTS: u32 = 0;
+pub(crate) const RETRY_BASE_BACKOFF_MS: u64 = 1_000;
+pub(crate) const RETRY_MAX_BACKOFF_MS: u64 = 30_000;
+pub(crate) const ARCHIVE_MAX_BYTES: u64 = 256 * 1024 * 1024;
+
+// Downloads previously reused `retry_attempts() == 0` as the chunk retry budget,
+// so a single transient chunk error killed the whole download and deleted the
+// partial file. Give chunk errors a real budget independent of user retries.
+pub(crate) const DOWNLOAD_CHUNK_RETRY_ATTEMPTS: u32 = 3;
+pub(crate) const DOWNLOAD_STALL_TIMEOUT_SECS: u64 = 30;
+
 pub(crate) fn upload_stream_retry_attempts(configured_attempts: u32) -> u32 {
     configured_attempts.max(TRANSIENT_UPLOAD_RETRY_ATTEMPTS)
+}
+
+pub(crate) fn backoff_ms(attempt: u32, base_ms: u64, max_ms: u64) -> u64 {
+    let capped = base_ms.saturating_mul(1u64 << attempt.min(10)).min(max_ms);
+    capped + (capped as f64 * 0.25 * rand::random::<f64>()) as u64
 }
 
 pub(crate) fn flood_wait_retry_attempts(configured_attempts: u32) -> u32 {
@@ -95,5 +113,24 @@ mod tests {
     fn flood_wait_gets_ten_retries_when_optional_retries_are_disabled() {
         assert_eq!(flood_wait_retry_attempts(0), 10);
         assert_eq!(flood_wait_retry_attempts(3), 10);
+    }
+
+    #[test]
+    fn download_chunks_have_a_real_retry_budget() {
+        // Guard against regressing to the old budget = 0 behaviour where a
+        // single transient chunk error failed the entire download.
+        assert!(DOWNLOAD_CHUNK_RETRY_ATTEMPTS > 0);
+        assert!(DOWNLOAD_STALL_TIMEOUT_SECS > 0);
+    }
+
+    #[test]
+    fn backoff_is_bounded_and_grows_with_attempt() {
+        let first = backoff_ms(0, RETRY_BASE_BACKOFF_MS, RETRY_MAX_BACKOFF_MS);
+        let second = backoff_ms(1, RETRY_BASE_BACKOFF_MS, RETRY_MAX_BACKOFF_MS);
+        let capped = backoff_ms(20, RETRY_BASE_BACKOFF_MS, RETRY_MAX_BACKOFF_MS);
+
+        assert!(first >= RETRY_BASE_BACKOFF_MS);
+        assert!(second >= first);
+        assert!(capped <= RETRY_MAX_BACKOFF_MS + (RETRY_MAX_BACKOFF_MS / 4));
     }
 }

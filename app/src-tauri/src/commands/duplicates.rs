@@ -1,12 +1,10 @@
 use std::collections::HashMap;
-use std::sync::Arc;
 
 use grammers_client::media::Media;
 use sha2::{Digest, Sha256};
 use tauri::State;
 
 use crate::TelegramState;
-use crate::transfer_policy::TransferPolicy;
 
 #[derive(Debug, Clone, serde::Serialize)]
 pub struct DuplicateFileInfo {
@@ -107,7 +105,6 @@ pub async fn cmd_find_duplicates(
     folder_ids: Vec<Option<i64>>,
     confirm: Option<bool>,
     state: State<'_, TelegramState>,
-    _net_config: State<'_, Arc<TransferPolicy>>,
 ) -> Result<Vec<DuplicateGroup>, String> {
     let confirm = confirm.unwrap_or(true);
     let client = { state.client.lock().await.clone() }.ok_or("Telegram client not initialized")?;

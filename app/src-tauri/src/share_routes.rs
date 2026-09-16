@@ -291,6 +291,7 @@ async fn get_shared_file(
                             extra_headers: vec![],
                             log_label: "Share download",
                         },
+                        Some((peer, row.message_id)),
                     );
                 }
             }
