@@ -111,7 +111,7 @@ pub fn restart_api_server(app: &tauri::AppHandle) {
     // Need TelegramState to share with the API server
     let tg_state = Arc::new(app.state::<TelegramState>().inner().clone());
     let bw_manager = app.state::<Arc<bandwidth::BandwidthManager>>().inner().clone();
-    let app_handle = app.handle().clone();
+    let app_handle = app.clone();
     let db_pool = app.state::<db::DbConnection>().inner().clone();
     let api_port = settings.port;
     let key_hash = settings.key_hash.clone();

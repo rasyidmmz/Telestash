@@ -6,7 +6,6 @@ use crate::commands::fs::split_manifest_from_media;
 use crate::commands::streaming::stream_token_header_name;
 use crate::commands::utils::{resolve_peer, media_size, mime_type_from_media};
 use grammers_client::media::Media;
-use grammers_client::peer::Peer;
 use crate::models::SplitManifest;
 use crate::transfer_log::record_transfer_log;
 
@@ -179,14 +178,17 @@ pub fn build_media_response(
 
     let label = extras.log_label;
     let stream_client = client.clone();
-    let stream_media = media.clone();
+    // Clone into a distinct name: `stream_media` is also an actix-generated unit
+    // struct for the /stream route, so a bare `let stream_media` would be parsed
+    // as a pattern match against that struct instead of a new binding.
+    let initial_media = media.clone();
     let stream = async_stream::stream! {
         let mut skipped: usize = 0;
         let mut total_yielded: u64 = 0;
         let mut resume_discard: u64 = 0;
         let mut retried = false;
 
-        let mut download_iter = stream_client.iter_download(&stream_media);
+        let mut download_iter = stream_client.iter_download(&initial_media);
         if start_byte > 0 {
             download_iter = download_iter.chunk_size(CHUNK_SIZE);
             if chunk_index > 0 {
