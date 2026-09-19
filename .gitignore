@@ -15,8 +15,12 @@ dist/
 .idea/
 .codex/
 .zcode/
+.workbuddy-ai/
 AGENTS.md
 CLAUDE.md
+# Local agentmemory wrapper - personal tooling, talks to a service on 127.0.0.1:3111.
+# Root-anchored so only this folder is ignored, not any tools/ inside app/.
+/tools/
 
 # Misc
 .github/hooks/
