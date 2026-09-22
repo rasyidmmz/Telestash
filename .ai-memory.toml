@@ -1,0 +1,22 @@
+# .ai-memory.toml — identitas project untuk ai-memory
+#
+# KENAPA FILE INI ADA
+# ai-memory menurunkan nama project dari nama folder kerja. Untuk repo ini itu
+# menghasilkan "Telestash" (huruf besar), sedangkan memori yang dimigrasikan dari
+# agentmemory memakai slug "telestash". Kalau namanya berbeda, sesi di repo ini
+# mencari "Telestash" dan TIDAK menemukan memori yang ditulis ke "telestash".
+#
+# Marker ini memaksa nama yang stabil, sehingga:
+#   - migrasi agentmemory -> ai-memory menulis ke namespace yang sama
+#   - capture sesi ke depan menulis ke namespace yang sama
+#   - recall dari sesi mana pun menemukan keduanya
+#
+# Skema ini sudah diuji: folder dengan marker ini dilaporkan ai-memory sebagai
+# `under default/telestash` (sebelumnya "Telestash").
+#
+# JANGAN dihapus dan JANGAN di-rename slug-nya tanpa memigrasikan ulang data.
+# Dokumen lengkap: C:\Code\Dsh\rencana-migrasi-ai-memory.md
+
+[project]
+workspace = "default"
+project = "telestash"
