@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, RotateCcw, Download, Upload, Trash2, HardDrive, Globe, Key, Copy, Check, RefreshCw, ChevronDown, Link, Sparkles, Info, Clipboard, Monitor, Loader2, Languages, Palette, Plus, Tag } from '../../shared/icons.tsx';
+import { X, RotateCcw, Download, Upload, Trash2, HardDrive, Globe, Key, Copy, Check, RefreshCw, ChevronDown, Link, Sparkles, Info, Clipboard, Monitor, Loader2, Languages, Palette, Plus, Tag, Play, Film } from '../../shared/icons.tsx';
 import { invoke } from '@tauri-apps/api/core';
 import { open } from '@tauri-apps/plugin-shell';
 import { toast } from 'sonner';
@@ -28,7 +28,17 @@ interface ApiSettings {
     running: boolean;
 }
 
-type SettingsTab = 'general' | 'themes' | 'sharing' | 'about';
+type HardwareDecodeMode = 'auto' | 'software' | 'adapter';
+
+interface PlaybackSettings {
+    hardware_decode: HardwareDecodeMode;
+    preferred_adapter: string | null;
+    extra_args: string[];
+    single_player_instance: boolean;
+    available_adapters: string[];
+}
+
+type SettingsTab = 'general' | 'playback' | 'themes' | 'sharing' | 'about';
 
 export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
     const closeButtonRef = useRef<HTMLButtonElement>(null);
@@ -138,6 +148,56 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
         setCopiedId(share.id);
         setTimeout(() => setCopiedId(null), 2000);
     };
+
+    // Playback (MPV) settings state
+    const [playbackSettings, setPlaybackSettings] = useState<PlaybackSettings | null>(null);
+    const [playbackLoading, setPlaybackLoading] = useState(false);
+    const [extraArgsText, setExtraArgsText] = useState('');
+
+    const fetchPlaybackSettings = useCallback(async () => {
+        try {
+            const result = await invoke<PlaybackSettings>('cmd_get_playback_settings');
+            setPlaybackSettings(result);
+            setExtraArgsText(result.extra_args.join('\n'));
+        } catch {
+            // Playback settings not available
+        }
+    }, []);
+
+    const savePlaybackSettings = useCallback(async (
+        next: Pick<PlaybackSettings, 'hardware_decode' | 'preferred_adapter' | 'single_player_instance'>,
+        argsText: string,
+    ) => {
+        setPlaybackLoading(true);
+        try {
+            const extraArgs = argsText
+                .split('\n')
+                .map(line => line.trim())
+                .filter(line => line.length > 0);
+            const result = await invoke<PlaybackSettings>('cmd_update_playback_settings', {
+                hardwareDecode: next.hardware_decode,
+                preferredAdapter: next.preferred_adapter,
+                extraArgs,
+                singlePlayerInstance: next.single_player_instance,
+            });
+            setPlaybackSettings(result);
+            setExtraArgsText(result.extra_args.join('\n'));
+            toast.success(t('settings.playback_saved'));
+        } catch (e) {
+            toast.error(t('settings.playback_save_failed', { error: e }));
+            // Re-read so the UI never shows a value the backend rejected.
+            fetchPlaybackSettings();
+        } finally {
+            setPlaybackLoading(false);
+        }
+    }, [t, fetchPlaybackSettings]);
+
+    // Load playback settings when modal opens
+    useEffect(() => {
+        if (isOpen) {
+            fetchPlaybackSettings();
+        }
+    }, [isOpen, fetchPlaybackSettings]);
 
     // API settings state
     const [apiSettings, setApiSettings] = useState<ApiSettings>({ enabled: false, port: 8550, key_set: false, running: false });
@@ -287,7 +347,7 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
 
                         {/* Tab Bar */}
                         <div className="px-5 pt-3 pb-0 flex gap-1 justify-start overflow-x-auto border-b border-stash-border scrollbar-none">
-                            {([['general', Globe], ['themes', Palette], ['sharing', Link], ['about', Info]] as const).map(([key, Icon]) => (
+                            {([['general', Globe], ['playback', Play], ['themes', Palette], ['sharing', Link], ['about', Info]] as const).map(([key, Icon]) => (
                                 <button
                                     key={key}
                                     onClick={() => setActiveTab(key as SettingsTab)}
@@ -647,6 +707,173 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                                 </div>
                             </section>
 
+                                    </motion.div>
+                                )}
+
+                        {activeTab === 'playback' && (
+                                    <motion.div
+                                        key="playback"
+                                        initial={{ opacity: 0, x: -20 }}
+                                        animate={{ opacity: 1, x: 0 }}
+                                        exit={{ opacity: 0, x: 20 }}
+                                        transition={{ type: 'spring', damping: 25, stiffness: 220, opacity: { duration: 0.15 } }}
+                                        className="space-y-6 w-full"
+                                    >
+                            {playbackSettings && (
+                            <>
+                            {/* Hardware Decoding Section */}
+                            <section className="space-y-3">
+                                <h3 className="text-xs font-semibold text-stash-subtext uppercase tracking-wider flex items-center gap-2">
+                                    <Play className="w-3.5 h-3.5" />
+                                    {t('settings.hw_decoding')}
+                                </h3>
+
+                                <div className="space-y-2">
+                                    <label className="text-xs text-stash-subtext" htmlFor="hw-decode-mode">
+                                        {t('settings.hw_decoding_desc')}
+                                    </label>
+                                    <div className="relative">
+                                        <select
+                                            id="hw-decode-mode"
+                                            value={playbackSettings.hardware_decode}
+                                            disabled={playbackLoading}
+                                            onChange={e => {
+                                                const mode = e.target.value as HardwareDecodeMode;
+                                                savePlaybackSettings({
+                                                    hardware_decode: mode,
+                                                    preferred_adapter: mode === 'adapter' ? playbackSettings.preferred_adapter : null,
+                                                    single_player_instance: playbackSettings.single_player_instance,
+                                                }, extraArgsText);
+                                            }}
+                                            className="appearance-none w-full bg-stash-bg border border-stash-border rounded-md pl-3 pr-8 py-1.5 text-sm text-stash-text focus:outline-none focus:border-stash-primary/50 transition cursor-pointer disabled:opacity-50"
+                                        >
+                                            <option value="auto">{t('settings.hw_decode_auto')}</option>
+                                            <option value="software">{t('settings.hw_decode_software')}</option>
+                                            <option value="adapter" disabled={playbackSettings.available_adapters.length === 0}>
+                                                {t('settings.hw_decode_adapter')}
+                                            </option>
+                                        </select>
+                                        <ChevronDown className="w-4 h-4 text-stash-subtext absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+                                    </div>
+                                    <p className="text-xs text-stash-subtext">
+                                        {playbackSettings.hardware_decode === 'auto' && t('settings.hw_decode_auto_hint')}
+                                        {playbackSettings.hardware_decode === 'software' && t('settings.hw_decode_software_hint')}
+                                        {playbackSettings.hardware_decode === 'adapter' && t('settings.hw_decode_adapter_hint')}
+                                    </p>
+                                    {/* Advisory only: more than one adapter usually means a
+                                        hybrid laptop, where automatic selection can decode on the
+                                        CPU without saying so. Not auto-pinned, because the right
+                                        adapter cannot be inferred reliably on every machine. */}
+                                    {playbackSettings.hardware_decode === 'auto' && playbackSettings.available_adapters.length > 1 && (
+                                        <p className="text-xs text-amber-400/90">{t('settings.hw_decode_hybrid_hint')}</p>
+                                    )}
+                                </div>
+
+                                {/* Adapter pin, only meaningful in adapter mode */}
+                                {playbackSettings.hardware_decode === 'adapter' && (
+                                    <div className="space-y-2 p-3 rounded-lg bg-stash-hover/50">
+                                        <label className="text-xs text-stash-subtext" htmlFor="hw-decode-adapter">
+                                            {t('settings.hw_decode_gpu')}
+                                        </label>
+                                        <div className="relative">
+                                            <select
+                                                id="hw-decode-adapter"
+                                                value={playbackSettings.preferred_adapter ?? ''}
+                                                disabled={playbackLoading}
+                                                onChange={e => savePlaybackSettings({
+                                                    hardware_decode: 'adapter',
+                                                    preferred_adapter: e.target.value,
+                                                    single_player_instance: playbackSettings.single_player_instance,
+                                                }, extraArgsText)}
+                                                className="appearance-none w-full bg-stash-bg border border-stash-border rounded-md pl-3 pr-8 py-1.5 text-sm text-stash-text focus:outline-none focus:border-stash-primary/50 transition cursor-pointer disabled:opacity-50"
+                                            >
+                                                <option value="" disabled>{t('settings.hw_decode_pick_gpu')}</option>
+                                                {playbackSettings.available_adapters.map(adapter => (
+                                                    <option key={adapter} value={adapter}>{adapter}</option>
+                                                ))}
+                                            </select>
+                                            <ChevronDown className="w-4 h-4 text-stash-subtext absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+                                        </div>
+                                        <p className="text-xs text-stash-subtext">
+                                            {t('settings.hw_decode_available', { count: playbackSettings.available_adapters.length })}
+                                        </p>
+                                    </div>
+                                )}
+
+                                {playbackSettings.available_adapters.length === 0 && (
+                                    <p className="text-xs text-stash-subtext/80">{t('settings.hw_decode_no_adapters')}</p>
+                                )}
+                            </section>
+
+                            {/* Player Behaviour Section */}
+                            <section className="space-y-3">
+                                <h3 className="text-xs font-semibold text-stash-subtext uppercase tracking-wider flex items-center gap-2">
+                                    <Film className="w-3.5 h-3.5" />
+                                    {t('settings.player_behaviour')}
+                                </h3>
+
+                                <div className="flex items-center justify-between p-3 rounded-lg bg-stash-hover/50">
+                                    <div className="flex items-center gap-2 min-w-0 flex-1 pr-4">
+                                        <Play className="w-4 h-4 text-stash-subtext shrink-0" />
+                                        <div className="min-w-0">
+                                            <p className="text-sm text-stash-text font-medium">{t('settings.single_player')}</p>
+                                            <p className="text-xs text-stash-subtext">{t('settings.single_player_desc')}</p>
+                                        </div>
+                                    </div>
+                                    <button
+                                        disabled={playbackLoading}
+                                        onClick={() => savePlaybackSettings({
+                                            hardware_decode: playbackSettings.hardware_decode,
+                                            preferred_adapter: playbackSettings.preferred_adapter,
+                                            single_player_instance: !playbackSettings.single_player_instance,
+                                        }, extraArgsText)}
+                                        className={`relative w-11 h-6 shrink-0 rounded-full transition-colors duration-200 disabled:opacity-50 ${playbackSettings.single_player_instance ? 'bg-stash-primary' : 'bg-stash-border'}`}
+                                        aria-label={t('settings.single_player')}
+                                    >
+                                        <span className={`absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white shadow transition-transform duration-200 ${playbackSettings.single_player_instance ? 'translate-x-5' : 'translate-x-0'}`} />
+                                    </button>
+                                </div>
+                            </section>
+
+                            {/* Advanced Section */}
+                            <section className="space-y-3">
+                                <h3 className="text-xs font-semibold text-stash-subtext uppercase tracking-wider flex items-center gap-2">
+                                    <Sparkles className="w-3.5 h-3.5" />
+                                    {t('settings.player_advanced')}
+                                </h3>
+
+                                <div className="space-y-2">
+                                    <label className="text-xs text-stash-subtext" htmlFor="mpv-extra-args">
+                                        {t('settings.mpv_extra_args')}
+                                    </label>
+                                    <textarea
+                                        id="mpv-extra-args"
+                                        value={extraArgsText}
+                                        disabled={playbackLoading}
+                                        onChange={e => setExtraArgsText(e.target.value)}
+                                        rows={3}
+                                        spellCheck={false}
+                                        placeholder={'--profile=fast\n--no-osc'}
+                                        className="w-full bg-stash-bg border border-stash-border rounded-md px-3 py-2 text-xs font-mono text-stash-text focus:outline-none focus:border-stash-primary/50 transition resize-y disabled:opacity-50"
+                                    />
+                                    <p className="text-xs text-stash-subtext">{t('settings.mpv_extra_args_desc')}</p>
+                                    <div className="flex justify-end">
+                                        <button
+                                            disabled={playbackLoading}
+                                            onClick={() => savePlaybackSettings({
+                                                hardware_decode: playbackSettings.hardware_decode,
+                                                preferred_adapter: playbackSettings.preferred_adapter,
+                                                single_player_instance: playbackSettings.single_player_instance,
+                                            }, extraArgsText)}
+                                            className="px-3 py-1.5 text-xs font-medium rounded-md bg-stash-primary/10 text-stash-primary border border-stash-primary/30 hover:bg-stash-primary/20 transition disabled:opacity-50"
+                                        >
+                                            {playbackLoading ? t('settings.saving') : t('settings.save_args')}
+                                        </button>
+                                    </div>
+                                </div>
+                            </section>
+                            </>
+                            )}
                                     </motion.div>
                                 )}
 
