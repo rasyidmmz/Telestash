@@ -311,6 +311,7 @@ pub fn run() {
             });
             app.manage(Arc::new(bandwidth::BandwidthManager::new(app.handle())));
             app.manage(StreamConfig { token: stream_token.clone(), port: STREAM_PORT });
+            app.manage(commands::PlayerProcess(std::sync::Mutex::new(None)));
             app.manage(ActixServerHandle(server_handle_for_setup.clone()));
             app.manage(ApiServerHandle(Arc::new(std::sync::Mutex::new(None))));
             app.manage(ApiServerRunning(Arc::new(std::sync::atomic::AtomicBool::new(false))));
@@ -447,6 +448,8 @@ pub fn run() {
             commands::cmd_clean_cache,
             commands::cmd_get_stream_info,
             commands::cmd_play_in_mpv,
+            commands::cmd_get_playback_settings,
+            commands::cmd_update_playback_settings,
             commands::cmd_cancel_transfer,
             commands::cmd_pause_transfer,
             commands::cmd_resume_transfer,
@@ -536,6 +539,12 @@ pub fn run() {
                 log::info!("Stopping API server...");
                 drop(handle.stop(true));
             }
+
+            // 4. Stop the external player process. The shell plugin does not
+            // kill children on drop, so without this MPV would outlive the app.
+            log::info!("Stopping player process...");
+            let player = app_handle.state::<commands::PlayerProcess>();
+            commands::stop_tracked_player(&player);
         }
     });
 }

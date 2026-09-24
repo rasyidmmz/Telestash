@@ -42,6 +42,7 @@ pub mod preview;
 pub mod utils;
 pub mod network;
 pub mod streaming;
+pub mod playback_settings;
 pub mod api_settings;
 pub mod settings;
 pub mod sharing;
@@ -56,6 +57,11 @@ pub use preview::*;
 pub use utils::*;
 pub use network::*;
 pub use streaming::*;
+// Glob on purpose: `#[tauri::command]` also exports hidden `__cmd__*` items that
+// `generate_handler!` looks up in this module, and an explicit re-export would
+// drop them. The helper functions stay `pub(crate)`; a glob re-export does not
+// widen their visibility.
+pub use playback_settings::*;
 pub use api_settings::*;
 pub use settings::*;
 pub use sharing::*;
