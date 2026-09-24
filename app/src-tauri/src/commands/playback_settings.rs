@@ -106,16 +106,48 @@ fn save_playback_settings(app: &AppHandle, settings: &PlaybackSettingsFile) -> R
 /// could be interpreted as a positional argument (a URL or a local file path)
 /// coming from the settings file. A bare `-` or the `--` options terminator is
 /// dropped too: neither carries an option.
+///
+/// Networking flags are refused as well. TeleStash connects to Telegram
+/// directly, so proxying, VPN, and bandwidth-shaping options must not become
+/// reachable through this box.
 pub(crate) fn sanitize_extra_args(args: &[String]) -> Vec<String> {
     args.iter()
         .map(|a| a.trim())
         .filter(|a| a.starts_with('-') && a.len() > 1 && *a != "--")
+        .filter(|a| !is_network_flag(a))
         .map(|a| a.to_string())
         .take(32)
         .collect()
 }
 
-fn response_from(app: &AppHandle, settings: PlaybackSettingsFile) -> PlaybackSettingsResponse {
+/// True for MPV options that route, tunnel, or reshape network traffic.
+///
+/// Matched by exact option name (the part before `=`), never by prefix, so a
+/// filesystem option such as `--cache-dir` is not caught by `--cache`.
+fn is_network_flag(arg: &str) -> bool {
+    const BLOCKED: [&str; 8] = [
+        "--http-proxy",
+        "--proxy",
+        "--network-timeout",
+        "--cache",
+        "--demuxer-max-bytes",
+        "--demuxer-max-back-bytes",
+        "--demuxer-readahead-secs",
+        "--stream-buffer-size",
+    ];
+    let name = arg.split('=').next().unwrap_or(arg);
+    BLOCKED.contains(&name)
+}
+
+/// Build the response the settings UI renders.
+///
+/// Side effect worth naming: this probes MPV for the machine's adapters the
+/// first time it is called, which is why it takes the `AppHandle` rather than
+/// being a pure conversion.
+fn response_with_adapters(
+    app: &AppHandle,
+    settings: PlaybackSettingsFile,
+) -> PlaybackSettingsResponse {
     PlaybackSettingsResponse {
         hardware_decode: settings.hardware_decode,
         preferred_adapter: settings.preferred_adapter,
@@ -127,7 +159,7 @@ fn response_from(app: &AppHandle, settings: PlaybackSettingsFile) -> PlaybackSet
 
 #[tauri::command]
 pub async fn cmd_get_playback_settings(app: AppHandle) -> Result<PlaybackSettingsResponse, String> {
-    Ok(response_from(&app, load_playback_settings(&app)))
+    Ok(response_with_adapters(&app, load_playback_settings(&app)))
 }
 
 #[tauri::command]
@@ -139,20 +171,26 @@ pub async fn cmd_update_playback_settings(
     app: AppHandle,
 ) -> Result<PlaybackSettingsResponse, String> {
     // An adapter pin only means something if the adapter actually exists:
-    // MPV exits fatally on an unknown name, so reject it up front.
+    // MPV exits fatally on an unknown name, so reject it up front. A pin is
+    // also never *required* here, because the UI can only offer the adapter
+    // picker once Adapter mode is already selected, and because adapter
+    // enumeration itself can fail on some machines. Playback falls back to
+    // automatic decoding while no valid pin is stored.
     let pinned = if hardware_decode == HardwareDecodeMode::Adapter {
         let requested = preferred_adapter.unwrap_or_default().trim().to_string();
         if requested.is_empty() {
-            return Err("Select an adapter to pin, or switch to Auto".to_string());
+            None
+        } else {
+            let adapters = super::streaming::detect_d3d11_adapters(&app);
+            // An unenumerable adapter list must not make the mode unusable.
+            if !adapters.is_empty() && !adapters.iter().any(|a| a == &requested) {
+                return Err(format!(
+                    "Adapter '{}' is not available on this machine",
+                    requested
+                ));
+            }
+            Some(requested)
         }
-        let adapters = super::streaming::detect_d3d11_adapters(&app);
-        if !adapters.iter().any(|a| a == &requested) {
-            return Err(format!(
-                "Adapter '{}' is not available on this machine",
-                requested
-            ));
-        }
-        Some(requested)
     } else {
         // Drop a stale pin when the user leaves Adapter mode.
         None
@@ -166,7 +204,7 @@ pub async fn cmd_update_playback_settings(
     };
     save_playback_settings(&app, &settings)?;
 
-    Ok(response_from(&app, settings))
+    Ok(response_with_adapters(&app, settings))
 }
 
 #[cfg(test)]
@@ -201,6 +239,32 @@ mod tests {
             "-".to_string(),
         ]);
         assert_eq!(cleaned, vec!["--no-osc".to_string()]);
+    }
+
+    #[test]
+    fn extra_args_reject_networking_flags() {
+        // TeleStash connects to Telegram directly, so proxy/VPN and bandwidth
+        // shaping options must not be reachable from this box.
+        let cleaned = sanitize_extra_args(&[
+            "--http-proxy=http://127.0.0.1:8080".to_string(),
+            "--proxy=foo".to_string(),
+            "--cache=yes".to_string(),
+            "--demuxer-max-bytes=500MiB".to_string(),
+            "--stream-buffer-size=1MiB".to_string(),
+            "--no-osc".to_string(),
+        ]);
+        assert_eq!(cleaned, vec!["--no-osc".to_string()]);
+    }
+
+    #[test]
+    fn extra_args_do_not_over_block_similar_names() {
+        // Guard against a prefix match that is too eager: these are unrelated
+        // to networking and must survive.
+        let cleaned = sanitize_extra_args(&[
+            "--cache-dir-helper".to_string(),
+            "--no-osc".to_string(),
+        ]);
+        assert_eq!(cleaned.len(), 2);
     }
 
     #[test]

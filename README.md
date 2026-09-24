@@ -28,7 +28,7 @@ Built with **Tauri v2, Rust, React, and an MPV sidecar**, TeleStash supports per
 
 **TeleStash** is a dedicated Windows 11 personal media and file-management application that connects directly to Telegram using MTProto. It provides a personal-library workflow without hosting a separate streaming server or using an application proxy or VPN. Telegram account capacity and service rules still apply.
 
-Unlike a browser-only media workflow, TeleStash is a native 64-bit Rust/Tauri application integrated with a bundled **MPV media engine**. MPV handles compatible media formats, including HEVC/H.265, 10-bit HDR, MKV, and MP4. Playback requests GPU decoding (`--hwdec=auto-safe`) using whitelisted methods, and falls back to software automatically when the local Windows graphics driver does not support a method.
+Unlike a browser-only media workflow, TeleStash is a native 64-bit Rust/Tauri application integrated with a bundled **MPV media engine**. MPV handles compatible media formats, including HEVC/H.265, 10-bit HDR, MKV, and MP4. Playback uses GPU decoding with automatic software fallback, and the decoding mode is configurable in **Settings → Playback**: automatic, CPU-only, or pinned to a specific graphics adapter for machines with more than one GPU. These options change only how frames are decoded — picture quality stays under MPV's own configuration.
 
 ---
 
@@ -101,7 +101,8 @@ The data path is intentionally short and deterministic: the Windows application 
 * 🛡️ **Bounded Streaming Prefetch**: 16 MiB in-memory forward buffer per active stream; no full media download is retained by the stream path.
 * ⚡ **Instant Folder Browsing**: each folder's file list is cached locally in SQLite, so reopening a folder shows the list immediately and a background delta sync reconciles it with Telegram (new, renamed, and deleted files) without a full re-scan.
 * 🔍 **Local Search**: search runs against the local folder cache first — instant and no longer capped at 50 results — and only falls back to a Telegram-wide search for folders that were never opened.
-* 🎮 **GPU Video Decoding**: MPV is launched with `--hwdec=auto-safe`, offloading video decode to the GPU with an automatic software fallback, instead of decoding every video on the CPU.
+* 🎮 **Configurable GPU Video Decoding**: choose automatic decoding, CPU-only, or a specific graphics adapter in **Settings → Playback**. On machines with two GPUs the automatic choice cannot always decode the file, and these options fix that without touching image quality.
+* 🧹 **Single Player Window**: closing the previous player before opening a new video keeps only one MPV process alive instead of leaving extra windows and memory behind (toggleable).
 * 📁 **Folder & Channel Storage**: Organize movies and TV series using Saved Messages and private channels as folders.
 * 🔍 **Duplicate Finder**: Quick Scan by name+size (no download, labeled *possible*), or full scan with a 256 KiB content hash; manual multi-select cleanup.
 * ⭐ **Favorites & All Favorites**: Star files per folder; filter ★ only, or open a virtual All Favorites view across folders (no extra Telegram folder).

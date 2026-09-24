@@ -192,6 +192,41 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
         }
     }, [t, fetchPlaybackSettings]);
 
+    // Selecting "Use a specific GPU" must seed a real adapter, otherwise the
+    // picker (rendered only in adapter mode) would never appear and the mode
+    // would be unusable. Falls back to the first reported adapter.
+    const handleDecodeModeChange = useCallback((mode: HardwareDecodeMode) => {
+        if (!playbackSettings) return;
+        const nextAdapter = mode === 'adapter'
+            ? (playbackSettings.preferred_adapter ?? playbackSettings.available_adapters[0] ?? null)
+            : null;
+        savePlaybackSettings({
+            hardware_decode: mode,
+            preferred_adapter: nextAdapter,
+            single_player_instance: playbackSettings.single_player_instance,
+        }, extraArgsText);
+    }, [playbackSettings, extraArgsText, savePlaybackSettings]);
+
+    // Explicit confirmation for the extra-args box, so typing does not save on
+    // every keystroke.
+    const handleSaveExtraArgs = useCallback(() => {
+        if (!playbackSettings) return;
+        savePlaybackSettings({
+            hardware_decode: playbackSettings.hardware_decode,
+            preferred_adapter: playbackSettings.preferred_adapter,
+            single_player_instance: playbackSettings.single_player_instance,
+        }, extraArgsText);
+    }, [playbackSettings, extraArgsText, savePlaybackSettings]);
+
+    const handleToggleSinglePlayer = useCallback(() => {
+        if (!playbackSettings) return;
+        savePlaybackSettings({
+            hardware_decode: playbackSettings.hardware_decode,
+            preferred_adapter: playbackSettings.preferred_adapter,
+            single_player_instance: !playbackSettings.single_player_instance,
+        }, extraArgsText);
+    }, [playbackSettings, extraArgsText, savePlaybackSettings]);
+
     // Load playback settings when modal opens
     useEffect(() => {
         if (isOpen) {
@@ -737,14 +772,7 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                                             id="hw-decode-mode"
                                             value={playbackSettings.hardware_decode}
                                             disabled={playbackLoading}
-                                            onChange={e => {
-                                                const mode = e.target.value as HardwareDecodeMode;
-                                                savePlaybackSettings({
-                                                    hardware_decode: mode,
-                                                    preferred_adapter: mode === 'adapter' ? playbackSettings.preferred_adapter : null,
-                                                    single_player_instance: playbackSettings.single_player_instance,
-                                                }, extraArgsText);
-                                            }}
+                                            onChange={e => handleDecodeModeChange(e.target.value as HardwareDecodeMode)}
                                             className="appearance-none w-full bg-stash-bg border border-stash-border rounded-md pl-3 pr-8 py-1.5 text-sm text-stash-text focus:outline-none focus:border-stash-primary/50 transition cursor-pointer disabled:opacity-50"
                                         >
                                             <option value="auto">{t('settings.hw_decode_auto')}</option>
@@ -822,11 +850,7 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                                     </div>
                                     <button
                                         disabled={playbackLoading}
-                                        onClick={() => savePlaybackSettings({
-                                            hardware_decode: playbackSettings.hardware_decode,
-                                            preferred_adapter: playbackSettings.preferred_adapter,
-                                            single_player_instance: !playbackSettings.single_player_instance,
-                                        }, extraArgsText)}
+                                        onClick={handleToggleSinglePlayer}
                                         className={`relative w-11 h-6 shrink-0 rounded-full transition-colors duration-200 disabled:opacity-50 ${playbackSettings.single_player_instance ? 'bg-stash-primary' : 'bg-stash-border'}`}
                                         aria-label={t('settings.single_player')}
                                     >
@@ -860,11 +884,7 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                                     <div className="flex justify-end">
                                         <button
                                             disabled={playbackLoading}
-                                            onClick={() => savePlaybackSettings({
-                                                hardware_decode: playbackSettings.hardware_decode,
-                                                preferred_adapter: playbackSettings.preferred_adapter,
-                                                single_player_instance: playbackSettings.single_player_instance,
-                                            }, extraArgsText)}
+                                            onClick={handleSaveExtraArgs}
                                             className="px-3 py-1.5 text-xs font-medium rounded-md bg-stash-primary/10 text-stash-primary border border-stash-primary/30 hover:bg-stash-primary/20 transition disabled:opacity-50"
                                         >
                                             {playbackLoading ? t('settings.saving') : t('settings.save_args')}
