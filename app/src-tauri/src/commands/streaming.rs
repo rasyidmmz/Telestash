@@ -161,7 +161,9 @@ fn attach_matching_subtitles(
 static ADAPTER_CACHE: OnceLock<Mutex<Option<Vec<String>>>> = OnceLock::new();
 
 /// A launched MPV process, tracked so a later launch can replace it.
-enum TrackedPlayer {
+///
+/// Public because it is the payload of the publicly managed `PlayerProcess`.
+pub enum TrackedPlayer {
     /// Spawned through the Tauri shell plugin, which hands back a killable handle.
     Sidecar(tauri_plugin_shell::process::CommandChild),
     /// Spawned directly (local binary or PATH fallback); only the pid is known.
