@@ -29,6 +29,8 @@ CompiledApps/
 *.key
 Error.html
 **/LatestError.html
+# mpv/QSV investigation notes - kept locally for reference, not published.
+docs/MPV_QSV_RESEARCH.md
 
 # Android local builds
 /android/
