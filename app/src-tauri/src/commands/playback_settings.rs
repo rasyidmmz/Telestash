@@ -104,11 +104,12 @@ fn save_playback_settings(app: &AppHandle, settings: &PlaybackSettingsFile) -> R
 ///
 /// Every legitimate MPV option starts with `-`, so this drops anything that
 /// could be interpreted as a positional argument (a URL or a local file path)
-/// coming from the settings file.
+/// coming from the settings file. A bare `-` or the `--` options terminator is
+/// dropped too: neither carries an option.
 pub(crate) fn sanitize_extra_args(args: &[String]) -> Vec<String> {
     args.iter()
         .map(|a| a.trim())
-        .filter(|a| a.starts_with('-') && a.len() > 1)
+        .filter(|a| a.starts_with('-') && a.len() > 1 && *a != "--")
         .map(|a| a.to_string())
         .take(32)
         .collect()
@@ -188,6 +189,18 @@ mod tests {
             cleaned,
             vec!["--profile=fast".to_string(), "--no-osc".to_string()]
         );
+    }
+
+    #[test]
+    fn extra_args_drop_the_options_terminator() {
+        // `--` would end option parsing and turn the next entry into a
+        // positional argument (i.e. a file to play).
+        let cleaned = sanitize_extra_args(&[
+            "--".to_string(),
+            "--no-osc".to_string(),
+            "-".to_string(),
+        ]);
+        assert_eq!(cleaned, vec!["--no-osc".to_string()]);
     }
 
     #[test]
