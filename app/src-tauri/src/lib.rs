@@ -543,7 +543,8 @@ pub fn run() {
             // 4. Stop the external player process. The shell plugin does not
             // kill children on drop, so without this MPV would outlive the app.
             log::info!("Stopping player process...");
-            commands::stop_tracked_player(&app_handle.state::<commands::PlayerProcess>());
+            let player = app_handle.state::<commands::PlayerProcess>();
+            commands::stop_tracked_player(&player);
         }
     });
 }

@@ -57,9 +57,11 @@ pub use preview::*;
 pub use utils::*;
 pub use network::*;
 pub use streaming::*;
-// Explicit re-exports: `load_playback_settings` and `sanitize_extra_args` are
-// only crate-visible, so a glob export would try to widen their visibility.
-pub use playback_settings::{cmd_get_playback_settings, cmd_update_playback_settings};
+// Glob on purpose: `#[tauri::command]` also exports hidden `__cmd__*` items that
+// `generate_handler!` looks up in this module, and an explicit re-export would
+// drop them. The helper functions stay `pub(crate)`; a glob re-export does not
+// widen their visibility.
+pub use playback_settings::*;
 pub use api_settings::*;
 pub use settings::*;
 pub use sharing::*;
