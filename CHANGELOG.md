@@ -1,5 +1,22 @@
 # Changelog
 
+## [1.8.1]
+
+### Added
+
+- **Playback settings tab**: a new **Settings → Playback** tab controls how video is decoded — **Automatic** (default, GPU decoding with software fallback), **CPU only**, or **Use a specific GPU**, which pins decoding to one graphics adapter chosen from the adapters detected on your machine. These options change only how frames are decoded; image quality remains under MPV's own configuration.
+- **Single player window**: the previous player is closed before a new video opens, so switching files no longer leaves extra MPV processes and windows behind. Toggleable in the Playback tab.
+- **Extra MPV arguments**: an optional advanced field for additional MPV command-line arguments, appended so they override TeleStash's own defaults. Only option flags are accepted, and networking options (proxy, cache sizing, stream buffering) are refused because TeleStash connects to Telegram directly.
+
+### Changed
+
+- **Hardware decoding is no longer hardcoded**: previously every playback requested `--hwdec=auto-safe`. On machines with two GPUs, MPV can select a graphics adapter that cannot decode the file and silently fall back to CPU. Decoding is now configurable, and pinning the correct adapter restores GPU decoding on such machines.
+
+### Fixed
+
+- **MPV process left running on app exit**: because the shell plugin does not terminate child processes when their handle is dropped, the player could outlive TeleStash. It is now stopped on exit.
+- **Stale graphics adapter selection**: if a saved adapter disappears (driver update, disabled GPU), playback falls back to automatic decoding instead of failing, because an unknown adapter name makes MPV exit before the video opens.
+
 ## [1.8.0]
 
 ### Added

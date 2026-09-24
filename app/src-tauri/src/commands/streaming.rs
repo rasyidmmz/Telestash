@@ -156,32 +156,68 @@ fn attach_matching_subtitles(
     }
 }
 
+/// Cache of probed adapters. `None` means "not probed yet"; an empty list is
+/// never stored, so a failed probe is retried instead of poisoning the session.
+static ADAPTER_CACHE: OnceLock<Mutex<Option<Vec<String>>>> = OnceLock::new();
+
+/// A launched MPV process, tracked so a later launch can replace it.
+enum TrackedPlayer {
+    /// Spawned through the Tauri shell plugin, which hands back a killable handle.
+    Sidecar(tauri_plugin_shell::process::CommandChild),
+    /// Spawned directly (local binary or PATH fallback); only the pid is known.
+    External(u32),
+}
+
 /// Holds the running MPV child process.
 ///
 /// The Tauri shell plugin does NOT kill a child when its `CommandChild` is
 /// dropped, so holding it here is what makes it possible to stop the player and
 /// to replace a previous one instead of stacking resident processes.
-pub struct PlayerProcess(pub Mutex<Option<tauri_plugin_shell::process::CommandChild>>);
+pub struct PlayerProcess(pub Mutex<Option<TrackedPlayer>>);
 
 /// MPV keeps writing to stdout/stderr for the whole session, and the plugin's
 /// event channel holds a single slot, so the receiver must be drained for as
 /// long as the process lives or the pipe reader threads stall.
-macro_rules! drain_player_events {
-    ($rx:expr) => {
-        tauri::async_runtime::spawn(async move {
-            let mut rx = $rx;
-            while rx.recv().await.is_some() {}
-        });
-    };
+fn drain_player_events(rx: tauri::async_runtime::Receiver<tauri_plugin_shell::process::CommandEvent>) {
+    tauri::async_runtime::spawn(async move {
+        let mut rx = rx;
+        while rx.recv().await.is_some() {}
+    });
+}
+
+/// Stop a process created outside the shell plugin.
+///
+/// `/T` also terminates children MPV may have started, and `CREATE_NO_WINDOW`
+/// keeps the helper from flashing a console window at the user.
+fn kill_external_player(pid: u32) {
+    use std::os::windows::process::CommandExt;
+    const CREATE_NO_WINDOW: u32 = 0x0800_0000;
+
+    let _ = std::process::Command::new("taskkill")
+        .args(["/PID", &pid.to_string(), "/T", "/F"])
+        .creation_flags(CREATE_NO_WINDOW)
+        .status();
 }
 
 /// Stop the currently tracked MPV process, if any. Safe to call repeatedly.
 pub fn stop_tracked_player(player: &PlayerProcess) {
-    if let Ok(mut guard) = player.0.lock() {
-        if let Some(child) = guard.take() {
+    let tracked = player.0.lock().ok().and_then(|mut guard| guard.take());
+    match tracked {
+        Some(TrackedPlayer::Sidecar(child)) => {
             log::info!("Stopping previous MPV process (pid {})", child.pid());
             let _ = child.kill();
         }
+        Some(TrackedPlayer::External(pid)) => {
+            log::info!("Stopping previous MPV process (pid {})", pid);
+            kill_external_player(pid);
+        }
+        None => {}
+    }
+}
+
+fn track_player(player: &PlayerProcess, tracked: TrackedPlayer) {
+    if let Ok(mut guard) = player.0.lock() {
+        *guard = Some(tracked);
     }
 }
 
@@ -252,16 +288,88 @@ fn parse_adapter_list(text: &str) -> Vec<String> {
     adapters
 }
 
-/// Adapter list for this machine, probed once per app run.
+/// Adapter list for this machine, probed once per successful run.
+///
+/// A failed or empty probe is deliberately NOT cached: otherwise one transient
+/// timeout would reject every adapter pin for the rest of the session.
 pub fn detect_d3d11_adapters(app_handle: &tauri::AppHandle) -> Vec<String> {
-    static ADAPTER_CACHE: OnceLock<Vec<String>> = OnceLock::new();
-    ADAPTER_CACHE
-        .get_or_init(|| {
-            let adapters = probe_d3d11_adapters(app_handle);
-            log::info!("Detected D3D11 adapters: {:?}", adapters);
-            adapters
-        })
-        .clone()
+    let cell = ADAPTER_CACHE.get_or_init(|| Mutex::new(None));
+    if let Ok(guard) = cell.lock() {
+        if let Some(cached) = guard.as_ref() {
+            return cached.clone();
+        }
+    }
+
+    let adapters = probe_d3d11_adapters(app_handle);
+    if adapters.is_empty() {
+        return Vec::new();
+    }
+    if let Ok(mut guard) = cell.lock() {
+        *guard = Some(adapters.clone());
+    }
+    log::info!("Detected D3D11 adapters: {:?}", adapters);
+    adapters
+}
+
+/// The adapters already probed during this session, without starting a probe.
+///
+/// Playback uses this so a stale pin can be validated against real hardware
+/// without spawning a probe process on every play.
+pub fn cached_d3d11_adapters() -> Vec<String> {
+    if let Some(cell) = ADAPTER_CACHE.get() {
+        if let Ok(guard) = cell.lock() {
+            if let Some(cached) = guard.as_ref() {
+                return cached.clone();
+            }
+        }
+    }
+    Vec::new()
+}
+
+/// Resolve the adapter to pin for this playback.
+///
+/// A stored pin can go stale when a driver renames the adapter or a GPU is
+/// disabled, and an unknown `--d3d11-adapter` value makes MPV exit *fatally*
+/// before the video opens. When the adapters are known and the stored pin is
+/// not among them, decoding falls back to automatic instead of failing the
+/// whole playback. An empty `known_adapters` means "not probed", in which case
+/// the stored pin is trusted rather than discarded.
+fn resolve_pinned_adapter(
+    settings: &PlaybackSettingsFile,
+    known_adapters: &[String],
+) -> Option<String> {
+    let pinned = settings
+        .preferred_adapter
+        .as_deref()
+        .map(str::trim)
+        .filter(|a| !a.is_empty())?;
+
+    if !known_adapters.is_empty() && !known_adapters.iter().any(|a| a == pinned) {
+        log::warn!(
+            "Stored adapter '{}' is no longer available; falling back to automatic decoding",
+            pinned
+        );
+        return None;
+    }
+    Some(pinned.to_string())
+}
+
+/// TeleStash's own playback arguments, excluding user-supplied ones.
+///
+/// Kept separate and pure so tests can assert that nothing here ever changes
+/// image quality, which is the promise this feature makes.
+fn tele_stash_args(settings: &PlaybackSettingsFile, known_adapters: &[String]) -> Vec<String> {
+    let mut args = vec![
+        "--save-position-on-quit".to_string(),
+        "--write-filename-in-watch-later-config=yes".to_string(),
+        "--keep-open=no".to_string(),
+        "--input-default-bindings=yes".to_string(),
+        "--slang=id,ind,Indonesian,en,eng,enUS,en-US,enGB,en-GB,en-UK,enUK,English,eng-US,eng-GB".to_string(),
+        "--sub-auto=fuzzy".to_string(),
+        "--sub-visibility=yes".to_string(),
+    ];
+    args.extend(build_hwdec_args(settings, known_adapters));
+    args
 }
 
 /// Translate the persisted settings into MPV hardware-decoding arguments.
@@ -269,18 +377,13 @@ pub fn detect_d3d11_adapters(app_handle: &tauri::AppHandle) -> Vec<String> {
 /// Deliberately limited to how frames are decoded: none of these change image
 /// quality (no scaler or dither tuning), so the user's own MPV configuration
 /// keeps deciding how the picture looks.
-fn build_hwdec_args(settings: &PlaybackSettingsFile) -> Vec<String> {
+fn build_hwdec_args(settings: &PlaybackSettingsFile, known_adapters: &[String]) -> Vec<String> {
     match settings.hardware_decode {
         HardwareDecodeMode::Auto => vec!["--hwdec=auto-safe".to_string()],
         HardwareDecodeMode::Software => vec!["--hwdec=no".to_string()],
         HardwareDecodeMode::Adapter => {
-            let Some(adapter) = settings
-                .preferred_adapter
-                .as_deref()
-                .map(str::trim)
-                .filter(|a| !a.is_empty())
-            else {
-                // No adapter stored: behave exactly like Auto.
+            let Some(adapter) = resolve_pinned_adapter(settings, known_adapters) else {
+                // No usable pin: behave exactly like Auto.
                 return vec!["--hwdec=auto-safe".to_string()];
             };
             // `--d3d11-adapter` only constrains the D3D11 backend, while recent
@@ -329,20 +432,7 @@ pub fn cmd_play_in_mpv(
         .ok()
         .map(|dir| dir.join("mpv-config"));
 
-    let mut args = vec![
-        "--save-position-on-quit".to_string(),
-        "--write-filename-in-watch-later-config=yes".to_string(),
-        "--keep-open=no".to_string(),
-        "--input-default-bindings=yes".to_string(),
-        "--slang=id,ind,Indonesian,en,eng,enUS,en-US,enGB,en-GB,en-UK,enUK,English,eng-US,eng-GB".to_string(),
-        "--sub-auto=fuzzy".to_string(),
-        "--sub-visibility=yes".to_string(),
-    ];
-
-    // How frames get decoded (quality-neutral). On hybrid-graphics machines the
-    // GPU MPV picks by default is not always able to decode the file, which is
-    // why this is configurable instead of hardcoded.
-    args.extend(build_hwdec_args(&playback));
+    let mut args = tele_stash_args(&playback, &cached_d3d11_adapters());
 
     if let Some(dir) = &watch_later_dir {
         args.push(format!("--watch-later-dir={}", dir.display()));
@@ -461,10 +551,8 @@ pub fn cmd_play_in_mpv(
     if let Ok(sidecar) = app_handle.shell().sidecar("mpv") {
         if let Ok((rx, child)) = sidecar.args(arg_refs.clone()).spawn() {
             log::info!("Launched bundled MPV (pid {})", child.pid());
-            drain_player_events!(rx);
-            if let Ok(mut guard) = player.0.lock() {
-                *guard = Some(child);
-            }
+            drain_player_events(rx);
+            track_player(&player, TrackedPlayer::Sidecar(child));
             return Ok(());
         }
     }
@@ -476,8 +564,7 @@ pub fn cmd_play_in_mpv(
         match std::process::Command::new(bin).args(&args).spawn() {
             Ok(child) => {
                 log::info!("Launched local MPV (pid {})", child.id());
-                // Not tracked: `stop_tracked_player` only knows about the
-                // sidecar handle, so this process is left to the OS.
+                track_player(&player, TrackedPlayer::External(child.id()));
                 return Ok(());
             }
             Err(err) => {
@@ -488,15 +575,18 @@ pub fn cmd_play_in_mpv(
     }
 
     // 3. Fallback: Try to launch system-installed mpv from PATH
-    std::process::Command::new("mpv").args(&args).spawn().map_err(|e| {
-        match &last_error {
+    let child = std::process::Command::new("mpv")
+        .args(&args)
+        .spawn()
+        .map_err(|e| match &last_error {
             Some(previous) => format!(
                 "Failed to launch MPV: {}. Bundled/local MPV also failed: {}",
                 e, previous
             ),
             None => format!("Failed to launch MPV: {}. Ensure 'mpv' is installed.", e),
-        }
-    })?;
+        })?;
+    log::info!("Launched system MPV (pid {})", child.id());
+    track_player(&player, TrackedPlayer::External(child.id()));
     Ok(())
 }
 
@@ -562,9 +652,17 @@ mod tests {
         }
     }
 
+    /// The adapters this machine reports, as the probe would return them.
+    fn known_adapters() -> Vec<String> {
+        vec![
+            "NVIDIA GeForce 940M".to_string(),
+            "Intel(R) HD Graphics 520".to_string(),
+        ]
+    }
+
     #[test]
     fn auto_mode_keeps_software_fallback_and_adds_no_scaler_flags() {
-        let args = build_hwdec_args(&settings_with(HardwareDecodeMode::Auto, None));
+        let args = build_hwdec_args(&settings_with(HardwareDecodeMode::Auto, None), &known_adapters());
 
         assert_eq!(args, vec!["--hwdec=auto-safe".to_string()]);
         // Quality must stay MPV's own business: no scaler/dither overrides.
@@ -574,17 +672,49 @@ mod tests {
     }
 
     #[test]
+    fn tele_stash_args_never_change_image_quality() {
+        // Covers the FULL built-in argument list, not just the hwdec portion:
+        // a scaler or dither flag leaking in anywhere would break the promise
+        // that this feature never trades quality for CPU.
+        for mode in [
+            HardwareDecodeMode::Auto,
+            HardwareDecodeMode::Software,
+            HardwareDecodeMode::Adapter,
+        ] {
+            let args = tele_stash_args(
+                &settings_with(mode, Some("Intel(R) HD Graphics 520")),
+                &known_adapters(),
+            );
+            for arg in &args {
+                assert!(
+                    !arg.starts_with("--scale")
+                        && !arg.starts_with("--dscale")
+                        && !arg.starts_with("--cscale")
+                        && !arg.starts_with("--dither")
+                        && !arg.starts_with("--profile")
+                        && !arg.starts_with("--correct-downscaling")
+                        && !arg.starts_with("--linear-downscaling")
+                        && !arg.starts_with("--sigmoid-upscaling"),
+                    "quality-affecting flag leaked into built-in args for {:?}: {}",
+                    mode,
+                    arg
+                );
+            }
+        }
+    }
+
+    #[test]
     fn software_mode_disables_hardware_decoding() {
-        let args = build_hwdec_args(&settings_with(HardwareDecodeMode::Software, None));
+        let args = build_hwdec_args(&settings_with(HardwareDecodeMode::Software, None), &known_adapters());
         assert_eq!(args, vec!["--hwdec=no".to_string()]);
     }
 
     #[test]
     fn adapter_mode_pins_the_named_adapter_via_d3d11() {
-        let args = build_hwdec_args(&settings_with(
-            HardwareDecodeMode::Adapter,
-            Some("Intel(R) HD Graphics 520"),
-        ));
+        let args = build_hwdec_args(
+            &settings_with(HardwareDecodeMode::Adapter, Some("Intel(R) HD Graphics 520")),
+            &known_adapters(),
+        );
 
         // d3d11va is named explicitly so the adapter pin cannot be bypassed by
         // MPV's preference for Vulkan hardware decoding.
@@ -598,8 +728,38 @@ mod tests {
     }
 
     #[test]
+    fn stale_adapter_pin_falls_back_instead_of_failing_playback() {
+        // An unknown --d3d11-adapter makes MPV exit fatally before the video
+        // opens, so a pin that no longer exists must degrade to automatic.
+        let args = build_hwdec_args(
+            &settings_with(HardwareDecodeMode::Adapter, Some("Removed GPU 3000")),
+            &known_adapters(),
+        );
+
+        assert_eq!(args, vec!["--hwdec=auto-safe".to_string()]);
+    }
+
+    #[test]
+    fn adapter_pin_is_trusted_before_any_probe() {
+        // With no probe result there is nothing to validate against, so the
+        // stored pin must still be used rather than silently ignored.
+        let args = build_hwdec_args(
+            &settings_with(HardwareDecodeMode::Adapter, Some("Intel(R) HD Graphics 520")),
+            &[],
+        );
+
+        assert_eq!(
+            args,
+            vec![
+                "--hwdec=d3d11va".to_string(),
+                "--d3d11-adapter=Intel(R) HD Graphics 520".to_string(),
+            ]
+        );
+    }
+
+    #[test]
     fn adapter_mode_without_a_saved_adapter_still_decodes_safely() {
-        let args = build_hwdec_args(&settings_with(HardwareDecodeMode::Adapter, None));
+        let args = build_hwdec_args(&settings_with(HardwareDecodeMode::Adapter, None), &known_adapters());
         assert_eq!(args, vec!["--hwdec=auto-safe".to_string()]);
     }
 
