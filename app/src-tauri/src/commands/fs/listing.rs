@@ -18,7 +18,7 @@ use crate::models::{
 };
 use crate::TelegramState;
 
-use super::split_manifest_from_media;
+use super::split::split_manifest_from_media;
 
 /// Pull a folder's full file list straight from Telegram. Shared by the
 /// cache-first read and the background delta sync.
