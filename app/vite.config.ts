@@ -29,4 +29,13 @@ export default defineConfig(async () => ({
       ignored: ["**/src-tauri/**"],
     },
   },
+
+  // Vitest: jsdom for component/hook tests, plus the globals-free setup file
+  // that stubs the Tauri APIs so hooks can be imported outside the app shell.
+  test: {
+    environment: "jsdom",
+    include: ["src/**/*.test.{ts,tsx}"],
+    setupFiles: ["./src/test/setup.ts"],
+    restoreMocks: true,
+  },
 }));
