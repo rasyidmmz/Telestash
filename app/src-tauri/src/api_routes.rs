@@ -1740,3 +1740,85 @@ pub fn configure_api(cfg: &mut web::ServiceConfig) {
        .service(api_empty_folders)
        .service(api_media_info);
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use actix_web::test::TestRequest;
+
+    /// Hash the same way `api_settings::hash_key` does, so tests can build a
+    /// stored hash without exposing that private helper.
+    fn sha256_hex(input: &str) -> String {
+        use sha2::{Digest, Sha256};
+        let mut hasher = Sha256::new();
+        hasher.update(input.as_bytes());
+        let digest = hasher.finalize();
+        digest.iter().map(|b| format!("{:02x}", b)).collect()
+    }
+
+    fn api_state_with_key(key: Option<&str>) -> web::Data<ApiState> {
+        web::Data::new(ApiState {
+            key_hash: key.map(sha256_hex),
+        })
+    }
+
+    #[test]
+    fn auth_rejects_when_no_key_is_configured() {
+        // An unconfigured server must not be usable by anyone.
+        let state = api_state_with_key(None);
+        let req = TestRequest::default().to_http_request();
+
+        let response = check_auth(&req, &state).expect_err("no key configured must reject");
+        assert_eq!(response.status(), actix_web::http::StatusCode::UNAUTHORIZED);
+    }
+
+    #[test]
+    fn auth_rejects_a_missing_header() {
+        let state = api_state_with_key(Some("secret-key"));
+        let req = TestRequest::default().to_http_request();
+
+        let response = check_auth(&req, &state).expect_err("missing header must reject");
+        assert_eq!(response.status(), actix_web::http::StatusCode::UNAUTHORIZED);
+    }
+
+    #[test]
+    fn auth_rejects_a_wrong_key() {
+        let state = api_state_with_key(Some("secret-key"));
+        let req = TestRequest::default()
+            .insert_header(("X-API-Key", "wrong-key"))
+            .to_http_request();
+
+        let response = check_auth(&req, &state).expect_err("wrong key must reject");
+        assert_eq!(response.status(), actix_web::http::StatusCode::UNAUTHORIZED);
+    }
+
+    #[test]
+    fn auth_accepts_the_matching_key() {
+        let state = api_state_with_key(Some("secret-key"));
+        let req = TestRequest::default()
+            .insert_header(("X-API-Key", "secret-key"))
+            .to_http_request();
+
+        assert!(check_auth(&req, &state).is_ok());
+    }
+
+    #[test]
+    fn auth_rejects_an_empty_key_even_when_configured() {
+        // A blank header must not be treated as "no key required".
+        let state = api_state_with_key(Some("secret-key"));
+        let req = TestRequest::default()
+            .insert_header(("X-API-Key", ""))
+            .to_http_request();
+
+        assert!(check_auth(&req, &state).is_err());
+    }
+
+    #[test]
+    fn verify_key_matches_only_the_exact_plaintext() {
+        let hash = sha256_hex("correct-horse");
+        assert!(crate::commands::api_settings::verify_key("correct-horse", &hash));
+        assert!(!crate::commands::api_settings::verify_key("correct-hors", &hash));
+        assert!(!crate::commands::api_settings::verify_key("Correct-Horse", &hash));
+        assert!(!crate::commands::api_settings::verify_key("", &hash));
+    }
+}
