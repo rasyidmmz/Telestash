@@ -141,6 +141,38 @@ async fn prepare_archive_operation(
 
 // ── ZIP helpers ─────────────────────────────────────────────────────────
 
+/// Classify one yielded download item.
+///
+/// A chunk stays a chunk and an error stays an error. Using `.ok().flatten()`
+/// instead silently turned a network failure into end-of-file, so a truncated
+/// archive reached the ZIP/RAR parser and surfaced as a confusing parse error
+/// rather than a transfer error.
+fn classify_download_item<E: std::fmt::Display>(
+    item: Result<Vec<u8>, E>,
+    label: &str,
+) -> Result<Vec<u8>, String> {
+    item.map_err(|e| format!("{} download failed: {}", label, e))
+}
+
+/// Enforce the archive size cap while accumulating chunks.
+fn push_chunk_within_limit(
+    data: &mut Vec<u8>,
+    chunk: &[u8],
+    max_bytes: u64,
+    label: &str,
+) -> Result<(), String> {
+    let total_bytes = data.len() as u64 + chunk.len() as u64;
+    if max_bytes > 0 && total_bytes > max_bytes {
+        return Err(format!(
+            "{} download exceeded the {} MiB limit",
+            label,
+            max_bytes / (1024 * 1024),
+        ));
+    }
+    data.extend_from_slice(chunk);
+    Ok(())
+}
+
 async fn download_to_memory(
     client: &grammers_client::Client,
     media: &Media,
@@ -149,18 +181,10 @@ async fn download_to_memory(
 ) -> Result<Vec<u8>, String> {
     let mut data = Vec::new();
     let mut download_iter = client.iter_download(media);
-    let mut total_bytes: u64 = 0;
 
-    while let Some(chunk) = download_iter.next().await.ok().flatten() {
-        total_bytes += chunk.len() as u64;
-        if max_bytes > 0 && total_bytes > max_bytes {
-            return Err(format!(
-                "{} download exceeded the {} MiB limit",
-                label,
-                max_bytes / (1024 * 1024),
-            ));
-        }
-        data.extend_from_slice(&chunk);
+    while let Some(item) = download_iter.next().await.transpose() {
+        let chunk = classify_download_item(item, label)?;
+        push_chunk_within_limit(&mut data, &chunk, max_bytes, label)?;
     }
     Ok(data)
 }
@@ -256,7 +280,19 @@ async fn download_to_temp_file(
         let mut download_iter = client.iter_download(media);
         let mut total_bytes: u64 = 0;
 
-        while let Some(chunk) = download_iter.next().await.ok().flatten() {
+        // `transpose()` keeps the error instead of letting `.ok().flatten()`
+        // turn a network failure into a normal end-of-file, which used to leave
+        // a truncated archive on disk for the parser to choke on.
+        loop {
+            let chunk = match download_iter.next().await.transpose() {
+                None => break,
+                Some(Ok(chunk)) => chunk,
+                Some(Err(e)) => {
+                    let _ = tokio::fs::remove_file(&archive_path).await;
+                    let _ = tokio::fs::remove_dir_all(&extract_dir).await;
+                    return Err(format!("{} download failed: {}", label, e));
+                }
+            };
             total_bytes += chunk.len() as u64;
             if max_bytes > 0 && total_bytes > max_bytes {
                 let _ = tokio::fs::remove_file(&archive_path).await;
@@ -500,4 +536,63 @@ fn check_non_empty(entries: &[ArchiveEntry], filename: &str, label: &str) -> Res
         ));
     }
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    /// A download error must surface as an error, not as a clean end-of-file.
+    ///
+    /// Regression guard: `.ok().flatten()` used to swallow the error, so a
+    /// truncated download was handed to the ZIP/RAR parser as if complete.
+    #[test]
+    fn download_error_is_propagated_not_treated_as_eof() {
+        let err = classify_download_item::<std::io::Error>(
+            Err(std::io::Error::new(
+                std::io::ErrorKind::ConnectionReset,
+                "connection reset",
+            )),
+            "ZIP",
+        )
+        .expect_err("a download error must fail");
+
+        assert!(err.contains("ZIP download failed"), "unexpected message: {}", err);
+        assert!(err.contains("connection reset"), "underlying cause was lost: {}", err);
+    }
+
+    #[test]
+    fn successful_chunk_passes_through_unchanged() {
+        let chunk = classify_download_item::<std::io::Error>(Ok(vec![1, 2, 3]), "ZIP")
+            .expect("a chunk is not an error");
+        assert_eq!(chunk, vec![1, 2, 3]);
+    }
+
+    #[test]
+    fn chunks_accumulate_in_order() {
+        let mut data = Vec::new();
+        for chunk in [vec![1u8, 2], vec![3], vec![4, 5, 6]] {
+            push_chunk_within_limit(&mut data, &chunk, 0, "ZIP").unwrap();
+        }
+        assert_eq!(data, vec![1, 2, 3, 4, 5, 6]);
+    }
+
+    #[test]
+    fn size_limit_rejects_oversized_downloads() {
+        let mut data = vec![0u8; 8];
+        let err = push_chunk_within_limit(&mut data, &[0u8; 8], 10, "RAR")
+            .expect_err("exceeding the limit must fail");
+
+        assert!(err.contains("exceeded the"), "unexpected message: {}", err);
+        // The rejected chunk must not be appended.
+        assert_eq!(data.len(), 8);
+    }
+
+    #[test]
+    fn size_limit_is_disabled_when_zero() {
+        let mut data = Vec::new();
+        push_chunk_within_limit(&mut data, &[0u8; 4096], 0, "ZIP")
+            .expect("a zero limit means unlimited");
+        assert_eq!(data.len(), 4096);
+    }
 }
