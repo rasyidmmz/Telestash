@@ -2,12 +2,11 @@ use tauri::{Emitter, Manager, State};
 use std::sync::Arc;
 use grammers_client::media::Media;
 use grammers_session::types::PeerRef;
-use grammers_client::peer::Peer;
 use grammers_client::message::InputMessage;
 use grammers_tl_types as tl;
 use crate::TelegramState;
 use crate::models::{
-    FileMetadata, SplitManifest, SplitPart, SPLIT_MANIFEST_SUFFIX,
+    SplitManifest, SplitPart, SPLIT_MANIFEST_SUFFIX,
     SPLIT_MANIFEST_UPLOAD_NAME, SPLIT_MANIFEST_VERSION, SPLIT_PART_CAPTION_PREFIX,
 };
 use crate::bandwidth::BandwidthManager;
@@ -28,7 +27,6 @@ use crate::split_upload_resume::{
 use crate::transfer_log::record_transfer_log;
 use crate::db::DbConnection;
 use sqlite;
-use serde::Serialize;
 use std::collections::{HashMap, HashSet};
 use std::sync::OnceLock;
 use std::sync::Mutex;
@@ -39,18 +37,15 @@ use tokio::io::{AsyncReadExt, AsyncSeekExt, AsyncWriteExt};
 
 // Submodules split out of this file. `fs.rs` remains the module root, so every
 // existing `crate::commands::fs::…` path keeps resolving unchanged.
+//
+// Glob re-exports on purpose: `#[tauri::command]` also emits hidden `__cmd__*`
+// items that `generate_handler!` looks up here, and an explicit re-export list
+// silently drops them.
 mod folders;
 mod listing;
 
-pub use folders::{
-    cmd_create_folder, cmd_delete_folder, cmd_export_folder_invite, cmd_rename_folder,
-    cmd_toggle_folder_visibility, create_folder_inner, delete_folder_inner, rename_folder_inner,
-    FolderInviteInfo,
-};
-pub use listing::{
-    cmd_get_files, cmd_scan_folders, cmd_search_cached_files, cmd_search_global, cmd_sync_folder,
-    fetch_files_from_telegram, folder_cache_key,
-};
+pub use folders::*;
+pub use listing::*;
 
 static UPLOAD_CANCELLATIONS: OnceLock<Mutex<HashMap<String, oneshot::Sender<()>>>> = OnceLock::new();
 
@@ -1600,9 +1595,9 @@ pub async fn cmd_delete_file(
 ) -> Result<bool, String> {
     let client_opt = { state.client.lock().await.clone() };
     #[cfg(debug_assertions)]
-    if client_opt.is_none() { 
+    if client_opt.is_none() {
          log::info!("[MOCK] Deleted message {} from folder {:?}", message_id, folder_id);
-        return Ok(true); 
+        return Ok(true);
     }
     let client = client_opt.ok_or_else(|| "Client not connected".to_string())?;
 
@@ -1745,18 +1740,18 @@ pub async fn cmd_download_file(
 
     let client_opt = { state.client.lock().await.clone() };
     #[cfg(debug_assertions)]
-    if client_opt.is_none() { 
+    if client_opt.is_none() {
         log::info!("[MOCK] Downloaded message {} from {:?} to {}", message_id, folder_id, actual_save_path);
         if let Err(e) = tokio::fs::write(&actual_save_path, b"Mock Content").await { return Err(e.to_string()); }
         return Ok("Download successful".to_string());
     }
     let client = client_opt.ok_or_else(|| "Client not connected".to_string())?;
-    
+
     let peer = resolve_peer(&client, folder_id, &state.peer_cache).await?;
 
     // Use get_messages_by_id for efficient message lookup (same as server.rs)
     let messages = client.get_messages_by_id(peer, &[message_id]).await.map_err(|e| e.to_string())?;
-    
+
     let msg = messages.into_iter()
         .flatten()
         .next()
@@ -1787,7 +1782,7 @@ pub async fn cmd_download_file(
         Media::Photo(_) => 1024 * 1024,
         _ => 0,
     });
-    
+
     bw_state.try_reserve_down(total_size)?;
 
     // Emit start
@@ -1878,7 +1873,7 @@ pub async fn cmd_download_file(
         };
         tokio::io::AsyncWriteExt::write_all(&mut file, &bytes).await.map_err(|e| e.to_string())?;
         downloaded += bytes.len() as u64;
-        
+
         // Time-based progress emission (every 250ms)
         if !tid.is_empty() {
             let now = std::time::Instant::now();
@@ -1965,9 +1960,9 @@ pub async fn cmd_move_files(
     if source_folder_id == target_folder_id { return Ok(true); }
     let client_opt = { state.client.lock().await.clone() };
     #[cfg(debug_assertions)]
-    if client_opt.is_none() { 
+    if client_opt.is_none() {
         log::info!("[MOCK] Moved msgs {:?} from {:?} to {:?}", message_ids, source_folder_id, target_folder_id);
-        return Ok(true); 
+        return Ok(true);
     }
     let client = client_opt.ok_or_else(|| "Client not connected".to_string())?;
 

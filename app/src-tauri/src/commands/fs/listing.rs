@@ -11,7 +11,7 @@ use grammers_tl_types as tl;
 use sqlite;
 use tauri::State;
 
-use crate::commands::utils::resolve_peer;
+use crate::commands::utils::{map_error, resolve_peer};
 use crate::db::DbConnection;
 use crate::models::{
     is_split_part_caption, FileMetadata, SPLIT_MANIFEST_SUFFIX, SPLIT_MANIFEST_UPLOAD_NAME,
@@ -28,13 +28,13 @@ pub(crate) async fn fetch_files_from_telegram(
 ) -> Result<Vec<FileMetadata>, String> {
     let client_opt = { state.client.lock().await.clone() };
     #[cfg(debug_assertions)]
-    if client_opt.is_none() { 
+    if client_opt.is_none() {
         log::info!("[MOCK] Returning mock files for folder {:?}", folder_id);
         return Ok(Vec::new()); // No mock files for now
     }
     let client = client_opt.ok_or_else(|| "Client not connected".to_string())?;
     let mut files = Vec::new();
-    
+
     let peer = resolve_peer(&client, folder_id, &state.peer_cache).await?;
 
     let mut msgs = client.iter_messages(peer);
@@ -331,11 +331,11 @@ pub async fn cmd_search_global(
 ) -> Result<Vec<FileMetadata>, String> {
     let client_opt = { state.client.lock().await.clone() };
     #[cfg(debug_assertions)]
-    if client_opt.is_none() { 
+    if client_opt.is_none() {
         return Ok(Vec::new());
     }
     let client = client_opt.ok_or_else(|| "Client not connected".to_string())?;
-    
+
     log::info!("Searching global for: {}", query);
 
     let result = client.invoke(&tl::functions::messages::SearchGlobal {
@@ -360,116 +360,4 @@ pub async fn cmd_search_global(
     };
 
     Ok(files)
-}
-
-#[tauri::command]
-pub async fn cmd_scan_folders(
-    state: State<'_, TelegramState>,
-    db_pool: State<'_, DbConnection>,
-) -> Result<Vec<FolderMetadata>, String> {
-    let client_opt = { state.client.lock().await.clone() };
-    #[cfg(debug_assertions)]
-    if client_opt.is_none() { 
-        // If not connected, return whatever is already in the database
-        return crate::commands::folder_groups::cmd_get_enriched_folders(db_pool).await;
-    }
-    let client = client_opt.ok_or_else(|| "Client not connected".to_string())?;
-    
-    let mut folders = Vec::new();
-    let mut dialogs = client.iter_dialogs();
-    let mut discovered = HashMap::new();
-    
-    log::info!("Starting Folder Scan...");
-
-    while let Some(dialog) = dialogs.next().await.map_err(|e| e.to_string())? {
-        // Populate peer cache for every dialog we encounter (free priming)
-        let channel_info = match &dialog.peer {
-            Peer::Channel(c) => Some(&c.raw),
-            Peer::Group(g) => match &g.raw {
-                tl::enums::Chat::Channel(c) => Some(c),
-                tl::enums::Chat::Chat(chat) => {
-                    let id = chat.id;
-                    if let Ok(Some(pr)) = dialog.peer.to_ref().await { discovered.insert(id, pr); }
-                    let name = chat.title.clone();
-                    log::debug!("[SCAN] Processing Group Chat: '{}' (ID: {})", name, id);
-                    if name.to_lowercase().contains("[td]") {
-                        log::info!(" -> MATCH via Title: {}", name);
-                        let display_name = name.replace(" [TD]", "").replace(" [td]", "").replace("[TD]", "").replace("[td]", "").trim().to_string();
-                        folders.push(FolderMetadata { id, name: display_name, parent_id: None, username: None, is_public: false, group_id: None, display_order: 0 });
-                    }
-                    None
-                }
-                _ => {
-                    if let Ok(Some(pr)) = dialog.peer.to_ref().await {
-                        if let Some(id) = dialog.peer.id().bare_id() {
-                            discovered.insert(id, pr);
-                        }
-                    }
-                    None
-                }
-            },
-            Peer::User(u) => {
-                if let Ok(Some(pr)) = dialog.peer.to_ref().await { discovered.insert(u.raw.id(), pr); }
-                log::debug!("[SCAN] Cached User Peer: {}", u.raw.id());
-                None
-            },
-        };
-
-        if let Some(c) = channel_info {
-            let id = c.id;
-            if let Ok(Some(pr)) = dialog.peer.to_ref().await { discovered.insert(id, pr); }
-
-            let name = c.title.clone();
-            let access_hash = c.access_hash.unwrap_or(0);
-            
-            log::debug!("[SCAN] Processing Channel/Supergroup: '{}' (ID: {})", name, id);
-
-            // Strategy 1: Title
-            if name.to_lowercase().contains("[td]") {
-                log::info!(" -> MATCH via Title: {}", name);
-                let display_name = name.replace(" [TD]", "").replace(" [td]", "").replace("[TD]", "").replace("[td]", "").trim().to_string();
-                let username = c.username.clone();
-                let is_public = username.is_some();
-                folders.push(FolderMetadata { id, name: display_name, parent_id: None, username, is_public, group_id: None, display_order: 0 });
-                continue; 
-            }
-
-            // Strategy 2: About (Only if we are the creator to avoid rate limits on third-party channels)
-            if c.creator {
-                let input_chan = tl::enums::InputChannel::Channel(tl::types::InputChannel {
-                    channel_id: c.id,
-                    access_hash,
-                });
-                
-                match client.invoke(&tl::functions::channels::GetFullChannel {
-                    channel: input_chan,
-                }).await {
-                    Ok(tl::enums::messages::ChatFull::Full(f)) => {
-                        if let tl::enums::ChatFull::Full(cf) = f.full_chat {
-                             if cf.about.contains("[telestash-folder]") {
-                                 log::info!(" -> MATCH via About: {}", name);
-                                 let username = c.username.clone();
-                                 let is_public = username.is_some();
-                                 folders.push(FolderMetadata { id, name: name.clone(), parent_id: None, username, is_public, group_id: None, display_order: 0 });
-                             }
-                        }
-                    },
-                    Err(e) => log::warn!(" -> Failed to get full info: {}", e),
-                }
-            }
-        }
-    }
-    
-    {
-        let mut cache = state.peer_cache.write().await;
-        cache.extend(discovered);
-    }
-    
-    let cache_len = state.peer_cache.read().await.len();
-    log::info!("Scan complete. Found {} folders. Peer cache size: {}.", folders.len(), cache_len);
-    
-    // Enrich folders via the local DB
-    let conn = db_pool.lock().map_err(|_| "DB poisoned".to_string())?;
-    let enriched = crate::commands::folder_groups::get_enriched_folders_internal(&conn, folders)?;
-    Ok(enriched)
 }
