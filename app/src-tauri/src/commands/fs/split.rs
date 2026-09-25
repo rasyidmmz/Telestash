@@ -16,6 +16,7 @@ use grammers_session::types::PeerRef;
 use tauri::Emitter;
 use tokio::io::{AsyncReadExt, AsyncSeekExt, AsyncWriteExt};
 
+use crate::bandwidth::BandwidthManager;
 use crate::commands::utils::{map_error, media_size, resolve_peer};
 use crate::models::{
     SplitManifest, SplitPart, SPLIT_MANIFEST_SUFFIX, SPLIT_MANIFEST_UPLOAD_NAME,
