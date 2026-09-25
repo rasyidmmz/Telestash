@@ -5,14 +5,12 @@
 use std::collections::{HashMap, HashSet};
 use std::sync::{Arc, Mutex, OnceLock};
 
-use grammers_client::media::Media;
-use grammers_session::types::PeerRef;
+use grammers_client::message::InputMessage;
 use tauri::{Emitter, State};
 use tokio::sync::oneshot;
 
 use crate::bandwidth::BandwidthManager;
-use crate::commands::utils::{map_error, media_size, resolve_peer};
-use crate::models::{SplitManifest, SPLIT_MANIFEST_SUFFIX, SPLIT_MANIFEST_UPLOAD_NAME};
+use crate::commands::utils::{map_error, resolve_peer};
 use crate::transfer_log::record_transfer_log;
 use crate::transfer_retry::{
     backoff_ms, flood_wait_retry_attempts, should_retry_upload_error, upload_error_kind,
@@ -20,10 +18,7 @@ use crate::transfer_retry::{
 };
 use crate::TelegramState;
 
-use super::split::{
-    download_split_file, split_manifest_from_media, upload_large_file_split,
-    upload_path_and_send, validate_split_parts_present,
-};
+use super::split::{upload_large_file_split, upload_path_and_send};
 
 static UPLOAD_CANCELLATIONS: OnceLock<Mutex<HashMap<String, oneshot::Sender<()>>>> = OnceLock::new();
 

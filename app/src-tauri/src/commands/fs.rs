@@ -26,5 +26,7 @@ pub use download::*;
 pub use files::*;
 pub use folders::*;
 pub use listing::*;
-pub use split::*;
+// `split` exposes only `pub(crate)` helpers — it has no Tauri commands of its
+// own — so a `pub use` glob here would warn that it re-exports nothing public.
+pub(crate) use split::*;
 pub use upload::*;

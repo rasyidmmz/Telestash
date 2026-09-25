@@ -13,7 +13,7 @@ use std::sync::{Arc, Mutex, OnceLock};
 use grammers_client::media::Media;
 use grammers_client::message::InputMessage;
 use grammers_session::types::PeerRef;
-use grammers_tl_types as tl;
+use tauri::Emitter;
 use tokio::io::{AsyncReadExt, AsyncSeekExt, AsyncWriteExt};
 
 use crate::commands::utils::{map_error, media_size, resolve_peer};
