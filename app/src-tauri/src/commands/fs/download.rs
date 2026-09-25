@@ -16,8 +16,8 @@ use crate::transfer_retry::{
 };
 use crate::TelegramState;
 
-use super::cleanup_partial_file;
-use super::{download_split_file, split_manifest_from_media, ProgressPayload};
+use super::split::{download_split_file, split_manifest_from_media};
+use super::upload::{cleanup_partial_file, ProgressPayload};
 
 #[derive(Debug, serde::Deserialize)]
 pub struct DownloadFileRequest {

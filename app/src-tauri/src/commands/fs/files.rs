@@ -12,7 +12,7 @@ use crate::db::DbConnection;
 use crate::transfer_log::record_transfer_log;
 use crate::TelegramState;
 
-use super::{
+use super::split::{
     delete_message_ids, forward_message_ids_checked, move_split_file, split_manifest_from_media,
     validate_split_parts_present,
 };
