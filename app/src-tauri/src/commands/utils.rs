@@ -133,6 +133,33 @@ pub fn map_error(e: impl std::fmt::Display) -> String {
     err_str
 }
 
+/// Delete a temporary file created by archive extraction or a queued upload.
+///
+/// Confined to the system temp directory and a no-op when the file is already
+/// gone, so callers can invoke it more than once without double-delete errors.
+#[tauri::command]
+pub async fn cmd_delete_temp_zip(path: String) -> Result<(), String> {
+    let path_clone = path.clone();
+    tokio::task::spawn_blocking(move || {
+        let p = std::path::Path::new(&path_clone);
+        if !p.exists() {
+            return Ok(());
+        }
+        let canonical_p = p.canonicalize().map_err(|e| format!("Invalid path: {}", e))?;
+        let tmp = std::env::temp_dir()
+            .canonicalize()
+            .map_err(|e| format!("Could not resolve temp directory: {}", e))?;
+        if !canonical_p.starts_with(&tmp) {
+            return Err("Refusing to delete file outside temp directory".to_string());
+        }
+        std::fs::remove_file(&canonical_p).map_err(|e| e.to_string())?;
+        log::info!("Cleaned up temp zip: {}", path_clone);
+        Ok(())
+    })
+    .await
+    .map_err(|e| format!("Task panicked: {}", e))?
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
