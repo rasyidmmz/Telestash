@@ -284,16 +284,14 @@ async fn download_to_temp_file(
         // turn a network failure into a normal end-of-file, which used to leave
         // a truncated archive on disk for the parser to choke on.
         loop {
-            let item = match download_iter.next().await.transpose() {
-                Ok(item) => item,
-                Err(e) => {
+            let chunk = match download_iter.next().await.transpose() {
+                None => break,
+                Some(Ok(chunk)) => chunk,
+                Some(Err(e)) => {
                     let _ = tokio::fs::remove_file(&archive_path).await;
                     let _ = tokio::fs::remove_dir_all(&extract_dir).await;
                     return Err(format!("{} download failed: {}", label, e));
                 }
-            };
-            let Some(chunk) = item else {
-                break;
             };
             total_bytes += chunk.len() as u64;
             if max_bytes > 0 && total_bytes > max_bytes {
