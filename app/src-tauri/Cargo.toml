@@ -1,6 +1,6 @@
 [package]
 name = "telestash"
-version = "1.8.1"
+version = "1.9.0"
 description = "Windows 11 x64 Telegram-backed media and file drive."
 authors = ["rasyidmmz"]
 edition = "2021"
@@ -52,9 +52,9 @@ sha2 = "0.11"
 glass_pumpkin = "=2.0.0-rc0"
 bcrypt = "0.19"
 constant_time_eq = "0.6"
+# `zip` is retained: it only *creates* archives for the REST bulk-download
+# endpoint. Nothing reads untrusted archives any more.
 zip = { version = "8", default-features = false, features = ["deflate"] }
-rar = "0.4"
-sevenz-rust2 = "0.22"
 sqlite = { version = "0.37.0", features = ["bundled"] }
 mp4parse = "0.17"
 
