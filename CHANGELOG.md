@@ -1,5 +1,21 @@
 # Changelog
 
+## [1.9.0]
+
+### Removed
+
+- **Archive browsing (`Viewer`) for `.zip`, `.rar`, and `.7z` files.** TeleStash is a media-streaming app, and archives were the only path that parsed untrusted files. The RAR backend could not be hardened: its crate exposes only "extract everything", writing entries to disk with names taken straight from the archive before any check could run. Removing the feature removes that risk entirely instead of patching around it. The `rar` and `sevenz-rust2` dependencies are gone with it.
+  - **Behaviour change:** archive files still appear in your library, still upload, download, and share normally — but their contents can no longer be opened from inside the app. Open them with a local tool instead.
+- Removed `cmd_delete_temp_zip`, which only archive extraction used.
+
+### Changed
+
+- **Hardened against dependency risk**: two fewer crates in the build, one of which (`rar`) could write files outside its target directory on a malicious archive.
+
+### Fixed
+
+- **Playback settings survive a missing graphics adapter**: if a pinned adapter no longer exists, playback falls back to automatic decoding instead of failing to open.
+
 ## [1.8.1]
 
 ### Added

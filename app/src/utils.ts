@@ -32,10 +32,6 @@ export const isVideoFile   = (name: string) => endsWithAny(name, VIDEO_EXTENSION
 export const isAudioFile   = (name: string) => endsWithAny(name, AUDIO_EXTENSIONS);
 export const isImageFile   = (name: string) => endsWithAny(name, IMAGE_EXTENSIONS);
 export const isPdfFile     = (name: string) => name.toLowerCase().endsWith('.pdf');
-export const isZipFile     = (name: string) => name.toLowerCase().endsWith('.zip');
-export const isRarFile     = (name: string) => name.toLowerCase().endsWith('.rar');
-export const isSevenZFile  = (name: string) => name.toLowerCase().endsWith('.7z');
-export const isArchiveFile = (name: string) => isZipFile(name) || isRarFile(name) || isSevenZFile(name);
 
 // ── HTML file input fallback for when Tauri dialog open() fails ──────────
 // Creates a hidden <input type="file"> element, triggers it, and returns
