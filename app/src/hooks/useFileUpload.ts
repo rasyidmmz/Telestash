@@ -79,17 +79,6 @@ export function useFileUpload(activeFolderId: number | null, store: Store | null
         }
     }, [uploadQueue, settings.maxConcurrentUploads]);
 
-    /** Clean up temp zip file if the item was created from a folder */
-    const cleanupTempZip = async (item: QueueItem) => {
-        if (item.tempZipPath) {
-            try {
-                await invoke('cmd_delete_temp_zip', { path: item.tempZipPath });
-            } catch {
-                // Best-effort cleanup
-            }
-        }
-    };
-
     const processItem = async (item: QueueItem) => {
         const itemStart = Date.now();
         activeCountRef.current++;
@@ -106,8 +95,6 @@ export function useFileUpload(activeFolderId: number | null, store: Store | null
                 await invoke('cmd_sync_folder', { folderId: item.folderId }).catch(() => {});
                 queryClient.invalidateQueries({ queryKey: ['files', item.folderId] });
             }
-            // Clean up temp zip on success
-            await cleanupTempZip(item);
         } catch (e) {
             if (!cancelledRef.current.has(item.id)) {
                 const errMsg = String(e);
@@ -124,8 +111,6 @@ export function useFileUpload(activeFolderId: number | null, store: Store | null
             } else {
                 cancelledRef.current.delete(item.id);
             }
-            // Clean up temp zip even on failure
-            await cleanupTempZip(item);
         } finally {
             // Adaptive cooldown: only pace uploads that finished faster than the
             // 2s anti-flood window. Slow uploads already spaced themselves out.
@@ -173,32 +158,41 @@ export function useFileUpload(activeFolderId: number | null, store: Store | null
     };
 
     const cancelAll = () => {
-        setUploadQueue(q => {
-            const activeItems = q.filter(i => i.status === 'uploading' || i.status === 'paused');
-            for (const item of activeItems) {
-                cancelledRef.current.add(item.id);
-                invoke('cmd_cancel_transfer', { transferId: item.id }).catch(() => {});
-            }
-            return q
-                .filter(i => i.status !== 'pending')
-                .map(i => (i.status === 'uploading' || i.status === 'paused') ? { ...i, status: 'cancelled' as const } : i);
-        });
+        const activeItems = uploadQueue.filter(i => i.status === 'uploading' || i.status === 'paused');
+
+        // Side effects stay OUT of the state updater: React may invoke an
+        // updater more than once, and these must run exactly once per item.
+        for (const item of activeItems) {
+            cancelledRef.current.add(item.id);
+            invoke('cmd_cancel_transfer', { transferId: item.id }).catch(() => {});
+        }
+
+        setUploadQueue(q =>
+            q.filter(i => i.status !== 'pending')
+                .map(i => (i.status === 'uploading' || i.status === 'paused') ? { ...i, status: 'cancelled' as const } : i)
+        );
         toast.info('All uploads cancelled');
     };
 
     const cancelItem = (id: string) => {
+        const item = uploadQueue.find(i => i.id === id);
+        if (!item) return;
+        // Only an in-flight or queued item can be cancelled. Completed, failed,
+        // and already-cancelled items are left untouched.
+        if (item.status !== 'uploading' && item.status !== 'paused' && item.status !== 'pending') {
+            return;
+        }
+
+        if (item.status === 'uploading' || item.status === 'paused') {
+            cancelledRef.current.add(item.id);
+            invoke('cmd_cancel_transfer', { transferId: item.id }).catch(() => {});
+        }
+
         setUploadQueue(q => {
-            const item = q.find(i => i.id === id);
-            if (item?.status === 'uploading' || item?.status === 'paused') {
-                cancelledRef.current.add(id);
-                invoke('cmd_cancel_transfer', { transferId: id }).catch(() => {});
-                return q.map(i => i.id === id ? { ...i, status: 'cancelled' as const } : i);
-            }
-            // Remove pending items directly
-            if (item?.status === 'pending') {
+            if (item.status === 'pending') {
                 return q.filter(i => i.id !== id);
             }
-            return q;
+            return q.map(i => i.id === id ? { ...i, status: 'cancelled' as const } : i);
         });
     };
 

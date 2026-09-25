@@ -141,17 +141,29 @@ async fn prepare_archive_operation(
 
 // ── ZIP helpers ─────────────────────────────────────────────────────────
 
-async fn download_to_memory(
-    client: &grammers_client::Client,
-    media: &Media,
+/// Collect a download stream into memory.
+///
+/// A stream error is propagated, never mistaken for end-of-file. Using
+/// `.ok().flatten()` here silently treated a network failure as a completed
+/// download, so a truncated archive reached the ZIP parser and produced a
+/// confusing parse error instead of an honest transfer error.
+async fn collect_chunks_to_memory<S, E>(
+    mut stream: S,
     max_bytes: u64,
     label: &str,
-) -> Result<Vec<u8>, String> {
+) -> Result<Vec<u8>, String>
+where
+    S: futures::Stream<Item = Result<Vec<u8>, E>> + Unpin,
+    E: std::fmt::Display,
+{
+    use futures::StreamExt;
+
     let mut data = Vec::new();
-    let mut download_iter = client.iter_download(media);
     let mut total_bytes: u64 = 0;
 
-    while let Some(chunk) = download_iter.next().await.ok().flatten() {
+    while let Some(chunk) = stream.next().await.transpose().map_err(|e| {
+        format!("{} download failed: {}", label, e)
+    })? {
         total_bytes += chunk.len() as u64;
         if max_bytes > 0 && total_bytes > max_bytes {
             return Err(format!(
@@ -163,6 +175,15 @@ async fn download_to_memory(
         data.extend_from_slice(&chunk);
     }
     Ok(data)
+}
+
+async fn download_to_memory(
+    client: &grammers_client::Client,
+    media: &Media,
+    max_bytes: u64,
+    label: &str,
+) -> Result<Vec<u8>, String> {
+    collect_chunks_to_memory(client.iter_download(media), max_bytes, label).await
 }
 
 async fn list_zip_contents(
@@ -256,7 +277,19 @@ async fn download_to_temp_file(
         let mut download_iter = client.iter_download(media);
         let mut total_bytes: u64 = 0;
 
-        while let Some(chunk) = download_iter.next().await.ok().flatten() {
+        // `transpose()` keeps the error instead of letting `.ok().flatten()`
+        // turn a network failure into a normal end-of-file, which used to leave
+        // a truncated archive on disk for the parser to choke on.
+        loop {
+            let chunk = match download_iter.next().await.transpose() {
+                Ok(Some(chunk)) => chunk,
+                Ok(None) => break,
+                Err(e) => {
+                    let _ = tokio::fs::remove_file(&archive_path).await;
+                    let _ = tokio::fs::remove_dir_all(&extract_dir).await;
+                    return Err(format!("{} download failed: {}", label, e));
+                }
+            };
             total_bytes += chunk.len() as u64;
             if max_bytes > 0 && total_bytes > max_bytes {
                 let _ = tokio::fs::remove_file(&archive_path).await;
@@ -500,4 +533,60 @@ fn check_non_empty(entries: &[ArchiveEntry], filename: &str, label: &str) -> Res
         ));
     }
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use futures::stream;
+
+    /// A stream error must surface as an error, not as a clean end-of-file.
+    ///
+    /// Regression guard: `.ok().flatten()` used to swallow the error, so a
+    /// truncated download was handed to the ZIP/RAR parser as if it were
+    /// complete.
+    #[tokio::test]
+    async fn stream_error_is_propagated_not_treated_as_eof() {
+        let chunks: Vec<Result<Vec<u8>, std::io::Error>> = vec![
+            Ok(vec![1, 2, 3]),
+            Err(std::io::Error::new(std::io::ErrorKind::ConnectionReset, "connection reset")),
+            Ok(vec![4, 5, 6]),
+        ];
+        let result = collect_chunks_to_memory(stream::iter(chunks), 0, "ZIP").await;
+
+        let err = result.expect_err("a stream error must fail the download");
+        assert!(err.contains("ZIP download failed"), "unexpected message: {}", err);
+        assert!(err.contains("connection reset"), "underlying cause was lost: {}", err);
+    }
+
+    #[tokio::test]
+    async fn successful_stream_is_concatenated_in_order() {
+        let chunks: Vec<Result<Vec<u8>, std::io::Error>> =
+            vec![Ok(vec![1, 2]), Ok(vec![3]), Ok(vec![4, 5, 6])];
+        let data = collect_chunks_to_memory(stream::iter(chunks), 0, "ZIP")
+            .await
+            .expect("clean stream should succeed");
+
+        assert_eq!(data, vec![1, 2, 3, 4, 5, 6]);
+    }
+
+    #[tokio::test]
+    async fn size_limit_still_rejects_oversized_downloads() {
+        let chunks: Vec<Result<Vec<u8>, std::io::Error>> =
+            vec![Ok(vec![0; 8]), Ok(vec![0; 8])];
+        let err = collect_chunks_to_memory(stream::iter(chunks), 10, "RAR")
+            .await
+            .expect_err("exceeding the limit must fail");
+
+        assert!(err.contains("exceeded the"), "unexpected message: {}", err);
+    }
+
+    #[tokio::test]
+    async fn empty_stream_yields_empty_download() {
+        let chunks: Vec<Result<Vec<u8>, std::io::Error>> = vec![];
+        let data = collect_chunks_to_memory(stream::iter(chunks), 0, "ZIP")
+            .await
+            .expect("empty stream is not an error");
+        assert!(data.is_empty());
+    }
 }

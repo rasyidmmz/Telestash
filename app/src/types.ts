@@ -57,7 +57,6 @@ export interface QueueItem {
     uploadedBytes?: number;
     totalBytes?: number;
     speedBytesPerSec?: number;
-    tempZipPath?: string; // Set when the item holds a temp file that needs cleanup
 }
 
 export interface BandwidthStats {
