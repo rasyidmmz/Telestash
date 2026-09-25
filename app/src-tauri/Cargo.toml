@@ -49,7 +49,7 @@ sha2 = "0.11"
 # Pin rc0: grammers-crypto 0.10.0 is written against this API; 2.0.0-rc1
 # breaks it (Result-returning mt:: API + num-bigint 0.5), and grammers'
 # loose ^2.0.0-rc0 range would otherwise resolve the broken release candidate.
-glass_pumpkin = "=2.0.0-rc0"
+glass_pumpkin = "=2.0.0-rc1"
 bcrypt = "0.19"
 constant_time_eq = "0.6"
 # `zip` is retained: it only *creates* archives for the REST bulk-download
