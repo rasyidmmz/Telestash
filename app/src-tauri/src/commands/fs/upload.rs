@@ -47,11 +47,11 @@ pub(crate) fn get_upload_cancellations() -> &'static Mutex<HashMap<String, onesh
 
 #[derive(Clone, serde::Serialize)]
 pub(crate) struct ProgressPayload {
-    id: String,
-    percent: u8,
-    uploaded_bytes: u64,
-    total_bytes: u64,
-    speed_bytes_per_sec: u64,
+    pub(crate) id: String,
+    pub(crate) percent: u8,
+    pub(crate) uploaded_bytes: u64,
+    pub(crate) total_bytes: u64,
+    pub(crate) speed_bytes_per_sec: u64,
 }
 
 /// Emitted when a transfer enters Telegram FLOOD_WAIT so the UI can show a countdown.
