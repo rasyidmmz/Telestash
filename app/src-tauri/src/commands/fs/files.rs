@@ -9,9 +9,13 @@ use tauri::{Manager, State};
 
 use crate::commands::utils::resolve_peer;
 use crate::db::DbConnection;
+use crate::transfer_log::record_transfer_log;
 use crate::TelegramState;
 
-use super::delete_message_ids;
+use super::{
+    delete_message_ids, forward_message_ids_checked, move_split_file, split_manifest_from_media,
+    validate_split_parts_present,
+};
 
 #[tauri::command]
 pub async fn cmd_rename_file(

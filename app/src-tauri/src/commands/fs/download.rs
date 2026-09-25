@@ -10,10 +10,15 @@ use tauri::{Emitter, State};
 
 use crate::bandwidth::BandwidthManager;
 use crate::commands::utils::{map_error, resolve_peer};
+use crate::transfer_retry::{
+    backoff_ms, DOWNLOAD_CHUNK_RETRY_ATTEMPTS, DOWNLOAD_STALL_TIMEOUT_SECS, RETRY_BASE_BACKOFF_MS,
+    RETRY_MAX_BACKOFF_MS,
+};
 use crate::TelegramState;
 
 use super::cleanup_partial_file;
 use super::{download_split_file, split_manifest_from_media, ProgressPayload};
+
 #[derive(Debug, serde::Deserialize)]
 pub struct DownloadFileRequest {
     message_id: i32,
