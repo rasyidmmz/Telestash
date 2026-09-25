@@ -25,8 +25,6 @@ use crate::split_upload_resume::{
     SplitUploadResumeState,
 };
 use crate::transfer_log::record_transfer_log;
-use crate::db::DbConnection;
-use sqlite;
 use std::collections::{HashMap, HashSet};
 use std::sync::OnceLock;
 use std::sync::Mutex;

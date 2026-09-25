@@ -5,13 +5,14 @@
 
 use grammers_client::message::InputMessage;
 use grammers_tl_types as tl;
-use tauri::State;
+use tauri::{Manager, State};
 
-use crate::commands::utils::{map_error, resolve_peer};
+use crate::commands::utils::resolve_peer;
 use crate::db::DbConnection;
 use crate::TelegramState;
 
 use super::delete_message_ids;
+
 #[tauri::command]
 pub async fn cmd_rename_file(
     message_id: i32,

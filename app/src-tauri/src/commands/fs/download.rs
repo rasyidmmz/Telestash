@@ -4,29 +4,16 @@
 //! a partial file is kept while retries remain.
 
 use std::sync::Arc;
-use std::time::{Duration, Instant};
 
 use grammers_client::media::Media;
-use grammers_tl_types as tl;
 use tauri::{Emitter, State};
 
 use crate::bandwidth::BandwidthManager;
 use crate::commands::utils::{map_error, resolve_peer};
-use crate::db::DbConnection;
-use crate::models::{
-    SplitManifest, SPLIT_MANIFEST_SUFFIX, SPLIT_MANIFEST_UPLOAD_NAME, SPLIT_PART_CAPTION_PREFIX,
-};
-use crate::transfer_retry::{
-    DOWNLOAD_CHUNK_RETRY_ATTEMPTS, DOWNLOAD_STALL_TIMEOUT_SECS,
-};
-use crate::transfer_log::record_transfer_log;
 use crate::TelegramState;
 
 use super::cleanup_partial_file;
-use super::{
-    download_split_file, split_manifest_from_media, validate_split_parts_present,
-    FloodWaitPayload, ProgressPayload,
-};
+use super::{download_split_file, split_manifest_from_media, ProgressPayload};
 #[derive(Debug, serde::Deserialize)]
 pub struct DownloadFileRequest {
     message_id: i32,
