@@ -213,12 +213,26 @@ Security (semua temuan audit security, P1 dulu):
    confine ke root hasil dialog) ke semua command ber-path; allowlist extension
    untuk open-external (pdf/mp4/mkv/zip/jpg/...; hard-deny
    hta/url/bat/cmd/scr/exe/js/vbs/lnk/chm/reg).
-2. **Ganti crate `rar` 0.4.0 (P1 zip-slip)** — crate menulis entry RAR tanpa
-   sanitasi nama; arsip RAR jahat bisa menulis keluar temp dir saat user cuma
-   membuka info arsip (bug diverifikasi langsung dari source crate:
-   `fs::File::create(format!("{}/{}", path, file.name))`). Ganti binding
-   `unrar`/`unrar-ng` yang path output-nya kita kontrol + sanitasi
-   `sanitise_entry_name` seperti jalur ZIP/7z. `archive.rs:298,338`
+2. **Zip-slip RAR (P1) — SELESAI 2026-09-25, dengan cara DIHAPUS (PR #75, `5708a79`)**.
+   Verifikasi source crate mengubah kesimpulan: `rar` 0.4.0 hanya mengekspos
+   `Archive::extract_all`, dan `FileWriter::new` menulis
+   `fs::File::create(format!("{}/{}", path, file.name))` — nama entry dari arsip,
+   **sebelum** pemeriksaan kita bisa jalan. `sanitise_entry_name` hanya melindungi
+   pembacaan kembali, bukan penulisan. Jadi fitur ini **tidak bisa** diamankan di
+   lapisan kita.
+   Karena TeleStash adalah app streaming media dan arsip satu-satunya jalur yang
+   mem-parse file tidak tepercaya, **seluruh fitur arsip dihapus** (keputusan user:
+   tidak pernah memakai arsip). Yang dihapus: `commands/archive.rs` (598 baris),
+   `ArchiveViewerModal.tsx` (795 baris), 2 command, `cmd_delete_temp_zip`, dan
+   crate `rar` + `sevenz-rust2`. Total 1.483 baris hilang.
+   Crate `zip` **dipertahankan** — hanya membuat arsip untuk endpoint REST bulk
+   download, tidak membaca arsip asing.
+   Catatan: mengganti ke `unrar-ng` **ditolak** karena butuh `unrar-ng-sys` yang
+   mengompilasi source C++ UnRAR — menukar path-traversal dengan permukaan FFI
+   di CI MSVC adalah pertukaran yang merugikan.
+   Dampak: file arsip tetap tampil/upload/download/share normal, tapi isinya tidak
+   bisa dibuka dari dalam app. Test Rust 72 → 67 (5 test archive ikut terhapus).
+
 3. **Rapatkan CSP (P1)** — `script-src` saat ini mengizinkan `unsafe-eval`,
    `blob:`, script dari HTTPS mana pun; frontend tidak pakai satu pun script
    remote (semua npm lokal). Ubah ke `script-src 'self'`; `connect-src` cukup
