@@ -18,13 +18,13 @@ use crate::transfer_retry::{
 };
 use crate::TelegramState;
 
-use super::split::{upload_large_file_split, upload_path_and_send};
+use super::split::upload_large_file_split;
 
 static UPLOAD_CANCELLATIONS: OnceLock<Mutex<HashMap<String, oneshot::Sender<()>>>> = OnceLock::new();
 
 const TELEGRAM_SINGLE_FILE_LIMIT: u64 = 2_000_000_000;
-const SPLIT_PART_SIZE: u64 = 512 * 1024 * 1024;
-const SPLIT_TEMP_BUFFER: usize = 1024 * 1024;
+pub(crate) const SPLIT_PART_SIZE: u64 = 512 * 1024 * 1024;
+pub(crate) const SPLIT_TEMP_BUFFER: usize = 1024 * 1024;
 
 fn requires_split_upload(size: u64) -> bool {
     size > TELEGRAM_SINGLE_FILE_LIMIT
@@ -41,12 +41,12 @@ mod tests {
     }
 }
 
-fn get_upload_cancellations() -> &'static Mutex<HashMap<String, oneshot::Sender<()>>> {
+pub(crate) fn get_upload_cancellations() -> &'static Mutex<HashMap<String, oneshot::Sender<()>>> {
     UPLOAD_CANCELLATIONS.get_or_init(|| Mutex::new(HashMap::new()))
 }
 
 #[derive(Clone, serde::Serialize)]
-struct ProgressPayload {
+pub(crate) struct ProgressPayload {
     id: String,
     percent: u8,
     uploaded_bytes: u64,
@@ -125,7 +125,7 @@ impl tokio::io::AsyncRead for ProgressReader {
 }
 
 /// Delete a partial file with retries (best-effort cleanup)
-fn cleanup_partial_file(path: &str) {
+pub(crate) fn cleanup_partial_file(path: &str) {
     let path = path.to_string();
     std::thread::spawn(move || {
         for attempt in 0..5 {

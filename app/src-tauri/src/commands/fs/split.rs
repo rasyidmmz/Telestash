@@ -8,7 +8,7 @@
 use std::collections::HashMap;
 use std::io::SeekFrom;
 use std::path::{Path, PathBuf};
-use std::sync::{Arc, Mutex, OnceLock};
+use std::sync::Arc;
 
 use grammers_client::media::Media;
 use grammers_client::message::InputMessage;
@@ -32,7 +32,8 @@ use crate::split_upload_resume::{
 use crate::transfer_log::record_transfer_log;
 use crate::transfer_retry::{
     backoff_ms, flood_wait_retry_attempts, should_retry_upload_error, upload_error_kind,
-    upload_stream_retry_attempts, RETRY_ATTEMPTS, RETRY_BASE_BACKOFF_MS, RETRY_MAX_BACKOFF_MS,
+    upload_stream_retry_attempts, DOWNLOAD_CHUNK_RETRY_ATTEMPTS, DOWNLOAD_STALL_TIMEOUT_SECS,
+    RETRY_ATTEMPTS, RETRY_BASE_BACKOFF_MS, RETRY_MAX_BACKOFF_MS,
 };
 use crate::TelegramState;
 
@@ -454,7 +455,7 @@ pub(crate) async fn forward_message_ids_checked(
     Ok(forwarded_ids)
 }
 
-async fn move_split_file(
+pub(crate) async fn move_split_file(
     client: &grammers_client::Client,
     source_peer: PeerRef,
     target_peer: PeerRef,
@@ -558,7 +559,7 @@ async fn save_split_resume_snapshot(
     }
 }
 
-async fn upload_large_file_split(
+pub(crate) async fn upload_large_file_split(
     path: &str,
     folder_id: Option<i64>,
     file_name: String,
@@ -801,7 +802,7 @@ async fn upload_large_file_split(
     Ok("Large file uploaded as split parts".to_string())
 }
 
-async fn download_split_file(
+pub(crate) async fn download_split_file(
     client: &grammers_client::Client,
     peer: PeerRef,
     manifest: SplitManifest,
