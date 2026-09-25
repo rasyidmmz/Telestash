@@ -130,7 +130,7 @@ dengan hwdec aktif (cek CPU di Task Manager turun), RAM app turun saat di tray.
 
 ---
 
-## R3 (v1.8.1) — Code Health: Refactor fs.rs, Lalu Tests
+## R3 (v1.8.2) — Code Health: Refactor fs.rs, Lalu Tests
 
 **Tujuan**: hilangkan kelas bug dengan struktur lebih sehat. Urutan (keputusan
 user): **refactor dulu, tests menyusul setelah struktur baru stabil** — dengan
@@ -138,24 +138,35 @@ caveat: jalur transfer adalah area paling sensitif, tiap modul yang dipecah
 dari fs.rs harus lulus CI test lama (transfer_retry, split_upload_resume,
 streaming) sebelum lanjut.
 
-1. **Pecah `fs.rs` (2.811 baris, 6 tanggung jawab)** jadi modul: folder listing,
+Catatan: v1.8.1 sudah dipakai untuk rilis playback (hardware decode + siklus
+hidup mpv). Item P3 di bawah sudah selesai lebih dulu pada 2026-09-25.
+
+1. **Pecah `fs.rs` (2.978 baris, 6 tanggung jawab)** jadi modul: folder listing,
    upload pipeline, split logic, download pipeline, pause/cancel plumbing, search.
    Target: tidak ada file >1.000 baris. Pecah bertahap per-modul dengan CI hijau
-   tiap langkah.
+   tiap langkah. Perhatikan juga `api_routes.rs` (1.742 baris), `server.rs` (869),
+   `commands/streaming.rs` (839), dan `SettingsModal.tsx` (1.384) — target yang
+   sama sebaiknya berlaku untuk frontend.
 2. **Vitest setup + tests prioritas frontend** — 0 test di `app/src/` hari ini
    (semua 4 test file di `app/scripts/`). Prioritas: `useFileUpload` (queue,
    restore, cancel), `useFileDownload`, `useFloodWait`, `errorHumanizer`,
-   `watchHistory` migration.
-3. **Tests `api_routes.rs` (1.869 baris, 0 test)** — REST upload path + endpoints
+   `watchHistory` migration. Catatan: Vitest + React Testing Library = dependency
+   baru, perlu persetujuan eksplisit (AGENTS.md ketat soal dep).
+3. **Tests `api_routes.rs` (1.742 baris, 0 test)** — REST upload path + endpoints
    kritis, mengikuti struktur post-refactor.
-4. **Cleanup sisa P3 correctness**: arsip menelan error network sebagai EOF
-   (`archive.rs:158,263` — propagate error), cancel pending upload bocorkan
-   temp zip (`useFileUpload.ts:189-192` — panggil `cmd_delete_temp_zip`),
-   akuntansi bandwidth reserve/release konsisten antara fs.rs dan api_routes
-   (`fs.rs:1726` vs `api_routes.rs:1392`).
+4. **Cleanup sisa P3 correctness — SELESAI 2026-09-25 (PR #67, `2fc2d99`)**.
+   Hasil verifikasi ketiga klaim:
+   - Arsip menelan error network sebagai EOF — **nyata**, diperbaiki
+     (`archive.rs` sekarang pakai `.transpose()` seperti `server.rs`; jalur
+     temp-file juga membersihkan artefak parsial saat gagal).
+   - Cancel upload bocorkan temp zip — **tidak valid**: `QueueItem.tempZipPath`
+     tidak pernah di-assign, jadi `cleanupTempZip` adalah dead code (jalur
+     folder-zip sudah dihapus di R1). Dead code + field-nya dihapus.
+   - Akuntansi bandwidth reserve/release — **bukan bug**: reservasi yang berdiri
+     saat sukses memang penghitung bytes kumulatif (dikonfirmasi user).
 
 Testing R3: semua test baru hijau di CI; tsc; tidak ada perubahan perilaku
-(perubahan murni struktur + test).
+(perubahan murni struktur + test). Test Rust saat ini 66 (naik dari 61).
 
 ---
 
