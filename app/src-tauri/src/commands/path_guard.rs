@@ -222,8 +222,16 @@ pub(crate) fn guard_open_externally(raw: &str, app_cache_dir: &Path) -> Result<(
     if is_allowed_open_extension(&ext) {
         return Ok(());
     }
-    if !app_cache_dir.as_os_str().is_empty() && is_within(&canonical, app_cache_dir) {
-        return Ok(());
+    if !app_cache_dir.as_os_str().is_empty() {
+        // Canonicalize the root too: it can arrive as a short (8.3) name or
+        // through a junction, and comparing that against an already
+        // canonicalized file path would silently disable this exception.
+        let cache_root = app_cache_dir
+            .canonicalize()
+            .unwrap_or_else(|_| app_cache_dir.to_path_buf());
+        if is_within(&canonical, &cache_root) {
+            return Ok(());
+        }
     }
     Err(format!(
         "Files of type \"{}\" cannot be opened externally",
@@ -350,6 +358,7 @@ mod tests {
         let _ = std::fs::create_dir_all(&dir);
         let odd = dir.join("preview.bin");
         let _ = std::fs::write(&odd, b"x");
+        assert!(odd.is_file(), "test setup: preview file must exist");
         let raw = odd.to_string_lossy().to_string();
         // Unknown extension outside the cache dir: rejected.
         assert!(guard_open_externally(&raw, Path::new("")).is_err());

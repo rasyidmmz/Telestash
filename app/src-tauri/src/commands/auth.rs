@@ -457,7 +457,7 @@ mod tests {
 
     #[test]
     fn masks_middle_digits_but_keeps_prefix_and_suffix() {
-        assert_eq!(mask_phone("+6281234567890"), "+628*******90");
+        assert_eq!(mask_phone("+6281234567890"), "+628********90");
     }
 
     #[test]
