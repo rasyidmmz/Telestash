@@ -19,6 +19,7 @@
 - **Phone numbers are masked in logs**; only the first digits remain visible for diagnostics.
 - **Hardened against dependency risk**: two fewer crates in the build, one of which (`rar`) could write files outside its target directory on a malicious archive.
 - **HTTP/2 switched off on the local API.** TeleStash's REST and share servers speak HTTP/1.1 on `127.0.0.1` only, so actix-web's `http2` feature is turned off. That drops the `h2` crate from the build entirely — the new dependency audit flagged it (unbounded empty DATA frames) and it has no patched release in its 0.3 line. Both servers keep working unchanged, and the TCP port behaves exactly as before.
+- **Tauri updated to 2.12** (the Rust crates and the npm packages move together). Refreshing the dependency graph also brought in newer patch releases across the stack, and removed five unmaintained `unic-*` crates. Tauri requires the JavaScript packages and the Rust crates to sit on the same minor version, so both sides were aligned.
 
 ### Fixed
 
