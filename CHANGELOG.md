@@ -18,6 +18,7 @@
 - **API Hash is no longer saved on disk**: only the non-secret API ID is kept for convenience, so a fresh sign-in asks for the hash again. Any hash saved by an older version is deleted automatically.
 - **Phone numbers are masked in logs**; only the first digits remain visible for diagnostics.
 - **Hardened against dependency risk**: two fewer crates in the build, one of which (`rar`) could write files outside its target directory on a malicious archive.
+- **HTTP/2 switched off on the local API.** TeleStash's REST and share servers speak HTTP/1.1 on `127.0.0.1` only, so actix-web's `http2` feature is turned off. That drops the `h2` crate from the build entirely — the new dependency audit flagged it (unbounded empty DATA frames) and it has no patched release in its 0.3 line. Both servers keep working unchanged, and the TCP port behaves exactly as before.
 
 ### Fixed
 

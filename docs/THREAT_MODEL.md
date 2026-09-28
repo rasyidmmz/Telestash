@@ -39,7 +39,11 @@ sudah dikeraskan di R4. Windows 11 64-bit saja.
    lagi disimpan di `config.json` (memory-only, konfigurasi lama dibersihkan
    otomatis); `api_id` non-secret tetap tersimpan untuk prefill (R4 #6).
 7. **CI audit gate** — `ci.yml`: `npm audit --audit-level=high` +
-   `cargo audit` menggagalkan build bila ada temuan (R4 #7).
+   `cargo audit` menggagalkan build bila ada temuan (R4 #7). Temuan pertama
+   sudah ditangani: `h2` (RUSTSEC-2026-0258, tanpa rilis 0.3.x yang ditambal
+   dan actix-http terbaru pun masih butuh `^0.3.27`) dikeluarkan dari build
+   dengan mematikan fitur `http2` actix-web — REST dan share/stream memang
+   hanya HTTP/1.1 di `127.0.0.1`.
 
 ## Risiko sisa (diterima sadar)
 

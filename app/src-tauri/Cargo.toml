@@ -36,7 +36,23 @@ base64 = "0.23"
 log = "0.4"
 env_logger = "0.11"
 tauri-plugin-updater = "2"
-actix-web = "4"
+# HTTP/2 is switched off deliberately (R4 #7). actix-web's `http2` feature is
+# the only path to the `h2` crate in this graph, and `h2` 0.3.27 carries
+# RUSTSEC-2026-0258 ("unbounded empty DATA frames") with no patched 0.3.x
+# release — even the newest actix-http still requires `h2 ^0.3.27`. TeleStash's
+# REST and share/stream servers are plain HTTP/1.1 on 127.0.0.1, so dropping
+# HTTP/2 removes the vulnerable code from the build instead of ignoring it.
+# Every other default feature is kept.
+actix-web = { version = "4", default-features = false, features = [
+  "macros",
+  "compress-brotli",
+  "compress-gzip",
+  "compress-zstd",
+  "cookies",
+  "unicode",
+  "compat",
+  "ws",
+] }
 actix-cors = "0.7"
 actix-multipart = "0.8"
 futures = "0.3"
