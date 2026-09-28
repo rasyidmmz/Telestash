@@ -17,6 +17,7 @@ use std::pin::Pin;
 use std::sync::{Arc, Mutex};
 use std::time::{Duration, Instant};
 
+use actix_web::body::EitherBody;
 use actix_web::dev::{forward_ready, Service, ServiceRequest, ServiceResponse, Transform};
 use actix_web::http::header;
 use actix_web::{Error, HttpResponse};
@@ -116,7 +117,7 @@ where
     S::Future: 'static,
     B: 'static,
 {
-    type Response = ServiceResponse<B>;
+    type Response = ServiceResponse<EitherBody<B>>;
     type Error = Error;
     // Boxed so the allow- and deny-paths share one future type with no
     // manual pin projection and no extra dependencies.
@@ -132,12 +133,17 @@ where
             None => None,
         };
         match over_limit {
-            None => Box::pin(self.service.call(req)),
-            Some(wait) => Box::pin(ready(Ok(req.into_response(
-                HttpResponse::TooManyRequests()
-                    .insert_header((header::RETRY_AFTER, wait.as_secs().to_string()))
-                    .body("Too many requests, slow down"),
-            )))),
+            None => {
+                let fut = self.service.call(req);
+                Box::pin(async move { fut.await.map(|res| res.map_into_left_body()) })
+            }
+            Some(wait) => Box::pin(ready(Ok(req
+                .into_response(
+                    HttpResponse::TooManyRequests()
+                        .insert_header((header::RETRY_AFTER, wait.as_secs().to_string()))
+                        .body("Too many requests, slow down"),
+                )
+                .map_into_right_body()))),
         }
     }
 }
