@@ -359,11 +359,10 @@ pub fn cmd_list_directory_files(path: String) -> Result<Vec<String>, String> {
     let dir = crate::commands::path_guard::guard_list_directory(&path)?;
     let mut files = Vec::new();
     if let Ok(entries) = std::fs::read_dir(&dir) {
-            for entry in entries.flatten() {
-                let p = entry.path();
-                if p.is_file() {
-                    files.push(p.to_string_lossy().to_string());
-                }
+        for entry in entries.flatten() {
+            let p = entry.path();
+            if p.is_file() {
+                files.push(p.to_string_lossy().to_string());
             }
         }
     }
