@@ -2,6 +2,11 @@
 
 ## [1.9.0]
 
+### Added
+
+- **Share-link password lockout**: after 5 wrong passwords on a password-protected share link, further attempts pause for about 10 minutes.
+- **REST API rate limiting**: local API calls are capped per client (excess calls get a "try again later" response) to protect bulk delete/move operations.
+
 ### Removed
 
 - **Archive browsing (`Viewer`) for `.zip`, `.rar`, and `.7z` files.** TeleStash is a media-streaming app, and archives were the only path that parsed untrusted files. The RAR backend could not be hardened: its crate exposes only "extract everything", writing entries to disk with names taken straight from the archive before any check could run. Removing the feature removes that risk entirely instead of patching around it. The `rar` and `sevenz-rust2` dependencies are gone with it.
@@ -10,6 +15,8 @@
 
 ### Changed
 
+- **API Hash is no longer saved on disk**: only the non-secret API ID is kept for convenience, so a fresh sign-in asks for the hash again. Any hash saved by an older version is deleted automatically.
+- **Phone numbers are masked in logs**; only the first digits remain visible for diagnostics.
 - **Hardened against dependency risk**: two fewer crates in the build, one of which (`rar`) could write files outside its target directory on a malicious archive.
 
 ### Fixed

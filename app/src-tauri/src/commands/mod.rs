@@ -38,6 +38,7 @@ pub struct TelegramState {
 
 pub mod auth;
 pub mod fs;
+pub mod path_guard;
 pub mod preview;
 pub mod utils;
 pub mod network;

@@ -844,7 +844,6 @@ pub async fn start_server(
                     || origin_bytes.starts_with(b"http://127.0.0.1")
                     || origin_bytes.starts_with(b"https://asset.localhost")
                     || origin_bytes.starts_with(b"http://asset.localhost")
-                    || origin_bytes == b"null"
             })
             .allow_any_method()
             .allow_any_header();

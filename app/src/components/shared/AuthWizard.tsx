@@ -80,11 +80,16 @@ export function AuthWizard({ onLogin }: { onLogin: () => void }) {
             try {
                 const store = await load('config.json');
                 const savedId = await store.get<string>('api_id');
-                const savedHash = await store.get<string>('api_hash');
+                // R4 #6: api_hash is a secret — never persist it in plaintext.
+                // One-time cleanup for configs saved by older versions.
+                const legacyHash = await store.get<string>('api_hash');
+                if (legacyHash) {
+                    await store.delete('api_hash');
+                    await store.save();
+                }
 
-                if (savedId && savedHash) {
+                if (savedId) {
                     setApiId(savedId);
-                    setApiHash(savedHash);
                 }
             } catch {
                 // config not found, starting fresh
@@ -96,8 +101,9 @@ export function AuthWizard({ onLogin }: { onLogin: () => void }) {
     const saveCredentials = async () => {
         try {
             const store = await load('config.json');
+            // R4 #6: api_id is a non-secret identifier, safe to prefill.
+            // api_hash stays in memory only for this session.
             await store.set('api_id', apiId);
-            await store.set('api_hash', apiHash);
             await store.save();
         } catch {
             // store write failure, non-critical

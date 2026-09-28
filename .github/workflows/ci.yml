@@ -62,6 +62,11 @@ jobs:
             exit $LASTEXITCODE
           }
 
+      - name: Audit frontend dependencies (npm audit, R4 #7)
+        working-directory: app
+        shell: pwsh
+        run: npm audit --audit-level=high
+
       - name: Provide MPV resource placeholder for Rust validation
         shell: pwsh
         run: |
@@ -92,6 +97,19 @@ jobs:
             exit $LASTEXITCODE
           }
 
+      - name: Audit Rust dependencies (cargo audit, R4 #7)
+        working-directory: app/src-tauri
+        shell: pwsh
+        run: |
+          $logPath = Join-Path $env:RUNNER_TEMP 'rust-audit.log'
+          cargo install cargo-audit --locked --quiet
+          & cargo audit 2>&1 | Tee-Object -FilePath $logPath
+          if ($LASTEXITCODE -ne 0) {
+            $details = (Get-Content $logPath | Select-Object -Last 30) -join '%0A'
+            Write-Output "::error title=Rust audit::$details"
+            exit $LASTEXITCODE
+          }
+
       - name: Upload validation diagnostics
         if: ${{ failure() }}
         uses: actions/upload-artifact@v7
@@ -102,4 +120,5 @@ jobs:
             ${{ runner.temp }}/unit-tests-validation.log
             ${{ runner.temp }}/rust-validation.log
             ${{ runner.temp }}/rust-tests.log
+            ${{ runner.temp }}/rust-audit.log
           if-no-files-found: warn

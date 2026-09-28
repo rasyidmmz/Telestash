@@ -15,6 +15,19 @@ use crate::models::{AuthResult};
 use crate::commands::utils::map_error;
 use grammers_client::SignInError;
 
+/// Mask a phone number for logs: keep the first 4 and last 2 characters,
+/// star the middle (R4 #6 — phone numbers are PII and logs get pasted into
+/// bug reports). Short inputs are fully masked.
+pub(crate) fn mask_phone(phone: &str) -> String {
+    let chars: Vec<char> = phone.chars().collect();
+    if chars.len() <= 6 {
+        return "*".repeat(chars.len().max(1));
+    }
+    let head: String = chars[..4].iter().collect();
+    let tail: String = chars[chars.len() - 2..].iter().collect();
+    format!("{}{}{}", head, "*".repeat(chars.len() - 6), tail)
+}
+
 /// Ensures the Telegram client is initialized.
 /// 
 /// IMPORTANT: This function properly manages runner lifecycle to prevent stack overflow.
@@ -244,7 +257,9 @@ pub async fn cmd_auth_request_code(
 
     let client_handle = ensure_client_initialized(&app_handle, &state, api_id).await?;
     
-    log::info!("Requesting code for {}", phone);
+    // R4 #6: never log the raw phone number — it is PII and logs get pasted
+    // into bug reports. Keep just enough to recognise the account.
+    log::info!("Requesting code for {}", mask_phone(&phone));
     
     let mut last_error = String::new();
     
@@ -433,5 +448,27 @@ pub async fn cmd_auth_qr_poll(
                 error: None,
             })
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::mask_phone;
+
+    #[test]
+    fn masks_middle_digits_but_keeps_prefix_and_suffix() {
+        assert_eq!(mask_phone("+6281234567890"), "+628*******90");
+    }
+
+    #[test]
+    fn short_inputs_are_fully_masked() {
+        assert_eq!(mask_phone("123456"), "******");
+        assert_eq!(mask_phone("12"), "**");
+    }
+
+    #[test]
+    fn masked_output_never_contains_the_full_number() {
+        let phone = "+6281234567890";
+        assert!(!mask_phone(phone).contains(&phone[4..phone.len() - 2]));
     }
 }

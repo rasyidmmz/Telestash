@@ -241,12 +241,18 @@ Security (semua temuan audit security, P1 dulu):
    (`api_bulk_files` delete/move, `api_routes.rs:576-823`); buang `Origin: null`
    dari CORS. `lib.rs:142-156`
 5. **Share brute-force lockout** — verify password tanpa counter/delay; tambah
-   `failed_login_attempts` + `locked_until` di tabel `shared_links` (N gagal →
-   lockout 15 menit). `share_routes.rs:309-356`
-6. **PII & secrets hygiene** — masking nomor telepon di log (`auth.rs:247`),
-   api_hash dari plaintext store ke DPAPI/`CryptProtectData`
-   (`AuthWizard.tsx:100`), pastikan log mencatat URL stream tanpa query token.
-7. **CI security gate** — `cargo audit` + `npm audit` wajib di release workflow.
+   lockout in-memory per proses di `share_routes.rs` (5x salah per token per
+   10 menit → pesan tunggu N menit; sukses me-reset). Counter hilang saat
+   restart — diterima sadar karena tiap percobaan tetap kena bcrypt ~300 ms.
+   (Diimplementasikan R4; alternatif tabel DB `failed_login_attempts` /
+   `locked_until` ditolak agar tidak menambah migrasi/state.)
+6. **PII & secrets hygiene** — masking nomor telepon di log (`auth.rs`),
+   `api_hash` tidak lagi disimpan di `config.json`: memory-only, konfigurasi
+   lama dibersihkan otomatis saat load (`AuthWizard.tsx`), pastikan log
+   mencatat URL stream tanpa query token. (Diimplementasikan R4; DPAPI/
+   `CryptProtectData` ditolak karena butuh dependensi/FFI baru.)
+7. **CI security gate** — `cargo audit` + `npm audit --audit-level=high` di
+   `ci.yml` (menggagalkan build bila ada temuan). (Diimplementasikan R4.)
 8. **Docs + publik**: rapikan README (fitur terkini), AGENTS.md (hapus menyebut
    "URL uploads" — path itu tidak ada di kode), AI_HANDOFF, RELEASE_RUNBOOK;
    tulis threat model singkat (webview = trusted, REST key = local-process trust,

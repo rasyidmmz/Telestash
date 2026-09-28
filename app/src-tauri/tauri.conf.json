@@ -35,7 +35,7 @@
       }
     ],
     "security": {
-      "csp": "default-src 'self'; connect-src 'self' https: http://localhost:*; media-src 'self' blob: http://localhost:*; img-src 'self' data: blob: http://localhost:* https:; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-eval' blob: https:; frame-src 'self' blob:; worker-src 'self' blob:;",
+      "csp": "default-src 'self'; connect-src 'self' https: http://localhost:*; media-src 'self' blob: http://localhost:*; img-src 'self' data: blob: http://localhost:* https:; style-src 'self' 'unsafe-inline'; script-src 'self'; frame-src 'self' blob:; worker-src 'self' blob:;",
       "capabilities": [
         "default"
       ]

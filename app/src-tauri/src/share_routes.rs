@@ -3,7 +3,9 @@ use crate::commands::TelegramState;
 use crate::commands::utils::resolve_peer;
 use crate::db::DbConnection;
 use sha2::{Sha256, Digest};
-use std::sync::{Arc, OnceLock};
+use std::collections::{HashMap, VecDeque};
+use std::sync::{Arc, Mutex, OnceLock};
+use std::time::{Duration, Instant};
 use serde::Deserialize;
 use rand::RngExt;
 
@@ -28,6 +30,73 @@ struct VerifyForm {
 /// Verify a password against a bcrypt hash.
 fn verify_password(password: &str, hash: &str) -> bool {
     bcrypt::verify(password, hash).unwrap_or(false)
+}
+
+/// Brute-force backstop for the password-verify endpoint (R4 #5). bcrypt
+/// already makes each guess expensive, but guesses were unlimited — so cap
+/// FAILED attempts per share token: 5 wrong passwords per 10 minutes, then
+/// the endpoint refuses to check until the window slides past. Successful
+/// logins clear the counter. Per-process memory (like the cookie secret
+/// below): a restart resets counters, which is acceptable for a
+/// loopback-only server and avoids a new DB table.
+const MAX_VERIFY_ATTEMPTS: usize = 5;
+const VERIFY_WINDOW: Duration = Duration::from_secs(600);
+
+static VERIFY_ATTEMPTS: OnceLock<Mutex<HashMap<String, VecDeque<Instant>>>> = OnceLock::new();
+
+fn verify_attempts() -> &'static Mutex<HashMap<String, VecDeque<Instant>>> {
+    VERIFY_ATTEMPTS.get_or_init(|| Mutex::new(HashMap::new()))
+}
+
+fn evict_stale(queue: &mut VecDeque<Instant>, now: Instant) {
+    while queue
+        .front()
+        .is_some_and(|seen| now.duration_since(*seen) >= VERIFY_WINDOW)
+    {
+        queue.pop_front();
+    }
+}
+
+/// Refuse to check when the token is over the failed-attempt budget.
+/// Returns `Err(wait)` with how long the client should back off.
+fn check_verify_lockout(token: &str) -> Result<(), Duration> {
+    let mut attempts = verify_attempts()
+        .lock()
+        .unwrap_or_else(|poisoned| poisoned.into_inner());
+    let now = Instant::now();
+    let mut queue = attempts.remove(token).unwrap_or_default();
+    evict_stale(&mut queue, now);
+    let locked = queue.len() >= MAX_VERIFY_ATTEMPTS;
+    let wait = queue
+        .front()
+        .map(|seen| VERIFY_WINDOW.saturating_sub(now.duration_since(*seen)))
+        .unwrap_or(VERIFY_WINDOW)
+        .max(Duration::from_secs(1));
+    if !queue.is_empty() {
+        attempts.insert(token.to_string(), queue);
+    }
+    if locked {
+        Err(wait)
+    } else {
+        Ok(())
+    }
+}
+
+fn record_failed_verify(token: &str) {
+    let mut attempts = verify_attempts()
+        .lock()
+        .unwrap_or_else(|poisoned| poisoned.into_inner());
+    let now = Instant::now();
+    let mut queue = attempts.remove(token).unwrap_or_default();
+    evict_stale(&mut queue, now);
+    queue.push_back(now);
+    attempts.insert(token.to_string(), queue);
+}
+
+fn clear_verify_attempts(token: &str) {
+    if let Ok(mut attempts) = verify_attempts().lock() {
+        attempts.remove(token);
+    }
 }
 
 /// Per-process secret mixed into share-auth cookies. Reading `shares.db`
@@ -330,7 +399,23 @@ async fn verify_shared_file_password(
         None => return HttpResponse::BadRequest().body("No password required for this link"),
     };
 
+    // R4 #5: refuse to even check the password once this token has burned
+    // through its failed-attempt budget.
+    if let Err(wait) = check_verify_lockout(&token) {
+        let minutes = wait.as_secs().div_ceil(60);
+        return render_password_form(
+            &row.file_name,
+            &token,
+            Some(&format!(
+                "Too many wrong passwords. Try again in about {} minute{}.",
+                minutes,
+                if minutes == 1 { "" } else { "s" }
+            )),
+        );
+    }
+
     if verify_password(&form.password, hash) {
+        clear_verify_attempts(&token);
         // Set session cookie (30 min).
         // NOTE: The share server binds to 127.0.0.1 over plain HTTP (not HTTPS),
         // so the cookie cannot use `.secure(true)` without becoming unusable.
@@ -349,6 +434,7 @@ async fn verify_shared_file_password(
             .cookie(cookie)
             .finish()
     } else {
+        record_failed_verify(&token);
         render_password_form(&row.file_name, &token, Some("Incorrect password. Please try again."))
     }
 }
@@ -361,6 +447,7 @@ pub fn configure_share_routes(cfg: &mut web::ServiceConfig) {
 #[cfg(test)]
 mod tests {
     use super::escape_html;
+    use super::{check_verify_lockout, clear_verify_attempts, record_failed_verify};
 
     #[test]
     fn escapes_html_metacharacters_in_filenames() {
@@ -378,5 +465,46 @@ mod tests {
             escape_html("Movie.Title.2024.1080p.mkv"),
             "Movie.Title.2024.1080p.mkv"
         );
+    }
+
+    #[test]
+    fn five_wrong_passwords_lock_the_token_out() {
+        let token = "r4-lockout-budget";
+        clear_verify_attempts(token);
+        for _ in 0..5 {
+            assert!(check_verify_lockout(token).is_ok());
+            record_failed_verify(token);
+        }
+        let wait = check_verify_lockout(token).expect_err("6th check must lock out");
+        assert!(wait >= std::time::Duration::from_secs(1));
+        clear_verify_attempts(token);
+    }
+
+    #[test]
+    fn successful_login_clears_the_failed_counter() {
+        let token = "r4-lockout-cleared";
+        clear_verify_attempts(token);
+        for _ in 0..5 {
+            record_failed_verify(token);
+        }
+        assert!(check_verify_lockout(token).is_err());
+        clear_verify_attempts(token);
+        assert!(check_verify_lockout(token).is_ok());
+        clear_verify_attempts(token);
+    }
+
+    #[test]
+    fn lockout_is_per_token() {
+        let locked = "r4-lockout-per-token-a";
+        let fresh = "r4-lockout-per-token-b";
+        clear_verify_attempts(locked);
+        clear_verify_attempts(fresh);
+        for _ in 0..5 {
+            record_failed_verify(locked);
+        }
+        assert!(check_verify_lockout(locked).is_err());
+        assert!(check_verify_lockout(fresh).is_ok());
+        clear_verify_attempts(locked);
+        clear_verify_attempts(fresh);
     }
 }

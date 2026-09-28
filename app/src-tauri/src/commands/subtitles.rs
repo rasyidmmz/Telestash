@@ -354,10 +354,11 @@ pub async fn cmd_delete_video_subtitle(
 
 #[tauri::command]
 pub fn cmd_list_directory_files(path: String) -> Result<Vec<String>, String> {
+    // R4 #1: confine the folder-picker path (absolute, existing dir, outside
+    // system folders, symlinks resolved) before enumerating it.
+    let dir = crate::commands::path_guard::guard_list_directory(&path)?;
     let mut files = Vec::new();
-    let dir = Path::new(&path);
-    if dir.is_dir() {
-        if let Ok(entries) = std::fs::read_dir(dir) {
+    if let Ok(entries) = std::fs::read_dir(&dir) {
             for entry in entries.flatten() {
                 let p = entry.path();
                 if p.is_file() {

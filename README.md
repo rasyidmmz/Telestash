@@ -47,6 +47,8 @@ Unlike a browser-only media workflow, TeleStash is a native 64-bit Rust/Tauri ap
 ### 🛡️ 1. Absolute Privacy & Security
 * **Direct MTProto Connection**: TeleStash connects from the Windows application to Telegram without adding an application proxy or VPN route.
 * **User-Owned Credentials**: Authenticate securely using your own Telegram API ID and API Hash ([my.telegram.org](https://my.telegram.org)).
+* **API Hash Stays in Memory**: your API Hash is never written to disk — only the non-secret API ID is saved for convenience, so you re-enter the hash on a fresh sign-in. Phone numbers are masked in diagnostic logs.
+* **Share-Link Password Lockout**: after 5 wrong passwords on a password-protected share link, further attempts are paused for about 10 minutes.
 * **Personal Library Boundary**: TeleStash is designed for a user-owned Telegram media library. Telegram's service rules and applicable law remain the governing limits.
 
 ### 🎬 2. Personal Cinema Experience
@@ -112,6 +114,7 @@ The data path is intentionally short and deterministic: the Windows application 
 * 📤 **Single-Path Upload Console**: One file-picker upload flow into the active folder, always visible as the first item in the file grid/list — no drag-drop, folder, or URL ingestion paths.
 * 📊 **Transfer Diagnostics**: Detailed error classification, attempt history, part indexes, and retry decisions in the desktop logs view.
 * 🖥️ **Windows 11 System Integration**: Autostart toggle via `HKCU\Software\Microsoft\Windows\CurrentVersion\Run`.
+* 📦 **Archive Files Stay Closed**: `.zip`, `.rar`, and `.7z` files appear in your library and upload, download, and share normally — but their contents cannot be opened from inside the app. Open them with a local tool instead.
 
 ---
 

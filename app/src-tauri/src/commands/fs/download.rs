@@ -9,6 +9,7 @@ use grammers_client::media::Media;
 use tauri::{Emitter, State};
 
 use crate::bandwidth::BandwidthManager;
+use crate::commands::path_guard::guard_download_path;
 use crate::commands::utils::{map_error, resolve_peer};
 use crate::transfer_retry::{
     backoff_ms, DOWNLOAD_CHUNK_RETRY_ATTEMPTS, DOWNLOAD_STALL_TIMEOUT_SECS, RETRY_BASE_BACKOFF_MS,
@@ -61,7 +62,11 @@ pub async fn cmd_download_file(
     bw_state: State<'_, Arc<BandwidthManager>>,
 ) -> Result<String, String> {
     let tid = req.transfer_id.unwrap_or_default();
-    let save_path = req.save_path;
+    // R4 #1: confine the webview-supplied save path (absolute, normalized,
+    // outside system folders, existing parent) before touching the disk.
+    let save_path = guard_download_path(&req.save_path)?
+        .to_string_lossy()
+        .to_string();
     let folder_id = req.folder_id;
     let message_id = req.message_id;
 

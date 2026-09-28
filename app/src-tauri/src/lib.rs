@@ -59,6 +59,7 @@ use rand::RngExt;
 
 pub mod server;
 pub mod api_routes;
+pub mod api_rate_limit;
 pub mod db;
 pub mod share_routes;
 pub mod mp4_utils;
@@ -149,13 +150,16 @@ pub fn restart_api_server(app: &tauri::AppHandle) {
                             || origin_bytes.starts_with(b"http://127.0.0.1")
                             || origin_bytes.starts_with(b"https://asset.localhost")
                             || origin_bytes.starts_with(b"http://asset.localhost")
-                            || origin_bytes == b"null"
                     })
                     .allow_any_method()
                     .allow_any_header();
 
                 actix_web::App::new()
                     .wrap(cors)
+                    // R4 #4: backstop against runaway local scripts hammering
+                    // the API. Applied here only — never on the streaming
+                    // server, where video range-request bursts are normal.
+                    .wrap(crate::api_rate_limit::RateLimit::with_defaults())
                     .app_data(api_state_data.clone())
                     .app_data(api_state.clone())
                     .app_data(cache_dirs.clone())
@@ -184,6 +188,11 @@ pub fn restart_api_server(app: &tauri::AppHandle) {
 #[tauri::command]
 fn cmd_open_file_externally(path: String, app_handle: tauri::AppHandle) -> Result<(), String> {
     use tauri_plugin_opener::OpenerExt;
+    // R4 #1: never hand an unchecked webview path to the OS opener.
+    // Executables are always refused; unknown extensions are allowed only
+    // for backend-produced preview files inside the app cache dir.
+    let cache_dir = app_handle.path().app_cache_dir().unwrap_or_default();
+    crate::commands::path_guard::guard_open_externally(&path, &cache_dir)?;
     app_handle
         .opener()
         .open_path(&path, None::<&str>)
