@@ -22,6 +22,7 @@
 ### Fixed
 
 - **Playback settings survive a missing graphics adapter**: if a pinned adapter no longer exists, playback falls back to automatic decoding instead of failing to open.
+- **Patched test-tooling vulnerability**: upgraded `vitest` 3 → 4.1.11 to fix a path-traversal advisory in `@vitest/mocker` (dev-only, never shipped in the app).
 
 ## [1.8.1]
 
