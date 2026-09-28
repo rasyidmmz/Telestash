@@ -52,10 +52,10 @@ fn is_reserved_basename(file_name: &str) -> bool {
         "clock$" | "config$" => !lower.contains('.'),
         _ => {
             let b = stem.as_bytes();
-            (b.len() == 4 && (stem.starts_with("com") || stem.starts_with("lpt"))
+            b.len() == 4 && (stem.starts_with("com") || stem.starts_with("lpt"))
                 && (b[3] == b'1' || b[3] == b'2' || b[3] == b'3' || b[3] == b'4'
                     || b[3] == b'5' || b[3] == b'6' || b[3] == b'7'
-                    || b[3] == b'8' || b[3] == b'9'))
+                    || b[3] == b'8' || b[3] == b'9')
         }
     }
 }
