@@ -85,8 +85,8 @@ jobs:
           }
 
           $version = $env:GITHUB_REF -replace '^refs/tags/v', ''
-          if ($version -notmatch '^\d+\.\d+\.\d+$') {
-            throw "Release tags must use vMAJOR.MINOR.PATCH. Received v$version"
+          if ($version -notmatch '^\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?$') {
+            throw "Release tags must use vMAJOR.MINOR.PATCH or a prerelease suffix. Received v$version"
           }
 
           & node app/scripts/verify-versions.js $version
@@ -329,10 +329,10 @@ jobs:
             let release;
             try {
               ({ data: release } = await github.rest.repos.getReleaseByTag({ owner: context.repo.owner, repo: context.repo.repo, tag }));
-              await github.rest.repos.updateRelease({ owner: context.repo.owner, repo: context.repo.repo, release_id: release.id, name: `TeleStash v${version}`, body, draft: true, prerelease: false });
+              await github.rest.repos.updateRelease({ owner: context.repo.owner, repo: context.repo.repo, release_id: release.id, name: `TeleStash v${version}`, body, draft: true, prerelease: tag.includes('-') });
             } catch (error) {
               if (error.status !== 404) throw error;
-              ({ data: release } = await github.rest.repos.createRelease({ owner: context.repo.owner, repo: context.repo.repo, tag_name: tag, name: `TeleStash v${version}`, body, draft: true, prerelease: false }));
+              ({ data: release } = await github.rest.repos.createRelease({ owner: context.repo.owner, repo: context.repo.repo, tag_name: tag, name: `TeleStash v${version}`, body, draft: true, prerelease: tag.includes('-') }));
             }
 
             const existing = await github.paginate(github.rest.repos.listReleaseAssets, { owner: context.repo.owner, repo: context.repo.repo, release_id: release.id });
@@ -342,4 +342,4 @@ jobs:
             for (const name of assets) {
               await github.rest.repos.uploadReleaseAsset({ owner: context.repo.owner, repo: context.repo.repo, release_id: release.id, name, data: fs.readFileSync(path.join(assetDir, name)) });
             }
-            await github.rest.repos.updateRelease({ owner: context.repo.owner, repo: context.repo.repo, release_id: release.id, draft: false, prerelease: false });
+            await github.rest.repos.updateRelease({ owner: context.repo.owner, repo: context.repo.repo, release_id: release.id, draft: false, prerelease: tag.includes('-') });

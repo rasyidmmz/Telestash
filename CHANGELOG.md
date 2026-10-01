@@ -1,5 +1,11 @@
 # Changelog
 
+## [1.9.1-rc.1]
+
+### Added
+
+- **Prarilis untuk pengujian Windows:** pemulihan UI saat terjadi crash, backup–restore pengaturan non-rahasia, validasi antrean transfer, ekspor log diagnostik, marker crash native, dan test regresi keamanan/transfer.
+
 ## [1.9.0]
 
 ### Added
