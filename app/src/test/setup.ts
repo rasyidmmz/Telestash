@@ -15,6 +15,7 @@ vi.mock('@tauri-apps/api/event', () => ({
 
 vi.mock('@tauri-apps/plugin-dialog', () => ({
     open: vi.fn(async () => null),
+    save: vi.fn(async () => null),
 }));
 
 vi.mock('@tauri-apps/plugin-store', () => ({

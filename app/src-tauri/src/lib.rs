@@ -215,6 +215,13 @@ fn cmd_get_system_diagnostics(
     lines.push(format!("OS: {} {}", std::env::consts::OS, std::env::consts::ARCH));
 
     lines.push("Package Type: Windows installer".to_string());
+    let last_crash = std::env::temp_dir().join("telestash-starting.marker");
+    if let Ok(marker) = std::fs::read_to_string(&last_crash) {
+        lines.push("Previous startup/crash marker: detected".to_string());
+        lines.push(marker.trim().to_string());
+    } else {
+        lines.push("Previous startup/crash marker: none".to_string());
+    }
 
     // App data dir
     if let Ok(dir) = app.path().app_data_dir() {
@@ -227,6 +234,22 @@ fn cmd_get_system_diagnostics(
 }
 
 pub fn run() {
+    // Mark startup before initializing services. A subsequent clean startup
+    // can distinguish a previous native panic/crash from a normal exit.
+    let crash_marker = std::env::temp_dir().join("telestash-starting.marker");
+    let _ = std::fs::write(&crash_marker, format!("started_at={}\n", chrono::Utc::now().to_rfc3339()));
+    let previous_panic_hook = std::panic::take_hook();
+    std::panic::set_hook({
+        let crash_marker = crash_marker.clone();
+        Box::new(move |panic_info| {
+            let _ = std::fs::write(
+                &crash_marker,
+                format!("panic_at={}\n{}\n", chrono::Utc::now().to_rfc3339(), panic_info),
+            );
+            previous_panic_hook(panic_info);
+        })
+    });
+
     // env_logger writes to stderr by default; a release build with
     // `windows_subsystem = "windows"` has no console, so when
     // TELESTASH_LOG_FILE is set (the debug launcher sets it) every log line
@@ -520,6 +543,7 @@ pub fn run() {
             }
         }
         if let tauri::RunEvent::Exit = event {
+            let _ = std::fs::remove_file(std::env::temp_dir().join("telestash-starting.marker"));
             log::info!("Application exiting — shutting down background services...");
 
             // 1. Shutdown the grammers network runner

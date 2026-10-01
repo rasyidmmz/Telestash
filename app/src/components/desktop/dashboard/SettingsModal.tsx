@@ -12,6 +12,7 @@ import { LANGUAGES } from '../../../i18n/languages';
 import { ShareInfo } from '../../../types';
 import { version as appVersion } from '../../../../package.json';
 import { useTheme } from '../../../context/ThemeContext';
+import { createBackup, parseBackup, applyBackup } from '../../../backup';
 import { CustomTheme, ThemeColorPalette, generateThemeId } from '../../../theme/themeEngine';
 import { getDefaultPalette } from '../../../theme/presets';
 import { useModalDialog } from '../../../hooks/useModalDialog';
@@ -43,10 +44,11 @@ type SettingsTab = 'general' | 'playback' | 'themes' | 'sharing' | 'about';
 export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
     const closeButtonRef = useRef<HTMLButtonElement>(null);
     const dialogRef = useModalDialog(isOpen, onClose, closeButtonRef);
-    const { settings, updateSetting, resetSettings } = useSettings();
+    const { settings, updateSetting, resetSettings, replaceSettings } = useSettings();
     const { confirm } = useConfirm();
     const { t } = useTranslation();
     const [clearing, setClearing] = useState(false);
+    const [backupBusy, setBackupBusy] = useState(false);
 
     const [activeTab, setActiveTab] = useState<SettingsTab>('general');
 
@@ -66,6 +68,52 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
 
     // Diagnostics state
     const [diagLoading, setDiagLoading] = useState(false);
+
+    const handleExportBackup = useCallback(() => {
+        try {
+            const payload = createBackup(settings);
+            const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const anchor = document.createElement('a');
+            anchor.href = url;
+            anchor.download = `telestash-settings-backup-${new Date().toISOString().slice(0, 10)}.json`;
+            anchor.click();
+            URL.revokeObjectURL(url);
+            toast.success('Cadangan pengaturan berhasil dibuat. Rahasia login tidak disertakan.');
+        } catch (e) {
+            toast.error(`Gagal membuat cadangan: ${String(e)}`);
+        }
+    }, [settings]);
+
+    const handleImportBackup = useCallback(() => {
+        const input = document.createElement('input');
+        input.type = 'file';
+        input.accept = 'application/json,.json';
+        input.onchange = async () => {
+            const file = input.files?.[0];
+            if (!file) return;
+            setBackupBusy(true);
+            try {
+                const payload = parseBackup(await file.text());
+                const ok = await confirm({
+                    title: 'Pulihkan pengaturan?',
+                    message: 'Pengaturan tampilan, bahasa, batas transfer, dan tema akan diganti. Rahasia login tidak disentuh.',
+                    confirmText: 'Pulihkan',
+                    cancelText: 'Batal',
+                    variant: 'info',
+                });
+                if (!ok) return;
+                replaceSettings(payload.settings);
+                applyBackup(payload);
+                toast.success('Pengaturan dipulihkan. Tutup dan buka kembali panel ini bila tema belum berubah.');
+            } catch (e) {
+                toast.error(`Cadangan ditolak: ${String(e)}`);
+            } finally {
+                setBackupBusy(false);
+            }
+        };
+        input.click();
+    }, [confirm, replaceSettings]);
 
     const handleCheckForUpdates = useCallback(async () => {
         const updateInfo = await checkForUpdates();
@@ -1084,14 +1132,34 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                         </motion.div>
 
                         {/* Footer */}
-                        <div className="px-5 py-3 border-t border-stash-border flex items-center justify-between">
-                            <button
-                                onClick={resetSettings}
-                                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs text-stash-subtext hover:text-red-400 hover:bg-red-500/10 transition font-medium"
-                            >
-                                <RotateCcw className="w-3.5 h-3.5" />
-                                {t('settings.reset_defaults')}
-                            </button>
+                        <div className="px-5 py-3 border-t border-stash-border flex items-center justify-between gap-2">
+                            <div className="flex items-center gap-1.5">
+                                <button
+                                    onClick={resetSettings}
+                                    className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs text-stash-subtext hover:text-red-400 hover:bg-red-500/10 transition font-medium"
+                                >
+                                    <RotateCcw className="w-3.5 h-3.5" />
+                                    {t('settings.reset_defaults')}
+                                </button>
+                                <button
+                                    onClick={handleExportBackup}
+                                    disabled={backupBusy}
+                                    title="Ekspor pengaturan non-rahasia"
+                                    className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs text-stash-subtext hover:text-stash-text hover:bg-stash-hover transition font-medium disabled:opacity-50"
+                                >
+                                    <Download className="w-3.5 h-3.5" />
+                                    Cadangkan
+                                </button>
+                                <button
+                                    onClick={handleImportBackup}
+                                    disabled={backupBusy}
+                                    title="Pulihkan pengaturan non-rahasia"
+                                    className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs text-stash-subtext hover:text-stash-text hover:bg-stash-hover transition font-medium disabled:opacity-50"
+                                >
+                                    <Upload className="w-3.5 h-3.5" />
+                                    Pulihkan
+                                </button>
+                            </div>
                             <button
                                 onClick={onClose}
                                 className="px-4 py-1.5 rounded-lg text-xs font-medium bg-stash-primary text-white hover:bg-stash-primary/90 transition"

@@ -34,6 +34,7 @@ interface SettingsContextType {
     settings: Settings;
     updateSetting: <K extends keyof Settings>(key: K, value: Settings[K]) => void;
     resetSettings: () => void;
+    replaceSettings: (next: Settings) => void;
     isLoaded: boolean;
 }
 
@@ -101,8 +102,12 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
         setSettings(defaultSettings);
     }, []);
 
+    const replaceSettings = useCallback((next: Settings) => {
+        setSettings(next);
+    }, []);
+
     return (
-        <SettingsContext.Provider value={{ settings, updateSetting, resetSettings, isLoaded }}>
+        <SettingsContext.Provider value={{ settings, updateSetting, resetSettings, replaceSettings, isLoaded }}>
             {children}
         </SettingsContext.Provider>
     );

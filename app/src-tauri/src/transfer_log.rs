@@ -32,7 +32,7 @@ pub(crate) fn record_transfer_log(
         details,
         level: "error",
     };
-    let mut logs = logs().lock().unwrap();
+    let mut logs = logs().lock().unwrap_or_else(|poisoned| poisoned.into_inner());
     logs.insert(0, entry);
     logs.truncate(MAX_TRANSFER_LOGS);
 }
@@ -52,7 +52,7 @@ pub(crate) fn record_transfer_success(
         details,
         level: "info",
     };
-    let mut logs = logs().lock().unwrap();
+    let mut logs = logs().lock().unwrap_or_else(|poisoned| poisoned.into_inner());
     logs.insert(0, entry);
     logs.truncate(MAX_TRANSFER_LOGS);
 }
@@ -84,6 +84,7 @@ mod tests {
     // The log store is process-global; serialize the tests that touch it so
     // parallel test threads cannot steal capped slots from each other.
     static LOG_TEST_LOCK: std::sync::Mutex<()> = std::sync::Mutex::new(());
+    static LOG_POISON_TEST_LOCK: std::sync::Mutex<()> = std::sync::Mutex::new(());
 
     #[test]
     fn keeps_newest_entries_first_and_caps_old_entries() {

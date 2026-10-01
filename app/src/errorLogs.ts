@@ -26,6 +26,13 @@ export function recordErrorLog(input: Omit<ErrorLogEntry, 'id' | 'time'>) {
     emit();
 }
 
+export function getErrorLogsText(): string {
+    return logs.map((entry) => {
+        const header = `[${entry.time}] [${entry.source}${entry.category ? `/${entry.category}` : ''}] [${entry.level === 'info' ? 'INFO' : 'ERROR'}] ${entry.message}`;
+        return entry.details ? `${header}\n${entry.details}` : header;
+    }).join('\n\n');
+}
+
 export function clearErrorLogs() {
     logs = [];
     writeStoredLogs(logs);

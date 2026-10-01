@@ -9,6 +9,7 @@ import { showFileDialogFallback, pickWithFallback } from '../utils';
 import { humanizeError } from '../utils/errorHumanizer';
 import i18n from '../i18n';
 import { useSettings } from '../context/SettingsContext';
+import { recoverUploadQueue } from '../queueRecovery';
 import type { Store } from '@tauri-apps/plugin-store';
 
 interface ProgressPayload {
@@ -50,16 +51,14 @@ export function useFileUpload(activeFolderId: number | null, store: Store | null
 
     useEffect(() => {
         if (!store || initialized) return;
-        store.get<QueueItem[]>('uploadQueue').then((saved) => {
-            if (saved && saved.length > 0) {
-                const resumable = saved.filter(i => i.status === 'pending' || i.status === 'paused');
-                if (resumable.length > 0) {
-                    setUploadQueue(resumable);
-                    toast.info(`Restored ${resumable.length} upload queue items`);
-                }
+        store.get<unknown>('uploadQueue').then((saved) => {
+            const resumable = recoverUploadQueue(saved);
+            if (resumable.length > 0) {
+                setUploadQueue(resumable);
+                toast.info(`${resumable.length} upload antrean dipulihkan sebagai jeda. Tekan Lanjutkan untuk memulai.`);
             }
             setInitialized(true);
-        });
+        }).catch(() => setInitialized(true));
     }, [store, initialized]);
 
     useEffect(() => {

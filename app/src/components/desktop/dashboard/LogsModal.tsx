@@ -1,9 +1,9 @@
 import { AnimatePresence, motion } from 'framer-motion';
-import { AlertTriangle, Copy, Terminal, Trash2, X } from '../../shared/icons.tsx';
+import { AlertTriangle, Copy, Download, Terminal, Trash2, X } from '../../shared/icons.tsx';
 import { toast } from 'sonner';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { invoke } from '@tauri-apps/api/core';
-import { clearErrorLogs, ErrorLogEntry, useErrorLogs } from '../../../errorLogs';
+import { clearErrorLogs, ErrorLogEntry, getErrorLogsText, useErrorLogs } from '../../../errorLogs';
 import { useModalDialog } from '../../../hooks/useModalDialog';
 import { humanizeError } from '../../../utils/errorHumanizer';
 import i18n from '../../../i18n';
@@ -42,9 +42,25 @@ export function LogsModal({ isOpen, onClose }: LogsModalProps) {
     }, [logs]);
 
     const copyLogs = async () => {
-        const text = formattedTerminalText || 'No logs recorded';
-        await navigator.clipboard.writeText(text);
-        toast.success('Terminal logs copied to clipboard');
+        const text = formattedTerminalText || getErrorLogsText() || 'No logs recorded';
+        try {
+            await navigator.clipboard.writeText(text);
+            toast.success('Log diagnostik disalin. Tempelkan ke Notepad untuk menyimpannya.');
+        } catch (e) {
+            toast.error(humanizeError(e, 'menyalin log diagnostik'));
+        }
+    };
+
+    const downloadLogs = () => {
+        const text = formattedTerminalText || getErrorLogsText() || 'No logs recorded';
+        const blob = new Blob([text], { type: 'text/plain;charset=utf-8' });
+        const url = URL.createObjectURL(blob);
+        const anchor = document.createElement('a');
+        anchor.href = url;
+        anchor.download = `telestash-diagnostics-${new Date().toISOString().replace(/[:.]/g, '-')}.txt`;
+        anchor.click();
+        URL.revokeObjectURL(url);
+        toast.success('Berkas log diagnostik berhasil disimpan.');
     };
 
     const clearLogs = async () => {
@@ -149,14 +165,24 @@ export function LogsModal({ isOpen, onClose }: LogsModalProps) {
                                 <Trash2 className="w-3.5 h-3.5" />
                                 Clear Console
                             </button>
-                            <button
-                                onClick={copyLogs}
-                                disabled={logs.length === 0}
-                                className="flex items-center gap-1.5 px-4 py-1.5 rounded-lg text-xs font-medium bg-emerald-600 text-white hover:bg-emerald-500 transition disabled:opacity-30 disabled:pointer-events-none shadow-sm"
-                            >
-                                <Copy className="w-3.5 h-3.5" />
-                                Copy Output
-                            </button>
+                            <div className="flex items-center gap-2">
+                                <button
+                                    onClick={copyLogs}
+                                    disabled={logs.length === 0}
+                                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border border-[#334155] text-[#cbd5e1] hover:bg-[#1e293b] transition disabled:opacity-30 disabled:pointer-events-none"
+                                >
+                                    <Copy className="w-3.5 h-3.5" />
+                                    Salin
+                                </button>
+                                <button
+                                    onClick={downloadLogs}
+                                    disabled={logs.length === 0}
+                                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-emerald-600 text-white hover:bg-emerald-500 transition disabled:opacity-30 disabled:pointer-events-none shadow-sm"
+                                >
+                                    <Download className="w-3.5 h-3.5" />
+                                    Simpan .txt
+                                </button>
+                            </div>
                         </div>
                     </motion.div>
                 </motion.div>

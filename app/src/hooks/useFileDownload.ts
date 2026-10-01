@@ -6,6 +6,9 @@ import { toast } from 'sonner';
 import { DownloadItem, TelegramFile } from '../types';
 import { showFileDialogFallback, pickWithFallback, sanitizeFilename } from '../utils';
 import { useSettings } from '../context/SettingsContext';
+import { humanizeError } from '../utils/errorHumanizer';
+import i18n from '../i18n';
+import { recoverDownloadQueue } from '../queueRecovery';
 import type { Store } from '@tauri-apps/plugin-store';
 
 interface ProgressPayload {
@@ -43,16 +46,14 @@ export function useFileDownload(store: Store | null) {
     // Load saved queue on mount
     useEffect(() => {
         if (!store || initialized) return;
-        store.get<DownloadItem[]>('downloadQueue').then((saved) => {
-            if (saved && saved.length > 0) {
-                const resumable = saved.filter(i => i.status === 'pending' || i.status === 'paused');
-                if (resumable.length > 0) {
-                    setDownloadQueue(resumable);
-                    toast.info(`Restored ${resumable.length} download queue items`);
-                }
+        store.get<unknown>('downloadQueue').then((saved) => {
+            const resumable = recoverDownloadQueue(saved);
+            if (resumable.length > 0) {
+                setDownloadQueue(resumable);
+                toast.info(`${resumable.length} download antrean dipulihkan sebagai jeda. Tekan Lanjutkan untuk memulai.`);
             }
             setInitialized(true);
-        });
+        }).catch(() => setInitialized(true));
     }, [store, initialized]);
 
     // Save queue when it changes (pending or paused items)
@@ -116,7 +117,7 @@ export function useFileDownload(store: Store | null) {
                     setDownloadQueue(q => q.map(i => i.id === item.id ? { ...i, status: 'cancelled' } : i));
                 } else {
                     setDownloadQueue(q => q.map(i => i.id === item.id ? { ...i, status: 'error', error: errMsg } : i));
-                    toast.error(`Download failed: ${item.filename}`);
+                    toast.error(`${humanizeError(e, i18n.t('errors.action_download'))} — ${item.filename}`);
                 }
             } else {
                 cancelledRef.current.delete(item.id);
