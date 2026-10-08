@@ -1,10 +1,23 @@
 # Changelog
 
+## [1.9.1]
+
+### Added
+
+- **Interface recovery**: retry the interface or reload the application after a rendering error, with technical details recorded in the diagnostic logs.
+- **Settings backup and restore**: export non-secret application settings and themes to JSON, then import a supported backup after confirmation. Telegram credentials, sessions, and media files are excluded.
+- **Diagnostic log export**: copy combined frontend and transfer logs or download them as a text file. System diagnostics include the native startup/panic marker when available.
+- **Regression coverage**: automated checks for settings backup parsing, queue recovery, transfer behavior, and security configuration.
+
+### Changed
+
+- **Transfer queue recovery**: validate saved upload and download entries, discard invalid or duplicate entries, and restore eligible pending or paused transfers in a paused state.
+
 ## [1.9.1-rc.1]
 
 ### Added
 
-- **Prarilis untuk pengujian Windows:** pemulihan UI saat terjadi crash, backup–restore pengaturan non-rahasia, validasi antrean transfer, ekspor log diagnostik, marker crash native, dan test regresi keamanan/transfer.
+- **Windows testing prerelease**: interface recovery, non-secret settings backup and restore, transfer queue validation, diagnostic log export, native startup/panic markers, and security/transfer regression tests.
 
 ## [1.9.0]
 

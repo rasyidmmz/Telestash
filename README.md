@@ -65,6 +65,13 @@ Unlike a browser-only media workflow, TeleStash is a native 64-bit Rust/Tauri ap
 * **Attach Subtitles**: upload SRT/ASS/SSA/VTT/VobSub files (matched to videos by filename) as hidden sidecar messages in the same Telegram folder, cached locally and auto-selected by MPV.
 * **Manage & Remove**: right-click any video to review its attached subtitles (language, format, filename) and remove them — the Telegram sidecar, cached copies, and registry entry are cleaned up together.
 
+### 🛠️ 5. Recovery, settings backup, and diagnostics
+
+* **Interface recovery**: if a rendering error interrupts the interface, retry it or reload the application. Technical details are recorded in the diagnostic logs.
+* **Settings backup and restore**: use the backup and restore buttons in the Settings footer to export a JSON backup or import one after confirmation. Backups include general settings, transfer concurrency limits, language, and themes. They exclude Telegram credentials, sessions, media files, and backend playback/API settings.
+* **Transfer queue recovery**: saved upload and download entries are checked for valid identities and required fields. Eligible pending or paused transfers return paused so you can resume them; invalid and duplicate entries are discarded.
+* **Diagnostic export**: copy combined frontend and transfer logs or save them as a text file from the logs panel. System diagnostics also include the native startup/panic marker when available.
+
 ---
 
 ## 🏗️ System Architecture
