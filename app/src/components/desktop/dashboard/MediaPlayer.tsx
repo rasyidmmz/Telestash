@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { X, ChevronLeft, ChevronRight } from '../../shared/icons.tsx';
 import { invoke } from '@tauri-apps/api/core';
 import { TelegramFile } from '../../../types';
@@ -7,6 +7,7 @@ import { toast } from 'sonner';
 import { recordWatchEvent } from '../../../utils/watchHistory';
 import { humanizeError } from '../../../utils/errorHumanizer';
 import i18n from '../../../i18n';
+import { useModalDialog } from '../../../hooks/useModalDialog';
 
 interface StreamInfo {
     token: string;
@@ -26,8 +27,10 @@ interface MediaPlayerProps {
 
 export function MediaPlayer({ file, onClose, onNext, onPrev, currentIndex, totalItems, activeFolderId: _activeFolderId, playlistFiles }: MediaPlayerProps) {
     const [streamInfo, setStreamInfo] = useState<StreamInfo | null>(null);
-    const [isPlayingInMpv, setIsPlayingInMpv] = useState(false);
+    const [hasOpenedInMpv, setHasOpenedInMpv] = useState(false);
     const [mpvError, setMpvError] = useState<string | null>(null);
+    const closeButtonRef = useRef<HTMLButtonElement>(null);
+    const dialogRef = useModalDialog(true, onClose, closeButtonRef);
 
     // Get stream info on mount
     useEffect(() => {
@@ -48,9 +51,9 @@ export function MediaPlayer({ file, onClose, onNext, onPrev, currentIndex, total
 
     // Reset MPV state when file changes (playlist navigation)
     useEffect(() => {
-        setIsPlayingInMpv(false);
+        setHasOpenedInMpv(false);
         setMpvError(null);
-    }, [file.id]);
+    }, [file.id, file.folder_id]);
 
     // Naturally sort playlist files by filename (ascending: Ep 01 -> Ep 02 -> Ep 10)
     const sortedPlaylistFiles = playlistFiles && playlistFiles.length > 0
@@ -74,7 +77,7 @@ export function MediaPlayer({ file, onClose, onNext, onPrev, currentIndex, total
 
     // Automatically trigger MPV launch when streamUrl is ready
     useEffect(() => {
-        if (isMedia && streamUrl && !isPlayingInMpv && !mpvError) {
+        if (isMedia && streamUrl && !hasOpenedInMpv && !mpvError) {
             invoke('cmd_play_in_mpv', {
                 url: streamUrl,
                 messageId: file.id,
@@ -84,7 +87,7 @@ export function MediaPlayer({ file, onClose, onNext, onPrev, currentIndex, total
                 startIndex: startIndex !== undefined && startIndex >= 0 ? startIndex : undefined
             })
                 .then(() => {
-                    setIsPlayingInMpv(true);
+                    setHasOpenedInMpv(true);
                     recordWatchEvent(file, 'started');
                 })
                 .catch((err) => {
@@ -94,7 +97,7 @@ export function MediaPlayer({ file, onClose, onNext, onPrev, currentIndex, total
                     toast.error(`${humanizeError(err, i18n.t('errors.action_play'))} (${errMsg})`);
                 });
         }
-    }, [isMedia, streamUrl, isPlayingInMpv, mpvError, file.id, file.folder_id, file.name, file, sortedPlaylistFiles, streamInfo, fileFolderParam]);
+    }, [isMedia, streamUrl, hasOpenedInMpv, mpvError, file.id, file.folder_id, file.name, file, sortedPlaylistFiles, streamInfo, fileFolderParam]);
 
     // Handle keyboard shortcuts (Left/Right arrow keys for navigation, Esc for close)
     useEffect(() => {
@@ -111,9 +114,6 @@ export function MediaPlayer({ file, onClose, onNext, onPrev, currentIndex, total
             } else if (e.key === 'ArrowLeft' || key === 'j') {
                 e.preventDefault();
                 onPrev?.();
-            } else if (e.key === 'Escape') {
-                e.preventDefault();
-                onClose();
             }
         };
 
@@ -123,13 +123,15 @@ export function MediaPlayer({ file, onClose, onNext, onPrev, currentIndex, total
 
     return (
         <div className="fixed inset-0 z-[200] bg-black/90 flex items-center justify-center p-4 backdrop-blur-md" onClick={onClose}>
-            <div className="relative w-full max-w-lg text-center p-8 bg-stash-surface border border-stash-border/60 rounded-2xl shadow-2xl flex flex-col items-center gap-6" onClick={e => e.stopPropagation()}>
+            <div ref={dialogRef} tabIndex={-1} className="relative w-full max-w-lg text-center p-8 bg-stash-surface border border-stash-border rounded-2xl shadow-2xl flex flex-col items-center gap-6" onClick={e => e.stopPropagation()} role="dialog" aria-modal="true" aria-label={`Player: ${file.name}`}>
                 {/* Close Button */}
                 <div className="absolute top-4 right-4">
                     <button
+                        ref={closeButtonRef}
                         onClick={onClose}
-                        className="w-10 h-10 flex items-center justify-center text-white/50 hover:text-white bg-white/10 hover:bg-white/20 rounded-full transition-all"
+                        className="w-10 h-10 flex items-center justify-center text-stash-subtext hover:text-stash-text bg-stash-hover rounded-xl transition-colors"
                         title="Close (Esc)"
+                        aria-label="Close player dialog"
                     >
                         <X className="w-5 h-5" />
                     </button>
@@ -139,8 +141,9 @@ export function MediaPlayer({ file, onClose, onNext, onPrev, currentIndex, total
                 {onPrev && (
                     <button
                         onClick={onPrev}
-                        className="absolute left-4 top-1/2 -translate-y-1/2 p-2 text-white/50 hover:text-white bg-white/10 hover:bg-white/20 rounded-full transition-all z-10"
+                        className="absolute left-4 top-1/2 -translate-y-1/2 p-2 text-stash-subtext hover:text-stash-text bg-stash-hover rounded-xl transition-colors z-10"
                         title="Previous (ArrowLeft / J)"
+                        aria-label="Previous file"
                     >
                         <ChevronLeft className="w-6 h-6" />
                     </button>
@@ -149,8 +152,9 @@ export function MediaPlayer({ file, onClose, onNext, onPrev, currentIndex, total
                 {onNext && (
                     <button
                         onClick={onNext}
-                        className="absolute right-4 top-1/2 -translate-y-1/2 p-2 text-white/50 hover:text-white bg-white/10 hover:bg-white/20 rounded-full transition-all z-10"
+                        className="absolute right-4 top-1/2 -translate-y-1/2 p-2 text-stash-subtext hover:text-stash-text bg-stash-hover rounded-xl transition-colors z-10"
                         title="Next (ArrowRight / L)"
+                        aria-label="Next file"
                     >
                         <ChevronRight className="w-6 h-6" />
                     </button>
@@ -160,19 +164,19 @@ export function MediaPlayer({ file, onClose, onNext, onPrev, currentIndex, total
                 {!streamUrl ? (
                     <div className="flex flex-col items-center gap-4 py-6">
                         <div className="w-10 h-10 border-4 border-stash-primary border-t-transparent rounded-full animate-spin"></div>
-                        <p className="text-white/80">Connecting stream...</p>
+                        <p className="text-stash-subtext">Connecting stream...</p>
                     </div>
                 ) : mpvError ? (
                     <div className="flex flex-col items-center gap-4 py-4 text-center">
                         <div className="w-16 h-16 rounded-full bg-red-500/10 flex items-center justify-center text-red-500 border border-red-500/20">
                             <X className="w-8 h-8" />
                         </div>
-                        <h3 className="text-lg font-bold text-white">Failed to Play Media</h3>
-                        <p className="text-sm text-white/60 max-w-sm">{mpvError}</p>
+                        <h3 className="text-lg font-semibold text-stash-text">Failed to Play Media</h3>
+                        <p className="text-sm text-stash-subtext max-w-sm">{mpvError}</p>
                     </div>
                 ) : (
                     <>
-                        <div className="w-20 h-20 rounded-full bg-stash-primary/10 flex items-center justify-center text-stash-primary border border-stash-primary/25 animate-pulse">
+                        <div className="w-20 h-20 rounded-2xl bg-stash-primary/10 flex items-center justify-center text-stash-primary border border-stash-primary/25">
                             {isVideo ? (
                                 <svg xmlns="http://www.w3.org/2000/svg" className="w-10 h-10 fill-current" viewBox="0 0 24 24"><polygon points="6 3 20 12 6 21 6 3"/></svg>
                             ) : (
@@ -181,11 +185,9 @@ export function MediaPlayer({ file, onClose, onNext, onPrev, currentIndex, total
                         </div>
 
                         <div>
-                            <h3 className="text-xl font-bold text-white mb-2 line-clamp-2 px-6">{file.name}</h3>
-                            <p className="text-sm text-white/60">
-                                {isPlayingInMpv 
-                                    ? `Playing ${isVideo ? 'video' : 'audio'} natively in MPV...` 
-                                    : `Opening ${isVideo ? 'video' : 'audio'} in MPV...`}
+                            <h3 className="text-xl font-semibold text-stash-text mb-2 line-clamp-2 px-6">{file.name}</h3>
+                            <p className="text-sm text-stash-subtext" role="status">
+                                {hasOpenedInMpv ? 'Opened in player' : 'Opening player...'}
                             </p>
                         </div>
 
@@ -205,15 +207,15 @@ export function MediaPlayer({ file, onClose, onNext, onPrev, currentIndex, total
                                         });
                                     }
                                 }}
-                                className="w-full py-3 bg-stash-primary text-black rounded-xl hover:shadow-lg hover:shadow-stash-primary/20 transition-all text-sm font-semibold"
+                                className="auth-primary w-full py-3 rounded-xl transition-colors text-sm font-semibold"
                             >
                                 Reopen in MPV
                             </button>
                             <button
                                 onClick={onClose}
-                                className="w-full py-3 bg-white/5 hover:bg-white/10 text-white border border-white/10 rounded-xl transition-all text-sm font-semibold"
+                                className="w-full py-3 bg-stash-hover hover:bg-stash-border text-stash-text border border-stash-border rounded-xl transition-colors text-sm font-semibold"
                             >
-                                Close Player
+                                Close
                             </button>
                         </div>
                     </>
@@ -221,7 +223,7 @@ export function MediaPlayer({ file, onClose, onNext, onPrev, currentIndex, total
 
                 {/* Playlist Counter */}
                 {typeof currentIndex === 'number' && typeof totalItems === 'number' && totalItems > 0 && (
-                    <div className="text-[11px] text-white/40 select-none">
+                    <div className="text-[11px] text-stash-subtext select-none">
                         File {currentIndex + 1} of {totalItems}
                     </div>
                 )}

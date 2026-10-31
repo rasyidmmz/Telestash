@@ -16,7 +16,8 @@
     "verify:updater-signing-key": "node scripts/verify-updater-signing-key.js",
     "verify:versions": "node scripts/verify-versions.js",
     "bump-version": "node scripts/bump-version.js",
-    "test:unit": "vitest run"
+    "test:unit": "vitest run",
+    "test:watch-history-sql": "node --test scripts/watch-history-sql.test.js"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",

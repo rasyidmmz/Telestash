@@ -1,9 +1,12 @@
 import { createContext, useContext, useState, useEffect, ReactNode, useCallback } from 'react';
 import { load } from '@tauri-apps/plugin-store';
 import { SupportedLanguage } from '../i18n/languages';
+import { folderPresentationKey, getFolderPresentation, sanitizeFolderPresentationMap } from '../folderPresentation';
+import type { FolderPresentation, FolderPresentationMap } from '../folderPresentation';
 
 export interface Settings {
     viewMode: 'grid' | 'list' | 'posters';
+    folderPresentation: FolderPresentationMap;
     autoUpdate: boolean;
     maxConcurrentUploads: number;
     maxConcurrentDownloads: number;
@@ -18,6 +21,7 @@ export interface Settings {
 
 const defaultSettings: Settings = {
     viewMode: 'grid',
+    folderPresentation: {},
     autoUpdate: true,
     maxConcurrentUploads: 6,
     maxConcurrentDownloads: 6,
@@ -33,6 +37,7 @@ const defaultSettings: Settings = {
 interface SettingsContextType {
     settings: Settings;
     updateSetting: <K extends keyof Settings>(key: K, value: Settings[K]) => void;
+    updateFolderPresentation: (folderId: number | null, patch: Partial<FolderPresentation>) => void;
     resetSettings: () => void;
     replaceSettings: (next: Settings) => void;
     isLoaded: boolean;
@@ -65,7 +70,11 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
                         delete savedSettings[key];
                     }
                     // Merge with defaults so new keys are always present
-                    const merged = { ...defaultSettings, ...savedSettings } as Settings;
+                    const merged = {
+                        ...defaultSettings,
+                        ...savedSettings,
+                        folderPresentation: sanitizeFolderPresentationMap(savedSettings.folderPresentation),
+                    } as Settings;
                     setSettings(merged);
                 }
             } catch {
@@ -98,6 +107,18 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
         setSettings(prev => ({ ...prev, [key]: value }));
     }, []);
 
+    const updateFolderPresentation = useCallback((folderId: number | null, patch: Partial<FolderPresentation>) => {
+        setSettings(prev => {
+            const current = getFolderPresentation(prev.folderPresentation, folderId);
+            const next = { ...current, ...patch, kind: patch.kind ?? current.kind };
+            if (next.viewMode === undefined) delete next.viewMode;
+            return {
+                ...prev,
+                folderPresentation: { ...prev.folderPresentation, [folderPresentationKey(folderId)]: next },
+            };
+        });
+    }, []);
+
     const resetSettings = useCallback(() => {
         setSettings(defaultSettings);
     }, []);
@@ -107,7 +128,7 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
     }, []);
 
     return (
-        <SettingsContext.Provider value={{ settings, updateSetting, resetSettings, replaceSettings, isLoaded }}>
+        <SettingsContext.Provider value={{ settings, updateSetting, updateFolderPresentation, resetSettings, replaceSettings, isLoaded }}>
             {children}
         </SettingsContext.Provider>
     );

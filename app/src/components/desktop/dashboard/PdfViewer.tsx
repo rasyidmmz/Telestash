@@ -5,6 +5,7 @@ import { invoke } from '@tauri-apps/api/core';
 // which isn't available in Tauri's WebKit WebView
 import * as pdfjsLib from 'pdfjs-dist/legacy/build/pdf.mjs';
 import { TelegramFile } from '../../../types';
+import { useModalDialog } from '../../../hooks/useModalDialog';
 
 // Use Vite's ?url suffix to get a properly bundled asset URL for the worker
 import workerUrl from 'pdfjs-dist/legacy/build/pdf.worker.mjs?url';
@@ -26,6 +27,8 @@ interface PdfViewerProps {
 }
 
 export function PdfViewer({ file, onClose, onNext, onPrev, currentIndex, totalItems, activeFolderId }: PdfViewerProps) {
+    const closeButtonRef = useRef<HTMLButtonElement>(null);
+    const dialogRef = useModalDialog(true, onClose, closeButtonRef);
     const [streamInfo, setStreamInfo] = useState<StreamInfo | null>(null);
     const [pdf, setPdf] = useState<pdfjsLib.PDFDocumentProxy | null>(null);
     const [numPages, setNumPages] = useState<number>(0);
@@ -144,12 +147,6 @@ export function PdfViewer({ file, onClose, onNext, onPrev, currentIndex, totalIt
                 return;
             }
 
-            if (e.key === 'Escape') {
-                e.preventDefault();
-                onClose();
-                return;
-            }
-
             if (e.key === '=' || key === '+') {
                 e.preventDefault();
                 setScale(s => Math.min(s + 0.2, 3));
@@ -181,7 +178,7 @@ export function PdfViewer({ file, onClose, onNext, onPrev, currentIndex, totalIt
     };
 
     return (
-        <div className="fixed inset-0 z-[200] bg-black/90 flex flex-col p-4 backdrop-blur-md animate-in fade-in duration-200" onClick={onClose}>
+        <div ref={dialogRef} tabIndex={-1} role="dialog" aria-modal="true" aria-label={`Document: ${file.name}`} className="fixed inset-0 z-[200] bg-black/90 flex flex-col p-4 backdrop-blur-md animate-in fade-in duration-200" onClick={onClose}>
             {/* Header / Controls */}
             <div className="absolute top-0 left-0 right-0 flex justify-between items-center px-4 md:px-8 z-50 pointer-events-none pt-[calc(1rem+env(safe-area-inset-top))]">
                 <div className="text-white bg-black/40 backdrop-blur-md px-4 py-2 rounded-full pointer-events-auto border border-white/10 flex items-center gap-3">
@@ -212,9 +209,11 @@ export function PdfViewer({ file, onClose, onNext, onPrev, currentIndex, totalIt
                     </div>
 
                     <button
+                        ref={closeButtonRef}
                         onClick={onClose}
                         className="p-3 text-white/50 hover:text-white bg-black/40 backdrop-blur-md hover:bg-black/60 rounded-full transition-all border border-white/10"
                         title="Close PDF Viewer"
+                        aria-label="Close PDF viewer"
                     >
                         <X className="w-5 h-5" />
                     </button>

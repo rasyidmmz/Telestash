@@ -45,9 +45,9 @@ export function LogsModal({ isOpen, onClose }: LogsModalProps) {
         const text = formattedTerminalText || getErrorLogsText() || 'No logs recorded';
         try {
             await navigator.clipboard.writeText(text);
-            toast.success('Log diagnostik disalin. Tempelkan ke Notepad untuk menyimpannya.');
+            toast.success('Diagnostic logs copied.');
         } catch (e) {
-            toast.error(humanizeError(e, 'menyalin log diagnostik'));
+            toast.error(humanizeError(e, 'copy diagnostic logs'));
         }
     };
 
@@ -60,7 +60,7 @@ export function LogsModal({ isOpen, onClose }: LogsModalProps) {
         anchor.download = `telestash-diagnostics-${new Date().toISOString().replace(/[:.]/g, '-')}.txt`;
         anchor.click();
         URL.revokeObjectURL(url);
-        toast.success('Berkas log diagnostik berhasil disimpan.');
+        toast.success('Diagnostic logs saved.');
     };
 
     const clearLogs = async () => {
@@ -94,28 +94,23 @@ export function LogsModal({ isOpen, onClose }: LogsModalProps) {
                         aria-modal="true"
                         aria-labelledby="logs-modal-title"
                         tabIndex={-1}
-                        className="w-full max-w-4xl max-h-[85vh] bg-[#090d16] border border-[#1e293b] rounded-xl shadow-2xl overflow-hidden flex flex-col font-mono"
+                        className="w-full max-w-4xl max-h-[85vh] bg-stash-surface border border-stash-border rounded-2xl shadow-2xl overflow-hidden flex flex-col"
                     >
                         {/* Terminal Header */}
-                        <div className="px-5 py-3.5 border-b border-[#1e293b] flex items-center justify-between bg-[#0f172a]/80 select-none">
+                        <div className="px-5 py-3.5 border-b border-stash-border flex items-center justify-between bg-stash-hover select-none">
                             <div className="flex items-center gap-3">
-                                <div className="flex items-center gap-1.5 mr-2">
-                                    <div className="w-3 h-3 rounded-full bg-red-500/80" />
-                                    <div className="w-3 h-3 rounded-full bg-yellow-500/80" />
-                                    <div className="w-3 h-3 rounded-full bg-green-500/80" />
+                                <div className="flex items-center gap-2 text-stash-subtext">
+                                    <Terminal className="w-4 h-4 text-stash-primary" />
+                                    <h2 id="logs-modal-title" className="text-base font-semibold tracking-tight text-stash-text">Diagnostic logs</h2>
                                 </div>
-                                <div className="flex items-center gap-2 text-[#94a3b8]">
-                                    <Terminal className="w-4 h-4 text-emerald-400" />
-                                    <h2 id="logs-modal-title" className="text-xs font-medium tracking-wide text-[#f8fafc]">System Diagnostic Console</h2>
-                                </div>
-                                <span className="text-[10px] px-2 py-0.5 rounded-full bg-[#1e293b] text-[#94a3b8] font-normal">
+                                <span className="text-[10px] px-2 py-0.5 rounded-full bg-stash-hover text-stash-subtext font-normal">
                                     {logs.length} line{logs.length === 1 ? '' : 's'}
                                 </span>
                             </div>
                             <button
                                 ref={closeButtonRef}
                                 onClick={onClose}
-                                className="p-1.5 rounded-lg text-[#94a3b8] hover:text-[#f8fafc] hover:bg-[#1e293b] transition"
+                                className="p-1.5 rounded-lg text-stash-subtext hover:text-stash-text hover:bg-stash-hover transition"
                                 title="Close"
                                 aria-label="Close logs"
                             >
@@ -124,28 +119,28 @@ export function LogsModal({ isOpen, onClose }: LogsModalProps) {
                         </div>
 
                         {/* Terminal Stream View */}
-                        <div className="p-4 flex-1 overflow-y-auto bg-[#030712] font-mono text-[12px] leading-relaxed text-[#38bdf8] whitespace-pre select-text">
+                        <div className="p-4 flex-1 overflow-y-auto bg-stash-bg font-mono text-[12px] leading-relaxed text-stash-text whitespace-pre select-text">
                             {logs.length === 0 ? (
-                                <div className="h-64 flex flex-col items-center justify-center text-center text-[#64748b]">
-                                    <AlertTriangle className="w-7 h-7 mb-2 text-[#475569]" />
+                                <div className="h-64 flex flex-col items-center justify-center text-center text-stash-subtext">
+                                    <AlertTriangle className="w-7 h-7 mb-2 text-stash-subtext" />
                                     <p className="text-xs font-mono">System log stream empty</p>
                                 </div>
                             ) : (
                                 <div className="space-y-4">
                                     {logs.map((log) => (
                                         <div key={log.id} className="leading-snug">
-                                            <div className="flex items-start flex-wrap gap-x-2 text-[#e2e8f0]">
-                                                <span className="text-[#64748b]">{formatTimestamp(log.time)}</span>
-                                                <span className="text-emerald-400 font-semibold">[{log.source}{log.category ? `/${log.category}` : ''}]</span>
+                                            <div className="flex items-start flex-wrap gap-x-2 text-stash-text">
+                                                <span className="text-stash-subtext">{formatTimestamp(log.time)}</span>
+                                                <span className="text-stash-primary font-semibold">[{log.source}{log.category ? `/${log.category}` : ''}]</span>
                                                 {log.level === 'info' ? (
                                                     <span className="text-sky-400 font-bold">[INFO]</span>
                                                 ) : (
                                                     <span className="text-red-400 font-bold">[ERROR]</span>
                                                 )}
-                                                <span className="text-[#f8fafc] font-medium break-all">{log.message}</span>
+                                                <span className="text-stash-text font-medium break-all">{log.message}</span>
                                             </div>
                                             {log.details && (
-                                                <div className="mt-1 pl-4 border-l-2 border-[#1e293b] text-[#94a3b8] text-[11px] whitespace-pre-wrap break-all">
+                                                <div className="mt-1 pl-4 border-l-2 border-stash-border text-stash-subtext text-[11px] whitespace-pre-wrap break-all">
                                                     {formatDetailsBlock(log.details)}
                                                 </div>
                                             )}
@@ -156,11 +151,11 @@ export function LogsModal({ isOpen, onClose }: LogsModalProps) {
                         </div>
 
                         {/* Terminal Footer */}
-                        <div className="px-5 py-3 border-t border-[#1e293b] flex items-center justify-between bg-[#0f172a]/60">
+                        <div className="px-5 py-3 border-t border-stash-border flex items-center justify-between bg-stash-hover">
                             <button
                                 onClick={clearLogs}
                                 disabled={logs.length === 0}
-                                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs text-[#94a3b8] hover:text-red-400 hover:bg-red-500/10 transition font-medium disabled:opacity-30 disabled:pointer-events-none"
+                                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs text-stash-subtext hover:text-red-400 hover:bg-red-500/10 transition font-medium disabled:opacity-30 disabled:pointer-events-none"
                             >
                                 <Trash2 className="w-3.5 h-3.5" />
                                 Clear Console
@@ -169,18 +164,18 @@ export function LogsModal({ isOpen, onClose }: LogsModalProps) {
                                 <button
                                     onClick={copyLogs}
                                     disabled={logs.length === 0}
-                                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border border-[#334155] text-[#cbd5e1] hover:bg-[#1e293b] transition disabled:opacity-30 disabled:pointer-events-none"
+                                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border border-stash-border text-stash-text hover:bg-stash-hover transition disabled:opacity-30 disabled:pointer-events-none"
                                 >
                                     <Copy className="w-3.5 h-3.5" />
-                                    Salin
+                                    Copy
                                 </button>
                                 <button
                                     onClick={downloadLogs}
                                     disabled={logs.length === 0}
-                                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-emerald-600 text-white hover:bg-emerald-500 transition disabled:opacity-30 disabled:pointer-events-none shadow-sm"
+                                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium auth-primary transition disabled:opacity-30 disabled:pointer-events-none shadow-sm"
                                 >
                                     <Download className="w-3.5 h-3.5" />
-                                    Simpan .txt
+                                    Save .txt
                                 </button>
                             </div>
                         </div>

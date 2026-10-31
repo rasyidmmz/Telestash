@@ -37,7 +37,6 @@ export function ContextMenu({
     onRename,
     onMove,
     folders,
-    activeFolderId,
     onRemoveSubtitles,
     subtitleCount,
     isFavorite = false,
@@ -164,7 +163,7 @@ export function ContextMenu({
 
             {file.type !== 'folder' && (
                 (() => {
-                    const folder = folders?.find(f => f.id === file.folder_id) || folders?.find(f => f.id === activeFolderId);
+                    const folder = folders?.find(f => f.id === file.folder_id);
                     const username = folder?.username || (folder as any)?.chat?.username || (folder as any)?.channel?.username;
                     
                     if (username) {

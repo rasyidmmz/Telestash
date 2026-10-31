@@ -21,6 +21,8 @@ interface SidebarItemProps {
     collapsed?: boolean;
     groups?: FolderGroup[];
     onAssignFolderToGroup?: (folderId: number, groupId: number | null) => void;
+    folderKind?: 'series' | 'movies' | 'general';
+    onSetFolderKind?: (kind: 'series' | 'movies' | 'general') => void;
 }
 
 /**
@@ -32,13 +34,13 @@ interface SidebarItemProps {
  */
 export function SidebarItem({
     icon: Icon, label, active = false, onClick, onDrop, onDelete, folderId, isPublic, onRename, onToggleVisibility, onExportInvite, collapsed = false,
-    groups = [], onAssignFolderToGroup
+    groups = [], onAssignFolderToGroup, folderKind = 'general', onSetFolderKind
 }: SidebarItemProps) {
     const [isOver, setIsOver] = useState(false);
     const [dragCount, setDragCount] = useState(0);
     const [contextMenu, setContextMenu] = useState<{ x: number; y: number } | null>(null);
     const menuRef = useRef<HTMLDivElement>(null);
-    const settingsBtnRef = useRef<HTMLDivElement>(null);
+    const settingsBtnRef = useRef<HTMLButtonElement>(null);
     const { t } = useTranslation();
 
     const {
@@ -178,14 +180,18 @@ export function SidebarItem({
                 <Globe className="w-3 h-3 text-emerald-400 flex-shrink-0" />
             )}
             {onDelete && !collapsed && (
-                <div
+                <button
+                    type="button"
                     ref={settingsBtnRef}
                     onClick={openSettingsPopover}
-                    className="opacity-0 group-hover:opacity-100 p-1 rounded hover:bg-stash-hover transition-all"
+                    onPointerDown={(event) => event.stopPropagation()}
+                    aria-label={`Folder options for ${label}`}
+                    aria-expanded={!!contextMenu}
+                    className="opacity-0 group-hover:opacity-100 focus:opacity-100 p-1 rounded hover:bg-stash-hover transition-all"
                     title={t('files.folder_settings')}
                 >
                     <MoreVertical className="w-3.5 h-3.5 text-stash-subtext hover:text-stash-text" />
-                </div>
+                </button>
             )}
 
             {/* Folder Context Menu */}
@@ -200,6 +206,25 @@ export function SidebarItem({
                     <div className="px-2 py-1.5 text-xs text-stash-subtext font-medium truncate max-w-[180px] border-b border-stash-border mb-1">
                         {label}
                     </div>
+
+                    {onSetFolderKind && (
+                        <>
+                            <span className="px-2 py-1 text-xs text-stash-subtext">Folder type</span>
+                            {(['series', 'movies', 'general'] as const).map(kind => (
+                                <button
+                                    key={kind}
+                                    type="button"
+                                    aria-pressed={folderKind === kind}
+                                    onClick={() => { onSetFolderKind(kind); setContextMenu(null); }}
+                                    className="flex items-center justify-between px-2 py-1.5 text-sm text-stash-text hover:bg-stash-hover rounded text-left w-full"
+                                >
+                                    {kind === 'series' ? 'Series' : kind === 'movies' ? 'Movies' : 'General'}
+                                    {folderKind === kind && <span aria-hidden="true">✓</span>}
+                                </button>
+                            ))}
+                            <div className="h-px bg-stash-border my-1" />
+                        </>
+                    )}
 
                     {onRename && (
                         <button

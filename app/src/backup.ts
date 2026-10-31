@@ -1,4 +1,5 @@
 import type { Settings } from './context/SettingsContext';
+import { isFolderPresentationMap } from './folderPresentation';
 
 export const BACKUP_SCHEMA = 'telestash-settings-backup';
 export const BACKUP_VERSION = 1;
@@ -54,11 +55,13 @@ export function parseBackup(raw: string): BackupPayload {
     if (!['grid', 'list', 'posters'].includes(String(settings.viewMode))) throw new Error('Mode tampilan cadangan tidak valid.');
     if (!Number.isInteger(settings.maxConcurrentUploads) || Number(settings.maxConcurrentUploads) < 1 || Number(settings.maxConcurrentUploads) > 10) throw new Error('Batas upload tidak valid.');
     if (!Number.isInteger(settings.maxConcurrentDownloads) || Number(settings.maxConcurrentDownloads) < 1 || Number(settings.maxConcurrentDownloads) > 10) throw new Error('Batas download tidak valid.');
+    const folderPresentation = 'folderPresentation' in settings ? settings.folderPresentation : {};
+    if (!isFolderPresentationMap(folderPresentation)) throw new Error('Invalid folder presentation preferences.');
     return {
         schema: BACKUP_SCHEMA,
         version: BACKUP_VERSION,
         exportedAt: typeof candidate.exportedAt === 'string' ? candidate.exportedAt : new Date().toISOString(),
-        settings: settings as unknown as Settings,
+        settings: { ...settings, folderPresentation } as unknown as Settings,
         theme: candidate.theme === 'light' || candidate.theme === 'dark' ? candidate.theme : null,
         customThemes: Array.isArray(candidate.customThemes) ? candidate.customThemes : [],
         activeCustomThemeId: typeof candidate.activeCustomThemeId === 'string' ? candidate.activeCustomThemeId : null,

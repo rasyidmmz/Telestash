@@ -98,9 +98,10 @@ fn purge_file_side_tables(
     let conn = pool.lock().map_err(|e| e.to_string())?;
 
     let mut history = conn
-        .prepare("DELETE FROM watch_history WHERE file_id = ?1")
+        .prepare("DELETE FROM watch_history WHERE file_id = ?1 AND folder_key = ?2")
         .map_err(|e| e.to_string())?;
     history.bind((1, message_id as i64)).map_err(|e| e.to_string())?;
+    history.bind((2, crate::commands::watch_history::folder_key(folder_id).as_str())).map_err(|e| e.to_string())?;
     history.next().map_err(|e| e.to_string())?;
 
     let _ = crate::commands::favorites::purge_favorite_for_file(&conn, folder_id, message_id);

@@ -1,3 +1,4 @@
+import { selectedFiles, groupFilesByFolder } from '../fileIdentity';
 import { useCallback, useRef } from 'react';
 import { showFileDialogFallback, pickWithFallback, sanitizeFilename } from '../utils';
 import { invoke } from '@tauri-apps/api/core';
@@ -11,8 +12,8 @@ import i18n from '../i18n';
 
 export function useFileOperations(
     activeFolderId: number | null,
-    selectedIds: number[],
-    setSelectedIds: (ids: number[]) => void,
+    selectedIds: string[],
+    setSelectedIds: (ids: string[]) => void,
     displayedFiles: TelegramFile[],
     queueBulkDownload?: (files: TelegramFile[], folderId: number | null) => void,
 ) {
@@ -25,14 +26,15 @@ export function useFileOperations(
     const displayedFilesRef = useRef(displayedFiles);
     displayedFilesRef.current = displayedFiles;
 
-    const handleDelete = useCallback(async (id: number) => {
+    const handleDelete = useCallback(async (id: number, folderId: number | null = activeFolderId) => {
         if (!await confirm({ title: "Delete File", message: "Are you sure you want to delete this file?", confirmText: "Delete", variant: 'danger' })) return;
         try {
-            await invoke('cmd_delete_file', { messageId: id, folderId: activeFolderId });
-            await invoke('cmd_delete_preview_for_message', { messageId: id, folderId: activeFolderId }).catch(() => {});
+            await invoke('cmd_delete_file', { messageId: id, folderId });
+            await invoke('cmd_delete_preview_for_message', { messageId: id, folderId }).catch(() => {});
             // Reconcile the folder cache, then refresh the list from it.
-            await invoke('cmd_sync_folder', { folderId: activeFolderId }).catch(() => {});
-            queryClient.invalidateQueries({ queryKey: ['files', activeFolderId] });
+            await invoke('cmd_sync_folder', { folderId }).catch(() => {});
+            queryClient.invalidateQueries({ queryKey: ['files', folderId] });
+            queryClient.invalidateQueries({ queryKey: ['all-favorite-files'] });
             toast.success("File deleted");
         } catch (e) {
             toast.error(humanizeError(e, i18n.t('errors.action_delete')));
@@ -46,18 +48,21 @@ export function useFileOperations(
 
         let success = 0;
         let fail = 0;
-        for (const id of ids) {
+        const targets = selectedFiles(displayedFilesRef.current, ids);
+        for (const file of targets) {
+            const folderId = file.folder_id ?? null;
             try {
-                await invoke('cmd_delete_file', { messageId: id, folderId: activeFolderId });
-                await invoke('cmd_delete_preview_for_message', { messageId: id, folderId: activeFolderId }).catch(() => {});
+                await invoke('cmd_delete_file', { messageId: file.id, folderId });
+                await invoke('cmd_delete_preview_for_message', { messageId: file.id, folderId }).catch(() => {});
                 success++;
-            } catch {
-                fail++;
-            }
+            } catch { fail++; }
         }
         setSelectedIds([]);
-        await invoke('cmd_sync_folder', { folderId: activeFolderId }).catch(() => {});
-        queryClient.invalidateQueries({ queryKey: ['files', activeFolderId] });
+        for (const folderId of groupFilesByFolder(targets).keys()) {
+            await invoke('cmd_sync_folder', { folderId }).catch(() => {});
+            queryClient.invalidateQueries({ queryKey: ['files', folderId] });
+        }
+        queryClient.invalidateQueries({ queryKey: ['all-favorite-files'] });
         if (success > 0) toast.success(`Deleted ${success} files.`);
         if (fail > 0) toast.error(`Failed to delete ${fail} files.`);
     }, [activeFolderId, confirm, queryClient, setSelectedIds]);
@@ -66,7 +71,7 @@ export function useFileOperations(
         const ids = selectedIdsRef.current;
         if (ids.length === 0) return;
         const currentFiles = displayedFilesRef.current;
-        const targetFiles = currentFiles.filter((f) => ids.includes(f.id));
+        const targetFiles = selectedFiles(currentFiles, ids);
         if (targetFiles.length === 0) return;
         if (queueBulkDownload) {
             queueBulkDownload(targetFiles, activeFolderId);
@@ -81,7 +86,7 @@ export function useFileOperations(
                 const sanitizedName = sanitizeFilename(file.name);
                 const filePath = dirPath.endsWith(sep) ? `${dirPath}${sanitizedName}` : `${dirPath}${sep}${sanitizedName}`;
                 try {
-                    await invoke('cmd_download_file', { req: { message_id: file.id, save_path: filePath, folder_id: activeFolderId } });
+                    await invoke('cmd_download_file', { req: { message_id: file.id, save_path: filePath, folder_id: file.folder_id ?? null } });
                     successCount++;
                 } catch (e) { }
             }
@@ -110,36 +115,27 @@ export function useFileOperations(
     }, [activeFolderId, setSelectedIds, queueBulkDownload]);
 
     const handleBulkMove = useCallback(async (targetFolderId: number | null, onSuccess?: () => void) => {
-        const ids = selectedIdsRef.current;
-        if (ids.length === 0) return;
-        try {
-            await invoke('cmd_move_files', {
-                messageIds: ids,
-                sourceFolderId: activeFolderId,
-                targetFolderId: targetFolderId
-            });
-            // Clean up stale preview cache entries for the old message IDs.
-            // After a move (forward+delete), the message gets a new ID in the
-            // target folder, so old cached previews are orphaned.
-            await Promise.all(ids.map(id =>
-                invoke('cmd_delete_preview_for_message', { messageId: id, folderId: activeFolderId }).catch(() => {}),
-            ));
-            toast.success(`Moved ${ids.length} files.`);
-            // Both folders changed: reconcile source and destination caches.
-            await Promise.all([
-                invoke('cmd_sync_folder', { folderId: activeFolderId }).catch(() => {}),
-                invoke('cmd_sync_folder', { folderId: targetFolderId }).catch(() => {}),
-            ]);
-            queryClient.invalidateQueries({ queryKey: ['files', activeFolderId] });
-            if (targetFolderId !== activeFolderId) {
-                queryClient.invalidateQueries({ queryKey: ['files', targetFolderId] });
-            }
-            setSelectedIds([]);
-            if (onSuccess) onSuccess();
-        } catch {
-            toast.error('Failed to move files');
+        const targets = selectedFiles(displayedFilesRef.current, selectedIdsRef.current);
+        if (!targets.length) return;
+        let moved = 0;
+        let failed = 0;
+        for (const [sourceFolderId, files] of groupFilesByFolder(targets)) {
+            if (sourceFolderId === targetFolderId) continue;
+            try {
+                await invoke('cmd_move_files', { messageIds: files.map(file => file.id), sourceFolderId, targetFolderId });
+                await Promise.all(files.map(file => invoke('cmd_delete_preview_for_message', { messageId: file.id, folderId: sourceFolderId }).catch(() => {})));
+                await invoke('cmd_sync_folder', { folderId: sourceFolderId }).catch(() => {});
+                queryClient.invalidateQueries({ queryKey: ['files', sourceFolderId] });
+                moved += files.length;
+            } catch { failed += files.length; }
         }
-    }, [activeFolderId, queryClient, setSelectedIds]);
+        await invoke('cmd_sync_folder', { folderId: targetFolderId }).catch(() => {});
+        queryClient.invalidateQueries({ queryKey: ['files', targetFolderId] });
+        queryClient.invalidateQueries({ queryKey: ['all-favorite-files'] });
+        if (moved) toast.success(`Moved ${moved} files.`);
+        if (failed) toast.error(`Failed to move ${failed} files.`);
+        if (!failed) { setSelectedIds([]); onSuccess?.(); }
+    }, [queryClient, setSelectedIds]);
 
     const handleDownloadFolder = useCallback(async () => {
         const files = displayedFilesRef.current;
@@ -160,7 +156,7 @@ export function useFileOperations(
                 const sanitizedName = sanitizeFilename(file.name);
                 const filePath = dirPath.endsWith(sep) ? `${dirPath}${sanitizedName}` : `${dirPath}${sep}${sanitizedName}`;
                 try {
-                    await invoke('cmd_download_file', { req: { message_id: file.id, save_path: filePath, folder_id: activeFolderId } });
+                    await invoke('cmd_download_file', { req: { message_id: file.id, save_path: filePath, folder_id: file.folder_id ?? null } });
                     successCount++;
                 } catch (e) { }
             }

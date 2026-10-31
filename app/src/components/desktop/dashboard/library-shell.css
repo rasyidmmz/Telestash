@@ -1,0 +1,37 @@
+.library-shell { color: var(--color-stash-text); }
+.library-folder-section { margin-bottom: 18px; }
+.library-folder-heading { color: var(--color-stash-subtext); font-size: 12px; font-weight: 500; padding: 8px 12px; }
+.library-shell .vault-command-bar { min-height: 64px; height: auto; flex-wrap: wrap; gap: 12px; padding: 14px 24px; }
+.library-shell .vault-command-context { min-width: 120px; flex: 1; }
+.library-shell .vault-command-search { flex: 1; min-width: 180px; max-width: 420px; }
+.vault-view-switcher { display: flex; gap: 2px; border: 1px solid var(--color-stash-border); border-radius: 8px; padding: 2px; }
+.vault-view-switcher [aria-pressed="true"] { color: var(--color-stash-text); background: var(--color-stash-hover); }
+.library-shell .vault-selection-strip { flex-wrap: wrap; }
+.watch-strip { padding: 0 0 12px; }
+.watch-strip-heading, .watch-strip-tools { display: flex; align-items: center; justify-content: space-between; gap: 16px; }
+.watch-strip-heading h2 { font-size: 14px; font-weight: 500; }
+.watch-strip-tools button { display: inline-flex; align-items: center; gap: 6px; color: var(--color-stash-subtext); font-size: 12px; padding: 8px 0; }
+.watch-strip-items { display: flex; gap: 12px; overflow-x: auto; padding: 8px 0; }
+.watch-card { position: relative; flex: 0 0 224px; min-width: 0; padding: 14px; border-radius: 10px; background: var(--color-stash-surface); }
+.watch-card-main { display: flex; flex-direction: column; gap: 6px; width: 100%; text-align: start; padding-inline-end: 16px; }
+.watch-card strong { display: block; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 14px; font-weight: 500; }
+.watch-card-caption, .watch-card-file, .watch-card-position { color: var(--color-stash-subtext); font-size: 12px; overflow: hidden; max-width: 100%; text-overflow: ellipsis; white-space: nowrap; }
+.watch-card-remove { position: absolute; inset-inline-end: 8px; top: 8px; padding: 6px; color: var(--color-stash-subtext); }
+.watch-card-progress { width: 100%; height: 3px; background: var(--color-stash-hover); border-radius: 2px; overflow: hidden; }
+.watch-card-progress > span { display: block; height: 100%; background: var(--color-stash-primary); }
+.watch-next { text-align: start; display: flex; flex-direction: column; gap: 8px; border: 1px solid var(--color-stash-border); }
+.watch-next > span:last-child { display: flex; align-items: center; gap: 6px; font-size: 12px; }
+.media-detail-backdrop { position: fixed; inset: 0; z-index: 180; background: rgb(0 0 0 / 75%); display: flex; align-items: center; justify-content: center; padding: 28px; }
+.media-detail { position: relative; display: grid; grid-template-columns: 200px minmax(0, 1fr); width: min(760px, 100%); max-height: 90vh; overflow: auto; border-radius: 16px; background: var(--color-stash-surface); color: var(--color-stash-text); }
+.media-detail-close { position: absolute; top: 12px; inset-inline-end: 12px; padding: 8px; border-radius: 8px; z-index: 1; }
+.media-detail-art { min-height: 300px; display: grid; place-items: center; background: var(--color-stash-hover); }
+.media-detail-content { padding: 52px 32px 32px; }
+.media-detail-source { color: var(--color-stash-subtext); font-size: 13px; }
+.media-detail h2 { font-size: 28px; font-weight: 500; line-height: 1.25; overflow-wrap: anywhere; margin: 12px 0; }
+.media-detail-metadata { color: var(--color-stash-subtext); font-size: 14px; }
+.media-detail-actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 28px; }
+.media-detail-actions button { display: inline-flex; align-items: center; gap: 8px; min-height: 40px; padding: 8px 18px; border-radius: 8px; }
+.media-detail-primary { color: var(--color-stash-bg); background: var(--color-stash-text); }
+.media-detail-secondary { border: 1px solid var(--color-stash-border); }
+@media (max-width: 1100px) { .library-shell .vault-command-count, .library-shell .vault-command-separator { display: none; } }
+@media (max-width: 640px) { .media-detail { grid-template-columns: 1fr; } .media-detail-art { min-height: 120px; } }

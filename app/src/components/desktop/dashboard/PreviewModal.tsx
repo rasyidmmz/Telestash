@@ -3,6 +3,7 @@ import { X, File, ChevronLeft, ChevronRight } from '../../shared/icons.tsx';
 import { invoke } from '@tauri-apps/api/core';
 import { TelegramFile } from '../../../types';
 import { isImageFile } from '../../../utils';
+import { useModalDialog } from '../../../hooks/useModalDialog';
 
 const PREVIEW_CACHE_TTL_MS = 5 * 60 * 1000;
 const PREVIEW_CACHE_MAX_ITEMS = 8;
@@ -68,6 +69,8 @@ export function PreviewModal({ file, onClose, onNext, onPrev, currentIndex, tota
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const latestRequestRef = useRef(0);
+    const closeButtonRef = useRef<HTMLButtonElement>(null);
+    const dialogRef = useModalDialog(true, onClose, closeButtonRef);
 
     useEffect(() => {
         const load = async () => {
@@ -165,10 +168,6 @@ export function PreviewModal({ file, onClose, onNext, onPrev, currentIndex, tota
                 return;
             }
 
-            if (e.key === 'Escape') {
-                e.preventDefault();
-                onClose();
-            }
         };
 
         window.addEventListener('keydown', handleKeyDown);
@@ -177,33 +176,29 @@ export function PreviewModal({ file, onClose, onNext, onPrev, currentIndex, tota
 
     return (
         <div className="fixed inset-0 z-[150] bg-black/90 flex items-center justify-center p-4 backdrop-blur-sm" onClick={onClose}>
-            <div className="relative max-w-5xl w-full max-h-screen flex flex-col items-center justify-center" onClick={e => e.stopPropagation()}>
-                <button
-                    onClick={onPrev}
-                    className="absolute left-2 top-1/2 -translate-y-1/2 p-2 bg-black/60 hover:bg-black/80 rounded-full transition-colors"
-                    style={{ color: '#ffffff' }}
-                    title="Previous (ArrowLeft / J)"
-                >
-                    <ChevronLeft className="w-6 h-6" />
-                </button>
-
-                <button
-                    onClick={onNext}
-                    className="absolute right-2 top-1/2 -translate-y-1/2 p-2 bg-black/60 hover:bg-black/80 rounded-full transition-colors"
-                    style={{ color: '#ffffff' }}
-                    title="Next (ArrowRight / L)"
-                >
-                    <ChevronRight className="w-6 h-6" />
-                </button>
-
-                <button
-                    onClick={onClose}
-                    className="absolute -top-12 right-0 p-2 bg-black/60 hover:bg-black/80 rounded-full transition-colors"
-                    style={{ color: '#ffffff' }}
-                >
-                    <X className="w-6 h-6" />
-                </button>
-
+            <div ref={dialogRef} tabIndex={-1} role="dialog" aria-modal="true" aria-label={`Preview: ${file.name}`} className="w-full max-w-6xl h-full flex flex-col" onClick={e => e.stopPropagation()}>
+                <div className="flex items-center justify-between gap-4 pb-4 text-white">
+                    <div className="min-w-0">
+                        <h2 className="truncate text-sm font-semibold">{file.name}</h2>
+                        {typeof currentIndex === 'number' && typeof totalItems === 'number' && totalItems > 0 && (
+                            <p className="text-xs text-white/60 mt-1">{currentIndex + 1} of {totalItems}</p>
+                        )}
+                    </div>
+                    <button ref={closeButtonRef} onClick={onClose} className="p-2.5 bg-white/10 hover:bg-white/20 rounded-xl transition-colors" aria-label="Close preview">
+                        <X className="w-5 h-5" />
+                    </button>
+                </div>
+                <div className="relative flex-1 min-h-0 flex items-center justify-center">
+                {onPrev && (
+                    <button onClick={onPrev} className="absolute left-2 top-1/2 -translate-y-1/2 p-2 text-white bg-black/60 hover:bg-black/80 rounded-xl transition-colors z-10" title="Previous (ArrowLeft / J)" aria-label="Previous file">
+                        <ChevronLeft className="w-6 h-6" />
+                    </button>
+                )}
+                {onNext && (
+                    <button onClick={onNext} className="absolute right-2 top-1/2 -translate-y-1/2 p-2 text-white bg-black/60 hover:bg-black/80 rounded-xl transition-colors z-10" title="Next (ArrowRight / L)" aria-label="Next file">
+                        <ChevronRight className="w-6 h-6" />
+                    </button>
+                )}
                 {loading && (
                     <div className="flex flex-col items-center gap-4 text-white">
                         <div className="w-10 h-10 border-4 border-stash-primary border-t-transparent rounded-full animate-spin"></div>
@@ -224,8 +219,8 @@ export function PreviewModal({ file, onClose, onNext, onPrev, currentIndex, tota
                         {isImageFile(file.name) ? (
                             <img
                                 src={src}
-                                className="max-w-full max-h-[85vh] object-contain rounded-lg shadow-2xl bg-black"
-                                alt="Preview"
+                                className="max-w-full max-h-[calc(100vh-9rem)] object-contain rounded-lg shadow-2xl bg-black"
+                                alt={`Preview of ${file.name}`}
                                 onError={() => {
                                     const key = getPreviewCacheKey(file.id, activeFolderId);
                                     forgetPreview(key);
@@ -233,21 +228,16 @@ export function PreviewModal({ file, onClose, onNext, onPrev, currentIndex, tota
                                 }}
                             />
                         ) : (
-                            <div className="bg-[#1c1c1c] p-8 rounded-xl text-center border border-white/10 shadow-2xl">
+                            <div className="bg-stash-surface p-8 rounded-xl text-center border border-stash-border shadow-2xl">
                                 <File className="w-16 h-16 text-stash-primary mx-auto mb-4" />
-                                <h3 className="text-xl text-white font-medium mb-2">{file.name}</h3>
-                                <p className="text-gray-400 mb-6">Preview not supported in app.</p>
-                                <p className="text-xs text-gray-500">File type: {file.name.split('.').pop()}</p>
+                                <h3 className="text-xl text-stash-text font-medium mb-2">{file.name}</h3>
+                                <p className="text-stash-subtext mb-6">Preview not supported in app.</p>
+                                <p className="text-xs text-stash-subtext">File type: {file.name.split('.').pop()}</p>
                             </div>
                         )}
                     </div>
                 )}
 
-                <div className="absolute bottom-[-3rem] text-white text-sm opacity-50">
-                    {file.name}
-                    {typeof currentIndex === 'number' && typeof totalItems === 'number' && totalItems > 0 && (
-                        <span className="ml-3">{currentIndex + 1}/{totalItems}</span>
-                    )}
                 </div>
             </div>
         </div>

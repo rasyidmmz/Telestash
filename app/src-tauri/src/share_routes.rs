@@ -188,7 +188,7 @@ fn escape_html(s: &str) -> String {
 /// Actix streaming server on loopback, not the public internet.
 fn render_password_form(file_name: &str, token: &str, error: Option<&str>) -> HttpResponse {
     let error_html = match error {
-        Some(err) => format!("<div class=\"error\">{}</div>", escape_html(err)),
+        Some(err) => format!("<div class=\"error\" role=\"alert\">{}</div>", escape_html(err)),
         None => "".to_string(),
     };
 
@@ -197,81 +197,99 @@ fn render_password_form(file_name: &str, token: &str, error: Option<&str>) -> Ht
 <html>
 <head>
     <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Password Protected File - TeleStash</title>
     <style>
+        * {{ box-sizing: border-box; }}
         body {{
-            background-color: #182533;
-            color: #ffffff;
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background: radial-gradient(ellipse at 75% 5%, #302719 0%, #0b0c0f 48%);
+            color: #f2f3f5;
+            font-family: "Outfit", "Segoe UI", sans-serif;
             display: flex;
             align-items: center;
             justify-content: center;
-            height: 100vh;
+            min-height: 100vh;
             margin: 0;
+            padding: 24px;
         }}
         .container {{
-            background: #202b36;
-            padding: 2rem;
-            border-radius: 12px;
-            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
-            border: 1px solid #2f3e4e;
+            background: #14161a;
+            padding: 2.25rem;
+            border-radius: 16px;
+            box-shadow: 0 24px 70px rgba(0, 0, 0, 0.35);
+            border: 1px solid rgba(255, 255, 255, 0.1);
             width: 100%;
-            max-width: 400px;
-            text-align: center;
+            max-width: 420px;
         }}
-        h2 {{
-            margin-top: 0;
-            color: #40a7e3;
+        .eyebrow {{
+            color: #e8a33d;
+            font-size: 12px;
+            font-weight: 700;
+            letter-spacing: 0.12em;
+            text-transform: uppercase;
+        }}
+        h1 {{
+            margin: 10px 0;
+            font-size: 24px;
+            letter-spacing: -0.03em;
         }}
         p {{
             font-size: 14px;
-            color: #7f91a4;
-            margin-bottom: 20px;
+            line-height: 1.6;
+            color: #b5bac3;
+            margin: 0 0 24px;
+            overflow-wrap: anywhere;
+        }}
+        strong {{ color: #f2f3f5; }}
+        label {{
+            display: block;
+            margin-bottom: 8px;
+            color: #d0d3d8;
+            font-size: 13px;
+            font-weight: 600;
         }}
         input[type="password"] {{
             width: 100%;
-            padding: 12px;
-            border-radius: 6px;
-            border: 1px solid #2f3e4e;
-            background: #182533;
+            padding: 13px;
+            border-radius: 10px;
+            border: 1px solid #3a3d43;
+            background: #0b0c0f;
             color: white;
-            box-sizing: border-box;
-            margin-bottom: 15px;
+            margin-bottom: 16px;
             font-size: 16px;
         }}
-        input[type="password"]:focus {{
-            outline: none;
-            border-color: #40a7e3;
+        input:focus-visible, button:focus-visible {{
+            outline: 2px solid #e8a33d;
+            outline-offset: 3px;
         }}
         button {{
             width: 100%;
-            padding: 12px;
-            border-radius: 6px;
+            padding: 13px;
+            border-radius: 10px;
             border: none;
-            background: #40a7e3;
-            color: white;
+            background: #e8a33d;
+            color: #171204;
             font-weight: bold;
             cursor: pointer;
-            font-size: 16px;
-            transition: background 0.2s;
-        }}
-        button:hover {{
-            background: #3598d1;
-        }}
-        .error {{
-            color: #ff5e5e;
             font-size: 14px;
-            margin-bottom: 15px;
+        }}
+        button:hover {{ background: #f1b65b; }}
+        .error {{
+            color: #ff9292;
+            font-size: 14px;
+            margin-bottom: 16px;
         }}
     </style>
 </head>
 <body>
     <div class="container">
-        <h2>Enter Password</h2>
+        <div class="eyebrow">TeleStash · Shared file</div>
+        <h1>Enter password</h1>
         <p>This share link is password-protected.<br>File: <strong>{}</strong></p>
         {}
         <form method="POST" action="/d/{}/verify">
-            <input type="password" name="password" placeholder="Password" autofocus required>
+            <label for="password">Password</label>
+            <input id="password" type="password" name="password" placeholder="Enter password" autofocus required>
             <button type="submit">Verify & Download</button>
         </form>
     </div>

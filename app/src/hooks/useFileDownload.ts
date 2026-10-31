@@ -148,7 +148,7 @@ export function useFileDownload(store: Store | null) {
                     id: Math.random().toString(36).substr(2, 9),
                     messageId: file.id,
                     filename: sanitizedName,
-                    folderId,
+                    folderId: file.folder_id === undefined ? folderId : file.folder_id,
                     status: 'pending' as const,
                     savePath: dir.endsWith(separator) ? `${dir}${sanitizedName}` : `${dir}${separator}${sanitizedName}`
                 };

@@ -6,6 +6,7 @@ import { SidebarItem } from './SidebarItem';
 import { BandwidthWidget } from './BandwidthWidget';
 import { TelegramFolder, BandwidthStats, FolderGroup } from '../../../types';
 import { useSettings } from '../../../context/SettingsContext';
+import { getFolderPresentation } from '../../../folderPresentation';
 import {
     DndContext,
     closestCenter,
@@ -137,7 +138,7 @@ export function Sidebar({
     const [showNewFolderInput, setShowNewFolderInput] = useState(false);
     const [newFolderName, setNewFolderName] = useState("");
     const { t } = useTranslation();
-    const { settings, updateSetting } = useSettings();
+    const { settings, updateSetting, updateFolderPresentation } = useSettings();
 
     // Grouping States
     const [activeGroupId, setActiveGroupId] = useState<number | null | 'all'>('all');
@@ -149,7 +150,7 @@ export function Sidebar({
     // Resizable Sidebar Width
     const [sidebarWidth, setSidebarWidth] = useState<number>(() => {
         const saved = localStorage.getItem('telestash_sidebar_width');
-        return saved ? Math.max(200, Math.min(520, parseInt(saved, 10))) : 270;
+        return saved ? Math.max(200, Math.min(520, parseInt(saved, 10))) : 224;
     });
     const [isResizing, setIsResizing] = useState(false);
 
@@ -490,38 +491,41 @@ export function Sidebar({
                             collapsed={settings.sidebarCollapsed}
                         />
                     )}
-                    <SidebarItem
-                        icon={HardDrive}
-                        label={t('common.saved_messages')}
-                        active={!showAllFavorites && activeFolderId === null}
-                        onClick={() => setActiveFolderId(null)}
-                        onDrop={(e: React.DragEvent) => onDrop(e, null)}
-                        folderId={null}
-                        collapsed={settings.sidebarCollapsed}
-                    />
                     <SortableContext
                         items={filteredFolders.map(folder => `folder-${folder.id}`)}
                         strategy={verticalListSortingStrategy}
                     >
-                        {filteredFolders.map(folder => (
-                            <SidebarItem
-                                key={folder.id}
-                                icon={Folder}
-                                label={folder.name}
-                                active={!showAllFavorites && activeFolderId === folder.id}
-                                onClick={() => setActiveFolderId(folder.id)}
-                                onDrop={(e: React.DragEvent) => onDrop(e, folder.id)}
-                                onDelete={() => onDelete(folder.id, folder.name)}
-                                onRename={() => onRename(folder.id, folder.name)}
-                                onToggleVisibility={() => onToggleVisibility(folder.id, folder.name, !!(folder.is_public || folder.username))}
-                                onExportInvite={() => onExportInvite(folder.id, folder.name)}
-                                folderId={folder.id}
-                                isPublic={!!(folder.is_public || folder.username)}
-                                collapsed={settings.sidebarCollapsed}
-                                groups={groups}
-                                onAssignFolderToGroup={onAssignFolderToGroup}
-                            />
-                        ))}
+                        {(['series', 'movies', 'general'] as const).map(kind => {
+                            const label = kind === 'series' ? 'Series' : kind === 'movies' ? 'Movies' : 'General';
+                            const sectionFolders = filteredFolders.filter(folder => getFolderPresentation(settings.folderPresentation, folder.id).kind === kind);
+                            return (
+                                <section key={kind} aria-label={label} className="library-folder-section">
+                                    {!settings.sidebarCollapsed && <h2 className="library-folder-heading">{label}</h2>}
+                                    {kind === 'general' && (
+                                        <SidebarItem icon={HardDrive} label={t('common.saved_messages')}
+                                            active={!showAllFavorites && activeFolderId === null}
+                                            onClick={() => setActiveFolderId(null)} onDrop={(e: React.DragEvent) => onDrop(e, null)}
+                                            folderId={null} collapsed={settings.sidebarCollapsed} />
+                                    )}
+                                    {sectionFolders.map(folder => (
+                                        <SidebarItem
+                                            key={folder.id} icon={Folder} label={folder.name}
+                                            active={!showAllFavorites && activeFolderId === folder.id}
+                                            onClick={() => setActiveFolderId(folder.id)}
+                                            onDrop={(e: React.DragEvent) => onDrop(e, folder.id)}
+                                            onDelete={() => onDelete(folder.id, folder.name)}
+                                            onRename={() => onRename(folder.id, folder.name)}
+                                            onToggleVisibility={() => onToggleVisibility(folder.id, folder.name, !!(folder.is_public || folder.username))}
+                                            onExportInvite={() => onExportInvite(folder.id, folder.name)}
+                                            folderId={folder.id} isPublic={!!(folder.is_public || folder.username)}
+                                            collapsed={settings.sidebarCollapsed} groups={groups}
+                                            onAssignFolderToGroup={onAssignFolderToGroup}
+                                            folderKind={kind} onSetFolderKind={next => updateFolderPresentation(folder.id, { kind: next })}
+                                        />
+                                    ))}
+                                </section>
+                            );
+                        })}
                     </SortableContext>
                 </nav>
             </DndContext>

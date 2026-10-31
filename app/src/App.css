@@ -46,14 +46,8 @@ body,
 /* Auth screen gradient background */
 .auth-gradient {
   background:
-    radial-gradient(90% 90% at 85% 8%, rgba(232, 163, 61, 0.14) 0%, transparent 52%),
-    radial-gradient(120% 120% at 0% 0%, #1d2028 0%, #0b0c0f 100%);
-}
-
-:root.light .auth-gradient {
-  background:
-    radial-gradient(90% 90% at 85% 8%, rgba(201, 138, 30, 0.12) 0%, transparent 52%),
-    linear-gradient(135deg, #f7f6f3 0%, #eceae4 100%);
+    radial-gradient(ellipse at 80% 10%, color-mix(in srgb, var(--color-stash-primary) 13%, transparent), transparent 48%),
+    linear-gradient(145deg, var(--color-stash-surface), var(--color-stash-bg) 70%);
 }
 
 /* Glassmorphism Utilities - Dark */
@@ -71,58 +65,17 @@ body,
 
 /* Auth-specific glass - works on gradient backgrounds in both themes */
 .auth-glass {
-  background: color-mix(in srgb, var(--color-stash-glass-bg) 85%, transparent);
+  background: color-mix(in srgb, var(--color-stash-surface) 94%, transparent);
   backdrop-filter: blur(24px);
   -webkit-backdrop-filter: blur(24px);
-  border: 1px solid color-mix(in srgb, var(--color-stash-glass-border) 10%, transparent);
-}
-
-:root.light .auth-glass {
-  background: color-mix(in srgb, var(--color-stash-glass-bg) 90%, transparent);
-  border: 1px solid color-mix(in srgb, var(--color-stash-glass-border) 30%, transparent);
-  color: #1a1a1a;
-}
-
-/* Force dark text inside auth-glass in light mode */
-:root.light .auth-glass .text-white {
-  color: #1a1a1a;
-}
-
-:root.light .auth-glass .text-white\/60 {
-  color: rgba(26, 26, 26, 0.7);
-}
-
-:root.light .auth-glass .text-gray-400 {
-  color: #555;
-}
-
-:root.light .auth-glass .text-blue-200 {
-  color: #1e40af;
-}
-
-:root.light .auth-glass .placeholder-gray-600::placeholder {
-  color: #9ca3af;
-}
-
-:root.light .auth-glass input {
-  background: rgba(0, 0, 0, 0.05);
-  border-color: rgba(0, 0, 0, 0.15);
-  color: #1a1a1a;
+  border: 1px solid var(--color-stash-border);
+  color: var(--color-stash-text);
 }
 
 /* Auth form icons - Direct overrides for maximum visibility */
 .auth-form-icon {
-  color: #ffffff !important;
-  /* Default (Dark Mode): Pure White */
-  opacity: 1 !important;
+  color: var(--color-stash-subtext);
   z-index: 20;
-}
-
-/* Light Mode Override */
-:root.light .auth-form-icon {
-  color: #000000 !important;
-  /* Light Mode: Pure Black */
-  opacity: 0.8 !important;
 }
 
 .glass-input {
@@ -152,7 +105,7 @@ body,
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(36, 129, 204, 0.6);
+  background: color-mix(in srgb, var(--color-stash-primary) 65%, transparent);
 }
 
 /* Custom Scrollbar - Light */
@@ -161,7 +114,7 @@ body,
 }
 
 :root.light ::-webkit-scrollbar-thumb:hover {
-  background: rgba(36, 129, 204, 0.5);
+  background: color-mix(in srgb, var(--color-stash-primary) 65%, transparent);
 }
 
 /* Progress Animation */
@@ -240,14 +193,14 @@ body,
 /* Input styling for light mode */
 :root.light input,
 :root.light textarea {
-  background-color: #ffffff;
-  border-color: rgba(0, 0, 0, 0.15);
-  color: #1a1a1a;
+  background-color: var(--color-stash-surface);
+  border-color: var(--color-stash-border);
+  color: var(--color-stash-text);
 }
 
 :root.light input::placeholder,
 :root.light textarea::placeholder {
-  color: #9ca3af;
+  color: var(--color-stash-subtext);
 }
 
 :root.light input:focus,
@@ -480,3 +433,27 @@ body,
 :root.light .vault-folder-drawer { box-shadow: 24px 0 60px rgba(0, 0, 0, .12); }
 :root.light .vault-selection-strip button.is-danger { color: #a8482f; }
 :root.light .vault-alert-dot { background: #a8482f; }
+
+/* Shared controls and surfaces */
+:where(button, a, input, select, textarea, [tabindex]):focus-visible {
+  outline: 2px solid var(--color-stash-primary) !important;
+  outline-offset: 3px;
+}
+
+.auth-primary {
+  background: var(--color-stash-primary);
+  color: #171204;
+}
+.auth-primary:hover { filter: brightness(1.08); }
+
+.fixed.inset-0[class*="bg-black/"] { background-color: rgba(5, 6, 8, .72); }
+.fixed.right-4.w-80.bg-stash-surface,
+.fixed.inset-0 .bg-stash-surface.shadow-2xl {
+  box-shadow: 0 24px 70px rgba(0, 0, 0, .3);
+}
+.fixed.right-4.w-80.bg-stash-surface { border-radius: 16px; }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { scroll-behavior: auto !important; transition-duration: .01ms !important; }
+  .animate-pulse, .vault-folder-drawer { animation: none !important; }
+}

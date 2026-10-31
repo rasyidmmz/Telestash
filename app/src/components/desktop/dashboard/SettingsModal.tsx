@@ -398,7 +398,7 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     exit={{ opacity: 0 }}
-                    className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 backdrop-blur-sm"
+                    className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4"
                     onClick={onClose}
                 >
                     <motion.div
@@ -408,7 +408,7 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                         animate={{ opacity: 1, scale: 1, y: 0 }}
                         exit={{ opacity: 0, scale: 0.95, y: 10 }}
                         transition={{ type: 'spring', damping: 25, stiffness: 220 }}
-                        className="bg-stash-surface border border-stash-border rounded-xl w-[440px] shadow-2xl overflow-hidden flex flex-col"
+                        className="bg-stash-surface border border-stash-border rounded-2xl w-full max-w-[520px] max-h-[calc(100vh-2rem)] shadow-2xl overflow-hidden flex flex-col"
                         onClick={e => e.stopPropagation()}
                         role="dialog"
                         aria-modal="true"
@@ -417,7 +417,7 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                     >
                         {/* Header */}
                         <div className="px-5 py-4 border-b border-stash-border flex justify-between items-center">
-                            <h2 id="settings-modal-title" className="text-stash-text font-semibold text-base">{t('settings.title')}</h2>
+                            <h2 id="settings-modal-title" className="text-stash-text font-semibold text-lg tracking-tight">{t('settings.title')}</h2>
                             <button
                                 ref={closeButtonRef}
                                 onClick={onClose}
@@ -447,7 +447,7 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                         </div>
 
                         {/* Body */}
-                        <motion.div layout className="px-5 py-4 max-h-[70vh] overflow-y-auto overflow-x-hidden relative">
+                        <motion.div layout className="px-5 py-5 min-h-0 max-h-[70vh] overflow-y-auto overflow-x-hidden relative">
                             <AnimatePresence mode="popLayout" initial={false}>
 
                                 {activeTab === 'general' && (
@@ -1162,7 +1162,7 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                             </div>
                             <button
                                 onClick={onClose}
-                                className="px-4 py-1.5 rounded-lg text-xs font-medium bg-stash-primary text-white hover:bg-stash-primary/90 transition"
+                                className="auth-primary px-4 py-1.5 rounded-lg text-xs font-medium transition"
                             >
                                 {t('settings.done')}
                             </button>
