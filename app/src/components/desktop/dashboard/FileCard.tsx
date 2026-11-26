@@ -1,8 +1,10 @@
+import { fileKey } from '../../../fileIdentity';
 import { motion } from 'framer-motion';
-import { useState, useRef, memo } from 'react';
-import { Folder, Eye, Trash2, Link, Download, Star } from '../../shared/icons.tsx';
+import { useState, useRef, useEffect, memo } from 'react';
+import { Folder, Eye, Trash2, Link, Download, Star, Play } from '../../shared/icons.tsx';
 import { TelegramFile } from '../../../types';
-import { createDragGhost } from '../../../utils';
+import { createDragGhost, isImageFile, isVideoFile } from '../../../utils';
+import { invoke } from '@tauri-apps/api/core';
 import { FileTypeIcon } from '../../shared/FileTypeIcon';
 import { useVideoMetadata } from '../../../hooks/useVideoMetadata';
 import { useVideoSubtitles } from '../../../hooks/useVideoSubtitles';
@@ -26,17 +28,31 @@ interface FileCardProps {
     activeFolderId?: number | null;
     height?: number;
     onToggleSelection?: () => void;
-    selectedIds?: number[];
+    selectedIds?: string[];
     isFavorite?: boolean;
     onToggleFavorite?: () => void;
     tags?: string[];
+    presentation?: 'series' | 'movies' | 'general';
+    onShowDetails?: () => void;
 }
 
-function FileCardComponent({ file, onDelete, onDownload, onPreview, onShare, isSelected, onClick, onContextMenu, onDrop, onDragStart, onDragEnd, height, onToggleSelection, selectedIds, variant = 'grid', isFavorite = false, onToggleFavorite, tags = [] }: FileCardProps) {
+function FileCardComponent({ file, onDelete, onDownload, onPreview, onShare, isSelected, onClick, onContextMenu, onDrop, onDragStart, onDragEnd, height, onToggleSelection, selectedIds, variant = 'grid', isFavorite = false, onToggleFavorite, tags = [], presentation = 'general', onShowDetails }: FileCardProps) {
     const isFolder = file.type === 'folder';
     const isPosterVariant = variant === 'poster';
     const [isDragOver, setIsDragOver] = useState(false);
+    const [previewSrc, setPreviewSrc] = useState<string | null>(null);
     const rootRef = useRef<HTMLDivElement | null>(null);
+    const isMovieCard = presentation === 'movies' && !isFolder;
+
+    useEffect(() => {
+        setPreviewSrc(null);
+        if (!isMovieCard || !isPosterVariant || !isImageFile(file.name)) return;
+        let active = true;
+        invoke<string>('cmd_get_preview', { messageId: file.id, folderId: file.folder_id ?? null })
+            .then(src => { if (active && /^https?:\/\//i.test(src)) setPreviewSrc(src); })
+            .catch(() => {});
+        return () => { active = false; };
+    }, [isMovieCard, isPosterVariant, file.id, file.folder_id, file.name]);
 
     // Lazy video metadata badge (.mp4/.mkv only)
     const { data: videoMeta, isLoading: videoMetaLoading } = useVideoMetadata(
@@ -68,7 +84,7 @@ function FileCardComponent({ file, onDelete, onDownload, onPreview, onShare, isS
                 event.currentTarget.click();
             }}
             onDragStart={!isFolder ? (e: any) => {
-                const idsToDrag = selectedIds && selectedIds.includes(file.id) ? selectedIds : [file.id];
+                const idsToDrag = selectedIds && selectedIds.includes(fileKey(file)) ? selectedIds.map(key => Number(key.split(':').pop())) : [file.id];
                 if (onDragStart) onDragStart(idsToDrag);
                 e.dataTransfer.setData('application/x-telegram-file-ids', JSON.stringify(idsToDrag));
                 e.dataTransfer.effectAllowed = 'move';
@@ -110,18 +126,21 @@ function FileCardComponent({ file, onDelete, onDownload, onPreview, onShare, isS
         >
             <motion.div
                 whileHover={{ y: -4 }}
-                className={`vault-file-card group cursor-pointer bg-stash-surface overflow-hidden border transition-all relative
+                className={`vault-file-card group cursor-pointer bg-stash-surface overflow-hidden border transition-all relative ${isMovieCard ? 'library-movie-card' : ''}
                 ${isSelected ? 'is-selected' : ''}
                 ${isDragOver ? 'is-drag-over' : ''}`}
                 style={height ? { height: `${height}px` } : { aspectRatio: isPosterVariant ? '2/3' : '4/3' }}
             >
                 {/* File type icon */}
-                <div className="absolute inset-0 flex items-center justify-center p-4">
-                    {isFolder ? (
+                <div className={`absolute inset-0 flex items-center justify-center p-4 ${isMovieCard ? 'library-poster-art' : ''}`}>
+                    {previewSrc ? (
+                        <img src={previewSrc} alt="" className="library-poster-image" onError={() => setPreviewSrc(null)} />
+                    ) : isFolder ? (
                         <Folder className="w-12 h-12 text-stash-primary" />
                     ) : (
                         <FileTypeIcon filename={file.name} size="lg" />
                     )}
+                    {isMovieCard && !previewSrc && <span className="library-poster-type">{file.name.split('.').pop()?.toUpperCase() || 'FILE'}</span>}
                 </div>
 
                 {/* Selection Checkmark */}
@@ -131,7 +150,7 @@ function FileCardComponent({ file, onDelete, onDownload, onPreview, onShare, isS
                         e.stopPropagation();
                         if (onToggleSelection) onToggleSelection();
                     }}
-                    className={`absolute top-2 left-2 w-5 h-5 rounded-full border flex items-center justify-center transition-all z-10 cursor-pointer ${isSelected ? 'bg-stash-primary border-stash-primary' : 'border-white/50 bg-black/30 opacity-0 group-hover:opacity-100'}`}
+                    className={`absolute top-2 left-2 w-5 h-5 rounded-full border flex items-center justify-center transition-all z-10 cursor-pointer ${isSelected ? 'bg-stash-primary border-stash-primary' : 'border-white/50 bg-black/30 opacity-0 group-hover:opacity-100 focus:opacity-100'}`}
                     aria-label={`${isSelected ? 'Unselect' : 'Select'} ${file.name}`}
                     aria-pressed={isSelected}
                 >
@@ -146,8 +165,8 @@ function FileCardComponent({ file, onDelete, onDownload, onPreview, onShare, isS
                 )}
 
                 {/* File info overlay at bottom */}
-                <div className="absolute bottom-0 left-0 right-0 p-3 text-stash-text">
-                    <h3 className="text-sm font-medium truncate w-full" title={file.name}>{file.name}</h3>
+                <div className={`absolute bottom-0 left-0 right-0 p-3 text-stash-text ${isMovieCard ? 'library-poster-info' : ''}`}>
+                    <h3 className={`text-sm font-medium w-full ${isMovieCard ? 'library-poster-title' : 'truncate'}`} title={file.name}>{file.name}</h3>
                     <div className="flex items-center gap-1.5 mt-1 flex-wrap">
                         <p className="text-xs text-stash-subtext">{file.sizeStr}</p>
                         <MediaBadgesList filename={file.name} maxBadges={3} />
@@ -167,6 +186,18 @@ function FileCardComponent({ file, onDelete, onDownload, onPreview, onShare, isS
                             </span>
                         )}
                     </div>
+                    {isMovieCard && (
+                        <div className="library-poster-actions">
+                            {isVideoFile(file.name) && onPreview && (
+                                <button onClick={(e) => { e.stopPropagation(); onPreview(); }} aria-label={`Play ${file.name}`}>
+                                    <Play className="w-3.5 h-3.5" /> Play
+                                </button>
+                            )}
+                            {onShowDetails && (
+                                <button onClick={(e) => { e.stopPropagation(); onShowDetails(); }} aria-label={`Details ${file.name}`}>Details</button>
+                            )}
+                        </div>
+                    )}
                 </div>
 
                 {/* Quick actions on hover */}

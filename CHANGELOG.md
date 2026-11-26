@@ -1,5 +1,21 @@
 # Changelog
 
+## [1.10.0-rc.1]
+
+### Added
+
+- **Folder-aware media library**: tag folders as Series, Movies, or General from the folder menu. Each folder keeps its presentation preference (renaming a folder does not reset it), stored in the existing settings store and included in settings backups.
+- **Series and Movies views**: series folders offer All files, detected seasons, and Other files with Resume and next-episode support; movies folders open with a dense poster view and Play/Details actions using real previews or a title/type fallback.
+- **Media detail surface**: a composed read-only detail view with preview, Telegram source, technical metadata, and subtitles.
+- **Expanded test coverage**: 66 frontend unit tests plus production-SQL checks for the watch history upgrade.
+
+### Changed
+
+- **Modernized frontend shell**: true-black neutral surfaces, amber media progress, and a rebuilt navigation, top bar, library, queues, settings, dialogs, and share password form under one visual system.
+- **File identity is folder + message**: selection, bulk actions, watch history, and playback resolve files by folder and message together, so equal message IDs in different folders never collide. Cross-folder drag is replaced by the explicit Move action.
+- **Watch history storage**: migrated to a composite folder/message key with an atomic SQLite upgrade. History rows already overwritten by the old schema cannot be recovered.
+- **Dependency refresh**: npm audit fix for new 2026 advisories against vite, vitest, source-map-js, and launch-editor.
+
 ## [1.9.1]
 
 ### Added

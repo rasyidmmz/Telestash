@@ -1,10 +1,10 @@
-import { HardDrive, SquaresFour, List, X, Scroll, FilmStrip } from '@phosphor-icons/react';
+import { HardDrive, SquaresFour, List, X, Scroll, FilmStrip, MagnifyingGlass } from '@phosphor-icons/react';
 import { useTranslation } from 'react-i18next';
 import { useErrorLogs } from '../../../errorLogs';
 
 interface TopBarProps {
     currentFolderName: string;
-    selectedIds: number[];
+    selectedIds: readonly (number | string)[];
     onShowMoveModal: () => void;
     onBulkDownload: () => void;
     onBulkDelete: () => void;
@@ -38,9 +38,9 @@ export function TopBar({
             </div>
 
             <div className="vault-command-search">
-                <span className="vault-search-glyph">⌘</span>
+                <MagnifyingGlass className="vault-search-glyph" size={16} aria-hidden="true" />
                 <input type="text" placeholder={t('common.search_placeholder')} aria-label={t('common.search_placeholder')} value={searchTerm} onChange={(e) => onSearchChange(e.target.value)} />
-                <span className="vault-search-hint">/</span>
+                <span className="vault-search-hint">Ctrl+F</span>
             </div>
 
             <div className="vault-command-actions">
@@ -55,9 +55,17 @@ export function TopBar({
                     </div>
                 )}
                 <button className="vault-icon-button" onClick={onDownloadFolder} data-tooltip={t('files.download_folder')} aria-label={t('files.download_folder')}><HardDrive size={18} /></button>
-                <button className="vault-icon-button" onClick={() => setViewMode(viewMode === 'grid' ? 'list' : viewMode === 'list' ? 'posters' : 'grid')} data-tooltip={t('files.toggle_layout')} aria-label={t('files.toggle_layout')}>
-                    {viewMode === 'grid' ? <SquaresFour size={18} /> : viewMode === 'list' ? <List size={18} /> : <FilmStrip size={18} />}
-                </button>
+                <div className="vault-view-switcher" role="group" aria-label="Library view">
+                    {([
+                        ['list', 'List view', List],
+                        ['grid', 'Grid view', SquaresFour],
+                        ['posters', 'Poster view', FilmStrip],
+                    ] as const).map(([mode, label, Icon]) => (
+                        <button key={mode} type="button" className="vault-icon-button"
+                            onClick={() => setViewMode(mode)} aria-label={label} title={label}
+                            aria-pressed={viewMode === mode}><Icon size={18} /></button>
+                    ))}
+                </div>
                 <span className="vault-command-divider" />
                 {onWatchLogsClick && <button className="vault-icon-button" onClick={onWatchLogsClick} data-tooltip="Watch history" aria-label="Watch history"><FilmStrip size={18} /></button>}
                 <button className="vault-icon-button" onClick={onLogsClick} data-tooltip="Error logs" aria-label="Error logs"><Scroll size={18} />{errorLogs.length > 0 && <i className="vault-alert-dot" />}</button>

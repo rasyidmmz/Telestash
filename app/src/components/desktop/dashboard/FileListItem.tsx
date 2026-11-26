@@ -1,7 +1,8 @@
+import { fileKey } from '../../../fileIdentity';
 import { useState } from 'react';
-import { Folder, MoreVertical } from '../../shared/icons.tsx';
+import { Folder, MoreVertical, Play, Star } from '../../shared/icons.tsx';
 import { TelegramFile } from '../../../types';
-import { createDragGhost } from '../../../utils';
+import { createDragGhost, isVideoFile } from '../../../utils';
 import { FileTypeIcon } from '../../shared/FileTypeIcon';
 import { useVideoMetadata } from '../../../hooks/useVideoMetadata';
 import { useVideoSubtitles } from '../../../hooks/useVideoSubtitles';
@@ -11,17 +12,24 @@ import { MediaBadgesList } from '../../shared/MediaBadgesList';
 
 interface FileListItemProps {
     file: TelegramFile;
-    selectedIds: number[];
-    onFileClick: (e: React.MouseEvent, id: number) => void;
+    selectedIds: string[];
+    onFileClick: (e: React.MouseEvent, id: number, folderId: number | null) => void;
     handleContextMenu: (e: React.MouseEvent, file: TelegramFile) => void;
     onDragStart?: (fileIds: number[]) => void;
     onDragEnd?: () => void;
     onDrop?: (e: React.DragEvent, folderId: number) => void;
+    presentation?: 'series' | 'movies' | 'general';
+    onPreview?: () => void;
+    onShowDetails?: () => void;
+    isFavorite?: boolean;
+    onToggleFavorite?: () => void;
+    tags?: string[];
 }
 
 export function FileListItem({
     file, selectedIds, onFileClick, handleContextMenu,
-    onDragStart, onDragEnd, onDrop
+    onDragStart, onDragEnd, onDrop, presentation = 'general', onPreview, onShowDetails,
+    isFavorite = false, onToggleFavorite, tags = [],
 }: FileListItemProps) {
     const [isDragOver, setIsDragOver] = useState(false);
     const isFolder = file.type === 'folder';
@@ -42,7 +50,7 @@ export function FileListItem({
 
     return (
         <div
-            onClick={(e) => onFileClick(e, file.id)}
+            onClick={(e) => onFileClick(e, file.id, file.folder_id ?? null)}
             role="button"
             tabIndex={0}
             aria-label={`${isFolder ? 'Open folder' : 'Select file'} ${file.name}`}
@@ -54,7 +62,7 @@ export function FileListItem({
             onContextMenu={(e) => handleContextMenu(e, file)}
             draggable
             onDragStart={(e) => {
-                const idsToDrag = selectedIds.includes(file.id) ? selectedIds : [file.id];
+                const idsToDrag = selectedIds.includes(fileKey(file)) ? selectedIds.map(key => Number(key.split(':').pop())) : [file.id];
                 if (onDragStart) onDragStart(idsToDrag);
                 e.dataTransfer.setData("application/x-telegram-file-ids", JSON.stringify(idsToDrag));
                 e.dataTransfer.effectAllowed = 'move';
@@ -93,7 +101,7 @@ export function FileListItem({
                     onDrop(e, file.id);
                 }
             }}
-            className={`vault-file-row group ${selectedIds.includes(file.id) ? 'is-selected' : ''} ${isDragOver ? 'is-drag-over' : ''}`}
+            className={`vault-file-row group ${presentation !== 'general' ? 'library-file-row' : ''} ${selectedIds.includes(fileKey(file)) ? 'is-selected' : ''} ${isDragOver ? 'is-drag-over' : ''}`}
         >
             <div className="flex justify-center">
                 {isFolder ? <Folder className="w-5 h-5 text-stash-primary" /> : <FileTypeIcon filename={file.name} className="w-5 h-5" />}
@@ -107,12 +115,27 @@ export function FileListItem({
                         SUB: {Array.from(new Set(subtitles.map(s => s.language.toUpperCase()))).join(', ')}
                     </span>
                 )}
+                {presentation !== 'general' && tags.slice(0, 3).map(tag => <span key={tag} className="library-tag" title={tag}>{tag}</span>)}
             </div>
-            <div className="hidden sm:block text-right text-xs text-stash-subtext truncate">{file.sizeStr}</div>
-            <div className="hidden sm:block text-right text-xs text-stash-subtext font-mono opacity-50 truncate">{file.created_at || '-'}</div>
+            <div className="library-file-size hidden sm:block text-right text-xs text-stash-subtext truncate">{file.sizeStr}</div>
+            <div className="library-file-date hidden sm:block text-right text-xs text-stash-subtext font-mono opacity-50 truncate">{file.created_at || '-'}</div>
 
             {/* 3-dot Menu Button — in grid flow, not absolutely positioned */}
-            <div className="flex justify-end">
+            <div className="flex items-center justify-end gap-1">
+                {presentation !== 'general' && !isFolder && onToggleFavorite && (
+                    <button onClick={(e) => { e.stopPropagation(); onToggleFavorite(); }} className="library-icon-action"
+                        aria-label={`${isFavorite ? 'Unfavorite' : 'Favorite'} ${file.name}`} aria-pressed={isFavorite}>
+                        <Star className="w-4 h-4" weight={isFavorite ? 'fill' : 'regular'} />
+                    </button>
+                )}
+                {presentation !== 'general' && !isFolder && isVideoFile(file.name) && onPreview && (
+                    <button onClick={(e) => { e.stopPropagation(); onPreview(); }} className="library-row-action"
+                        aria-label={`Play ${file.name}`}><Play className="w-3.5 h-3.5" /> Play</button>
+                )}
+                {presentation === 'movies' && !isFolder && onShowDetails && (
+                    <button onClick={(e) => { e.stopPropagation(); onShowDetails(); }} className="library-row-action"
+                        aria-label={`Details ${file.name}`}>Details</button>
+                )}
                 <button
                     onClick={(e) => {
                         e.stopPropagation();

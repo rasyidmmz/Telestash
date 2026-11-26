@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { motion, AnimatePresence } from "framer-motion";
 import { Phone, Key, Lock, ArrowRight, Settings, ShieldCheck, Sun, Moon, HelpCircle, ExternalLink, X, QrCode } from './icons.tsx';
@@ -6,21 +6,24 @@ import { load } from '@tauri-apps/plugin-store';
 import { useTheme } from '../../context/ThemeContext';
 import { open } from '@tauri-apps/plugin-shell';
 import { QRCodeSVG } from 'qrcode.react';
+import { useModalDialog } from '../../hooks/useModalDialog';
 
 type Step = "setup" | "phone" | "code" | "password";
 
 function AuthThemeToggle() {
-    const { theme, toggleTheme } = useTheme();
+    const { theme, toggleTheme, activeCustomThemeId, customThemes } = useTheme();
+    const isDark = customThemes.find(item => item.id === activeCustomThemeId)?.isDark ?? (theme === 'dark');
     return (
         <button
             onClick={toggleTheme}
-            className="absolute top-[calc(1rem+env(safe-area-inset-top,24px))] right-4 p-3 rounded-full bg-white/10 hover:bg-white/20 transition-colors z-10"
-            title={theme === 'dark' ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
+            className="absolute top-4 right-4 p-3 rounded-xl bg-stash-surface border border-stash-border text-stash-text hover:bg-stash-hover transition-colors z-10"
+            title={isDark ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
+            aria-label={isDark ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
         >
-            {theme === 'dark' ? (
-                <Sun className="w-5 h-5 text-white" />
+            {isDark ? (
+                <Sun className="w-5 h-5" />
             ) : (
-                <Moon className="w-5 h-5 text-white" />
+                <Moon className="w-5 h-5" />
             )}
         </button>
     );
@@ -34,12 +37,12 @@ export function AuthWizard({ onLogin }: { onLogin: () => void }) {
                 <div className="w-20 h-20 bg-red-500/20 rounded-full flex items-center justify-center mb-6">
                     <ShieldCheck className="w-10 h-10 text-red-500" />
                 </div>
-                <h1 className="text-2xl font-bold text-white mb-4">Desktop App Required</h1>
-                <p className="text-gray-400 mb-6 leading-relaxed">
+                <h1 className="text-2xl font-bold text-stash-text mb-4">Desktop App Required</h1>
+                <p className="text-stash-subtext mb-6 leading-relaxed">
                     You are viewing the internal development server in a browser.
                     This application cannot function here because it requires access to the system backend (Rust).
                 </p>
-                <div className="p-4 bg-gray-800 rounded-xl border border-gray-700 text-sm text-gray-300">
+                <div className="p-4 bg-stash-surface rounded-xl border border-stash-border text-sm text-stash-subtext">
                     Please open the <strong>TeleStash</strong> window in your Windows taskbar to continue.
                 </div>
             </div>
@@ -58,6 +61,9 @@ export function AuthWizard({ onLogin }: { onLogin: () => void }) {
     const [error, setError] = useState<string | null>(null);
     const [floodWait, setFloodWait] = useState<number | null>(null);
     const [showHelp, setShowHelp] = useState(false);
+    const closeHelp = useCallback(() => setShowHelp(false), []);
+    const helpCloseRef = useRef<HTMLButtonElement>(null);
+    const helpDialogRef = useModalDialog(showHelp, closeHelp, helpCloseRef);
     const [loginMethod, setLoginMethod] = useState<'phone' | 'qr'>('phone');
     const [qrUrl, setQrUrl] = useState<string | null>(null);
     const [qrPolling, setQrPolling] = useState(false);
@@ -274,20 +280,20 @@ export function AuthWizard({ onLogin }: { onLogin: () => void }) {
     };
 
     return (
-        <div className="h-full w-full auth-gradient flex items-center justify-center p-6 pt-[calc(1.5rem+env(safe-area-inset-top,24px))] relative">
+        <div className="h-full w-full auth-gradient flex items-center justify-center p-6 relative">
             <AuthThemeToggle />
 
             <motion.div
-                initial={{ opacity: 0, scale: 0.95 }}
+                initial={{ opacity: 0 }}
                 animate={{ opacity: 1, scale: 1 }}
-                className="auth-glass p-8 rounded-3xl shadow-2xl w-full max-w-md"
+                className="auth-glass p-8 rounded-2xl shadow-2xl w-full max-w-md max-h-[calc(100vh-3rem)] overflow-y-auto"
             >
                 <div className="text-center mb-8">
-                    <div className="w-20 h-20 mb-6 mx-auto flex items-center justify-center filter drop-shadow-lg">
+                    <div className="w-16 h-16 mb-4 mx-auto flex items-center justify-center">
                         <img src="/telestash-logo.png" alt="TeleStash" className="w-full h-full" />
                     </div>
-                    <h1 className="text-2xl font-bold text-white mb-1 tracking-tight">TeleStash</h1>
-                    <p className="text-sm text-white/60 font-medium">Telegram-backed personal media vault</p>
+                    <h1 className="text-2xl font-semibold text-stash-text mb-1 tracking-tight">TeleStash</h1>
+                    <p className="text-sm text-stash-subtext">Your personal media library, connected to Telegram</p>
                 </div>
 
                 <AnimatePresence mode="wait">
@@ -302,9 +308,9 @@ export function AuthWizard({ onLogin }: { onLogin: () => void }) {
                                 <span className="text-2xl">⏳</span>
                             </div>
                             <div>
-                                <h2 className="text-xl font-bold text-white mb-2">Too Many Requests</h2>
-                                <p className="text-sm text-gray-400">Telegram has temporarily limited your actions.</p>
-                                <p className="text-sm text-gray-400">Please wait before trying again.</p>
+                                <h2 className="text-xl font-semibold text-stash-text mb-2">Too Many Requests</h2>
+                                <p className="text-sm text-stash-subtext">Telegram has temporarily limited your actions.</p>
+                                <p className="text-sm text-stash-subtext">Please wait before trying again.</p>
                             </div>
 
                             <div className="text-5xl font-mono items-center justify-center flex text-amber-300 font-bold">
@@ -330,28 +336,30 @@ export function AuthWizard({ onLogin }: { onLogin: () => void }) {
                                 >
                                     <div className="space-y-4">
                                         <div>
-                                            <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">API ID</label>
+                                            <label htmlFor="auth-api-id" className="block text-xs font-semibold text-stash-subtext uppercase tracking-wider mb-2">API ID</label>
                                             <div className="relative">
                                                 <Key className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 auth-form-icon" />
                                                 <input
+                                                    id="auth-api-id"
                                                     type="text"
                                                     value={apiId}
                                                     onChange={(e) => setApiId(e.target.value)}
                                                     placeholder="12345678"
-                                                    className="w-full glass-input rounded-xl pl-12 pr-4 py-3.5 text-white placeholder-gray-600 focus:outline-none focus:border-amber-500/70 transition-all font-mono text-sm"
+                                                    className="w-full glass-input rounded-xl pl-12 pr-4 py-3.5 text-stash-text placeholder:text-stash-subtext/60 focus:border-stash-primary transition-colors font-mono text-sm"
                                                 />
                                             </div>
                                         </div>
                                         <div>
-                                            <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">API Hash</label>
+                                            <label htmlFor="auth-api-hash" className="block text-xs font-semibold text-stash-subtext uppercase tracking-wider mb-2">API Hash</label>
                                             <div className="relative">
                                                 <Key className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 auth-form-icon" />
                                                 <input
+                                                    id="auth-api-hash"
                                                     type="text"
                                                     value={apiHash}
                                                     onChange={(e) => setApiHash(e.target.value)}
                                                     placeholder="abcdef123456..."
-                                                    className="w-full glass-input rounded-xl pl-12 pr-4 py-3.5 text-white placeholder-gray-600 focus:outline-none focus:border-amber-500/70 transition-all font-mono text-sm"
+                                                    className="w-full glass-input rounded-xl pl-12 pr-4 py-3.5 text-stash-text placeholder:text-stash-subtext/60 focus:border-stash-primary transition-colors font-mono text-sm"
                                                 />
                                             </div>
                                         </div>
@@ -359,7 +367,7 @@ export function AuthWizard({ onLogin }: { onLogin: () => void }) {
 
                                     <button
                                         type="submit"
-                                        className="w-full bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-300 hover:to-amber-400 text-[#171204] font-bold py-4 rounded-xl flex items-center justify-center gap-2 transition-all shadow-lg shadow-amber-950/30 active:scale-[0.98]"
+                                        className="auth-primary w-full font-semibold py-3.5 rounded-xl flex items-center justify-center gap-2 transition-colors"
                                     >
                                         Configure <Settings className="w-4 h-4" />
                                     </button>
@@ -367,7 +375,7 @@ export function AuthWizard({ onLogin }: { onLogin: () => void }) {
                                     <button
                                         type="button"
                                         onClick={() => setShowHelp(true)}
-                                        className="w-full text-xs text-amber-200/80 hover:text-white transition-colors flex items-center justify-center gap-1.5 py-1"
+                                        className="w-full text-xs text-stash-subtext hover:text-stash-text transition-colors flex items-center justify-center gap-1.5 py-1"
                                     >
                                         <HelpCircle className="w-3 h-3" />
                                         How do I get my API credentials?
@@ -377,7 +385,7 @@ export function AuthWizard({ onLogin }: { onLogin: () => void }) {
                                         <button
                                             type="button"
                                             onClick={() => onLogin()}
-                                            className="w-full text-xs text-red-400/60 hover:text-red-300 transition-colors py-1"
+                                            className="w-full text-xs text-stash-subtext hover:text-stash-text transition-colors py-1"
                                         >
                                             Dev Mode
                                         </button>
@@ -394,14 +402,14 @@ export function AuthWizard({ onLogin }: { onLogin: () => void }) {
                                     exit={{ x: -20, opacity: 0 }}
                                     className="space-y-6"
                                 >
-                                    <div className="flex rounded-xl overflow-hidden border border-white/10">
+                                    <div className="flex rounded-xl overflow-hidden border border-stash-border">
                                         <button
                                             type="button"
                                             onClick={() => { setLoginMethod('phone'); setQrUrl(null); setQrPolling(false); setError(null); }}
                                             className={`flex-1 py-2.5 text-sm font-medium flex items-center justify-center gap-2 transition-all ${
                                                 loginMethod === 'phone'
-                                                    ? 'bg-white/15 text-white'
-                                                    : 'text-white/50 hover:text-white/70'
+                                                    ? 'bg-stash-hover text-stash-text'
+                                                    : 'text-stash-subtext hover:text-stash-text'
                                             }`}
                                         >
                                             <Phone className="w-4 h-4" /> Phone Number
@@ -411,8 +419,8 @@ export function AuthWizard({ onLogin }: { onLogin: () => void }) {
                                             onClick={() => { setLoginMethod('qr'); setError(null); handleQrLogin(); }}
                                             className={`flex-1 py-2.5 text-sm font-medium flex items-center justify-center gap-2 transition-all ${
                                                 loginMethod === 'qr'
-                                                    ? 'bg-white/15 text-white'
-                                                    : 'text-white/50 hover:text-white/70'
+                                                    ? 'bg-stash-hover text-stash-text'
+                                                    : 'text-stash-subtext hover:text-stash-text'
                                             }`}
                                         >
                                             <QrCode className="w-4 h-4" /> QR Code
@@ -422,15 +430,16 @@ export function AuthWizard({ onLogin }: { onLogin: () => void }) {
                                     {loginMethod === 'phone' ? (
                                         <form onSubmit={handlePhoneSubmit} className="space-y-6">
                                             <div className="space-y-2">
-                                                <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wider">Phone Number</label>
+                                                <label htmlFor="auth-phone" className="block text-xs font-semibold text-stash-subtext uppercase tracking-wider">Phone Number</label>
                                                 <div className="relative">
                                                     <Phone className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 auth-form-icon" />
                                                     <input
+                                                        id="auth-phone"
                                                         type="tel"
                                                         value={phone}
                                                         onChange={(e) => setPhone(e.target.value)}
                                                         placeholder="+1 234 567 8900"
-                                                        className="w-full glass-input rounded-xl pl-12 pr-4 py-4 text-white placeholder-gray-600 focus:outline-none focus:border-amber-500/70 transition-all text-lg tracking-wide"
+                                                        className="w-full glass-input rounded-xl pl-12 pr-4 py-4 text-stash-text placeholder:text-stash-subtext/60 focus:border-stash-primary transition-colors text-lg tracking-wide"
                                                     />
                                                 </div>
                                             </div>
@@ -439,11 +448,11 @@ export function AuthWizard({ onLogin }: { onLogin: () => void }) {
                                                 <button
                                                     type="submit"
                                                     disabled={loading}
-                                                    className="w-full bg-white text-black hover:bg-gray-100 font-bold py-4 rounded-xl flex items-center justify-center gap-2 transition-all shadow-lg active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed"
+                                                    className="auth-primary w-full font-semibold py-3.5 rounded-xl flex items-center justify-center gap-2 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                                                 >
                                                     {loading ? "Connecting..." : <>Continue <ArrowRight className="w-5 h-5" /></>}
                                                 </button>
-                                                <button type="button" onClick={() => setStep("setup")} className="text-xs text-gray-500 hover:text-white transition-colors py-2">
+                                                <button type="button" onClick={() => setStep("setup")} className="text-xs text-stash-subtext hover:text-stash-text transition-colors py-2">
                                                     Back to Configuration
                                                 </button>
                                             </div>
@@ -451,7 +460,7 @@ export function AuthWizard({ onLogin }: { onLogin: () => void }) {
                                     ) : (
                                         <div className="flex flex-col items-center gap-5">
                                             {loading && !qrUrl && (
-                                                <div className="w-52 h-52 rounded-2xl bg-white/5 flex items-center justify-center">
+                                                <div className="w-52 h-52 rounded-2xl bg-stash-hover flex items-center justify-center">
                                                     <div className="w-8 h-8 border-2 border-amber-300 border-t-transparent rounded-full animate-spin" />
                                                 </div>
                                             )}
@@ -467,11 +476,11 @@ export function AuthWizard({ onLogin }: { onLogin: () => void }) {
                                                         />
                                                     </div>
                                                     <div className="text-center space-y-1">
-                                                        <p className="text-sm text-white/80">Scan with your Telegram app</p>
-                                                        <p className="text-xs text-white/40">Settings &gt; Devices &gt; Link Desktop Device</p>
+                                                        <p className="text-sm text-stash-text">Scan with your Telegram app</p>
+                                                        <p className="text-xs text-stash-subtext">Settings &gt; Devices &gt; Link Desktop Device</p>
                                                     </div>
                                                     {qrPolling && (
-                                                        <div className="flex items-center gap-2 text-xs text-blue-300">
+                                                        <div className="flex items-center gap-2 text-xs text-stash-subtext">
                                                             <div className="w-3 h-3 border-2 border-amber-300 border-t-transparent rounded-full animate-spin" />
                                                             Waiting for scan...
                                                         </div>
@@ -479,13 +488,13 @@ export function AuthWizard({ onLogin }: { onLogin: () => void }) {
                                                     <button
                                                         type="button"
                                                         onClick={handleQrLogin}
-                                                        className="text-xs text-white/50 hover:text-white transition-colors"
+                                                        className="text-xs text-stash-subtext hover:text-stash-text transition-colors"
                                                     >
                                                         Refresh QR Code
                                                     </button>
                                                 </>
                                             )}
-                                            <button type="button" onClick={() => { setStep("setup"); setQrPolling(false); }} className="text-xs text-gray-500 hover:text-white transition-colors py-2">
+                                            <button type="button" onClick={() => { setStep("setup"); setQrPolling(false); }} className="text-xs text-stash-subtext hover:text-stash-text transition-colors py-2">
                                                 Back to Configuration
                                             </button>
                                         </div>
@@ -504,15 +513,16 @@ export function AuthWizard({ onLogin }: { onLogin: () => void }) {
                                     className="space-y-6"
                                 >
                                     <div className="space-y-2">
-                                        <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wider">Telegram Code</label>
+                                        <label htmlFor="auth-code" className="block text-xs font-semibold text-stash-subtext uppercase tracking-wider">Telegram Code</label>
                                         <div className="relative">
                                             <Key className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 auth-form-icon" />
                                             <input
+                                                id="auth-code"
                                                 type="text"
                                                 value={code}
                                                 onChange={(e) => setCode(e.target.value)}
                                                 placeholder="1 2 3 4 5"
-                                                className="w-full glass-input rounded-xl pl-12 pr-4 py-4 text-white placeholder-gray-600 focus:outline-none focus:border-amber-500/70 transition-all text-2xl tracking-[0.5em] font-mono text-center"
+                                                className="w-full glass-input rounded-xl pl-12 pr-4 py-4 text-stash-text placeholder:text-stash-subtext/60 focus:border-stash-primary transition-colors text-2xl tracking-[0.5em] font-mono text-center"
                                             />
                                         </div>
                                     </div>
@@ -521,11 +531,11 @@ export function AuthWizard({ onLogin }: { onLogin: () => void }) {
                                         <button
                                             type="submit"
                                             disabled={loading}
-                                            className="w-full bg-white text-black hover:bg-gray-100 font-bold py-4 rounded-xl flex items-center justify-center gap-2 transition-all shadow-lg active:scale-[0.98]"
+                                            className="auth-primary w-full font-semibold py-3.5 rounded-xl flex items-center justify-center gap-2 transition-colors disabled:opacity-50"
                                         >
                                             {loading ? "Verifying..." : "Sign In"}
                                         </button>
-                                        <button type="button" onClick={() => setStep("phone")} className="text-xs text-gray-500 hover:text-white transition-colors py-2">
+                                        <button type="button" onClick={() => setStep("phone")} className="text-xs text-stash-subtext hover:text-stash-text transition-colors py-2">
                                             Change Phone Number
                                         </button>
                                     </div>
@@ -543,21 +553,22 @@ export function AuthWizard({ onLogin }: { onLogin: () => void }) {
                                     className="space-y-6"
                                 >
                                     <div className="space-y-2">
-                                        <div className="p-3 bg-blue-500/10 border border-blue-500/20 rounded-xl mb-4">
-                                            <p className="text-xs text-blue-300 text-center">
+                                        <div className="p-3 bg-stash-hover border border-stash-border rounded-xl mb-4">
+                                            <p className="text-xs text-stash-subtext text-center">
                                                 Your account has Two-Factor Authentication enabled.
                                                 Please enter your cloud password to continue.
                                             </p>
                                         </div>
-                                        <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wider">Cloud Password</label>
+                                        <label htmlFor="auth-password" className="block text-xs font-semibold text-stash-subtext uppercase tracking-wider">Cloud Password</label>
                                         <div className="relative">
                                             <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 auth-form-icon" />
                                             <input
+                                                id="auth-password"
                                                 type="password"
                                                 value={password}
                                                 onChange={(e) => setPassword(e.target.value)}
                                                 placeholder="Enter your password"
-                                                className="w-full glass-input rounded-xl pl-12 pr-4 py-4 text-white placeholder-gray-600 focus:outline-none focus:border-amber-500/70 transition-all text-lg"
+                                                className="w-full glass-input rounded-xl pl-12 pr-4 py-4 text-stash-text placeholder:text-stash-subtext/60 focus:border-stash-primary transition-colors text-lg"
                                                 autoFocus
                                             />
                                         </div>
@@ -567,11 +578,11 @@ export function AuthWizard({ onLogin }: { onLogin: () => void }) {
                                         <button
                                             type="submit"
                                             disabled={loading || !password}
-                                            className="w-full bg-white text-black hover:bg-gray-100 font-bold py-4 rounded-xl flex items-center justify-center gap-2 transition-all shadow-lg active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed"
+                                            className="auth-primary w-full font-semibold py-3.5 rounded-xl flex items-center justify-center gap-2 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                                         >
                                             {loading ? "Verifying..." : "Unlock"}
                                         </button>
-                                        <button type="button" onClick={() => { setStep("code"); setPassword(""); setError(null); }} className="text-xs text-gray-500 hover:text-white transition-colors py-2">
+                                        <button type="button" onClick={() => { setStep("code"); setPassword(""); setError(null); }} className="text-xs text-stash-subtext hover:text-stash-text transition-colors py-2">
                                             Back to Code Entry
                                         </button>
                                     </div>
@@ -592,7 +603,7 @@ export function AuthWizard({ onLogin }: { onLogin: () => void }) {
                     </motion.div>
                 )}
 
-                <div className="mt-8 pt-4 border-t border-white/5" />
+                <div className="mt-8 pt-4 border-t border-stash-border" />
             </motion.div>
 
 
@@ -603,18 +614,23 @@ export function AuthWizard({ onLogin }: { onLogin: () => void }) {
                         animate={{ opacity: 1 }}
                         exit={{ opacity: 0 }}
                         className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4"
-                        onClick={() => setShowHelp(false)}
+                        onClick={closeHelp}
                     >
                         <motion.div
+                            ref={helpDialogRef}
+                            tabIndex={-1}
                             initial={{ scale: 0.95, opacity: 0 }}
                             animate={{ scale: 1, opacity: 1 }}
                             exit={{ scale: 0.95, opacity: 0 }}
                             className="glass bg-stash-surface border border-stash-border rounded-2xl p-6 max-w-lg w-full max-h-[80vh] overflow-y-auto shadow-2xl"
                             onClick={(e) => e.stopPropagation()}
+                            role="dialog"
+                            aria-modal="true"
+                            aria-labelledby="auth-help-title"
                         >
                             <div className="flex items-center justify-between mb-6">
-                                <h2 className="text-xl font-bold text-stash-text">Getting Started</h2>
-                                <button onClick={() => setShowHelp(false)} className="p-2 hover:bg-stash-hover rounded-lg transition-colors">
+                                <h2 id="auth-help-title" className="text-xl font-semibold text-stash-text">Getting Started</h2>
+                                <button ref={helpCloseRef} onClick={closeHelp} className="p-2 hover:bg-stash-hover rounded-lg transition-colors" aria-label="Close help">
                                     <X className="w-5 h-5 text-stash-subtext" />
                                 </button>
                             </div>
@@ -676,8 +692,6 @@ export function AuthWizard({ onLogin }: { onLogin: () => void }) {
                 )}
             </AnimatePresence>
 
-            <div className="fixed top-[-20%] left-[-10%] w-[500px] h-[500px] bg-blue-600/20 rounded-full blur-[120px] pointer-events-none -z-10" />
-            <div className="fixed bottom-[-10%] right-[-10%] w-[400px] h-[400px] bg-purple-600/10 rounded-full blur-[100px] pointer-events-none -z-10" />
         </div>
     );
 }

@@ -1,3 +1,4 @@
+import { fileKey } from '../../fileIdentity';
 import { Suspense, lazy, useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { AnimatePresence } from 'framer-motion';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
@@ -23,6 +24,7 @@ import { RenameFolderModal } from './dashboard/RenameFolderModal';
 import { RenameFileModal } from './dashboard/RenameFileModal';
 import { LogsModal } from './dashboard/LogsModal';
 import { RecentWatchBar } from './dashboard/RecentWatchBar';
+import { MediaDetail } from './dashboard/MediaDetail';
 import { WatchLogsModal } from './dashboard/WatchLogsModal';
 import { WatchAnalyticsModal } from './dashboard/WatchAnalyticsModal';
 import { StorageAnalyticsModal } from './dashboard/StorageAnalyticsModal';
@@ -42,10 +44,12 @@ import { useFolderFavorites, useToggleFavorite } from '../../hooks/useFavorites'
 import { useTags, useFolderTagMap } from '../../hooks/useFileTags';
 import { TagEditorModal } from './dashboard/TagEditorModal';
 import { useSettings } from '../../context/SettingsContext';
+import { getEffectiveViewMode, getFolderPresentation } from '../../folderPresentation';
 import { useTheme } from '../../context/ThemeContext';
 import { useConfirm } from '../../context/ConfirmContext';
 import { useUpdate } from '../../context/UpdateContext';
 import { recordErrorLog } from '../../errorLogs';
+import './dashboard/library-shell.css';
 
 const SettingsModal = lazy(() => import('./dashboard/SettingsModal').then(m => ({ default: m.SettingsModal })));
 // pdfjs-dist is a ~1 MB dependency; only pull it into the bundle when a
@@ -65,22 +69,21 @@ export function Dashboard({ onLogout }: { onLogout: () => void }) {
     } = useTelegramConnection(onLogout);
 
 
-    const { settings, updateSetting } = useSettings();
+    const { settings, updateSetting, updateFolderPresentation } = useSettings();
     const { theme, toggleTheme } = useTheme();
     const { confirm } = useConfirm();
     const { checkForUpdates } = useUpdate();
-    const viewMode = settings.viewMode;
-    const setViewMode = (mode: 'grid' | 'list' | 'posters') => updateSetting('viewMode', mode);
 
     const [previewFile, setPreviewFile] = useState<TelegramFile | null>(null);
-    const [selectedIds, setSelectedIds] = useState<number[]>([]);
+    const [detailFile, setDetailFile] = useState<TelegramFile | null>(null);
+    const closeDetails = useCallback(() => setDetailFile(null), []);
+    const [selectedIds, setSelectedIds] = useState<string[]>([]);
     const [showMoveModal, setShowMoveModal] = useState(false);
     const [showSettings, setShowSettings] = useState(false);
     const [showLogs, setShowLogs] = useState(false);
     const [showWatchLogs, setShowWatchLogs] = useState(false);
     const [showWatchAnalytics, setShowWatchAnalytics] = useState(false);
     const [showAnalytics, setShowAnalytics] = useState(false);
-    const [showFolderDrawer, setShowFolderDrawer] = useState(false);
     const [watchHistory, setWatchHistory] = useState<WatchHistoryEntry[]>([]);
 
     const refreshWatchHistory = useCallback(() => {
@@ -97,6 +100,12 @@ export function Dashboard({ onLogout }: { onLogout: () => void }) {
     const [isSearching, setIsSearching] = useState(false);
     const [cardScale, setCardScale] = useState(1.0);
     const [showAllFavorites, setShowAllFavorites] = useState(false);
+    const activePresentation = getFolderPresentation(settings.folderPresentation, activeFolderId);
+    const viewMode = showAllFavorites ? settings.viewMode : getEffectiveViewMode(activePresentation, settings.viewMode);
+    const setViewMode = (mode: 'grid' | 'list' | 'posters') => {
+        if (showAllFavorites) updateSetting('viewMode', mode);
+        else updateFolderPresentation(activeFolderId, { viewMode: mode });
+    };
     const [favoritesOnly, setFavoritesOnly] = useState(false);
     const [tagEditorFile, setTagEditorFile] = useState<TelegramFile | null>(null);
     const [activeTagFilter, setActiveTagFilter] = useState<string | null>(null);
@@ -145,7 +154,7 @@ export function Dashboard({ onLogout }: { onLogout: () => void }) {
 
     const handleToggleFavorite = useCallback(async (file: TelegramFile) => {
         try {
-            const folderId = file.folder_id ?? (showAllFavorites ? file.folder_id ?? null : activeFolderId);
+            const folderId = file.folder_id ?? null;
             const next = await toggleFavorite(folderId, file.id);
             toast.success(next ? `Favorited ${file.name}` : `Unfavorited ${file.name}`);
             if (showAllFavorites) {
@@ -299,7 +308,7 @@ export function Dashboard({ onLogout }: { onLogout: () => void }) {
 
     // Bulk share: generate links for all selected non-folder files
     const handleBulkShare = useCallback(async () => {
-        const shareFiles = displayedFiles.filter(f => selectedIds.includes(f.id) && f.type !== 'folder');
+        const shareFiles = displayedFiles.filter(f => selectedIds.includes(fileKey(f)) && f.type !== 'folder');
         if (shareFiles.length === 0) {
             toast.info('No shareable files selected (folders cannot be shared)');
             return;
@@ -312,7 +321,7 @@ export function Dashboard({ onLogout }: { onLogout: () => void }) {
                 shareFiles.map(async (file) => {
                     try {
                         const info = await invoke<ShareInfo>('cmd_create_share', {
-                            folderId: null,
+                            folderId: file.folder_id ?? null,
                             messageId: file.id,
                             fileName: file.name,
                             fileSize: file.size,
@@ -351,7 +360,7 @@ export function Dashboard({ onLogout }: { onLogout: () => void }) {
 
 
     const handleSelectAll = useCallback(() => {
-        setSelectedIds(displayedFiles.map(f => f.id));
+        setSelectedIds(displayedFiles.map(fileKey));
     }, [displayedFiles]);
 
     const handleKeyboardDelete = useCallback(() => {
@@ -379,7 +388,7 @@ export function Dashboard({ onLogout }: { onLogout: () => void }) {
 
     const handleEnter = useCallback(() => {
         if (selectedIds.length === 1) {
-            const selected = displayedFiles.find(f => f.id === selectedIds[0]);
+            const selected = displayedFiles.find(f => fileKey(f) === selectedIds[0]);
             if (selected) {
                 if (selected.type === 'folder') {
                     setActiveFolderId(selected.id);
@@ -398,7 +407,7 @@ export function Dashboard({ onLogout }: { onLogout: () => void }) {
         setSearchTerm("");
         setSearchResults([]);
         setPreviewFile(null);
-        setPlayingFile(null);
+        setPlayingFile(current => current && (current.folder_id ?? null) === activeFolderId ? current : null);
         setPdfFile(null);
         setPreviewContextFiles([]);
         setPreviewContextIndex(-1);
@@ -448,15 +457,16 @@ export function Dashboard({ onLogout }: { onLogout: () => void }) {
         setSelectedIds([]);
     }, []);
 
-    const handleFileClick = (e: React.MouseEvent, id: number) => {
+    const handleFileClick = (e: React.MouseEvent, fileId: number, folderId: number | null) => {
+        const id = fileKey({ id: fileId, folder_id: folderId });
         e.stopPropagation();
-        const currentIndex = displayedFiles.findIndex(f => f.id === id);
+        const currentIndex = displayedFiles.findIndex(f => fileKey(f) === id);
 
         if (e.shiftKey && lastClickedIndexRef.current >= 0) {
             // Shift+Click: range select from last clicked to current
             const start = Math.min(lastClickedIndexRef.current, currentIndex);
             const end = Math.max(lastClickedIndexRef.current, currentIndex);
-            const rangeIds = displayedFiles.slice(start, end + 1).map(f => f.id);
+            const rangeIds = displayedFiles.slice(start, end + 1).map(fileKey);
             setSelectedIds(rangeIds);
         } else if (e.metaKey || e.ctrlKey) {
             // Ctrl/Cmd+Click: toggle individual file
@@ -469,7 +479,8 @@ export function Dashboard({ onLogout }: { onLogout: () => void }) {
         }
     }
 
-    const handleToggleSelection = useCallback((id: number) => {
+    const handleToggleSelection = useCallback((fileId: number, folderId: number | null) => {
+        const id = fileKey({ id: fileId, folder_id: folderId });
         setSelectedIds(ids => ids.includes(id) ? ids.filter(i => i !== id) : [...ids, id]);
     }, []);
 
@@ -487,11 +498,12 @@ export function Dashboard({ onLogout }: { onLogout: () => void }) {
         try {
             await invoke('cmd_rename_file', {
                 messageId: renameFileTarget.id,
-                folderId: activeFolderId,
+                folderId: renameFileTarget.folder_id ?? null,
                 newName,
             });
-            await invoke('cmd_sync_folder', { folderId: activeFolderId }).catch(() => {});
-            queryClient.invalidateQueries({ queryKey: ['files', activeFolderId] });
+            await invoke('cmd_sync_folder', { folderId: renameFileTarget.folder_id ?? null }).catch(() => {});
+            queryClient.invalidateQueries({ queryKey: ['files', renameFileTarget.folder_id ?? null] });
+            queryClient.invalidateQueries({ queryKey: ['all-favorite-files'] });
             toast.success(`Renamed to "${newName}"`);
         } catch (e) {
             toast.error(humanizeError(e, i18n.t('errors.action_rename')));
@@ -513,7 +525,7 @@ export function Dashboard({ onLogout }: { onLogout: () => void }) {
 
     const handleKeyboardRename = useCallback(() => {
         if (selectedIds.length === 1) {
-            const selected = displayedFiles.find(f => f.id === selectedIds[0]);
+            const selected = displayedFiles.find(f => fileKey(f) === selectedIds[0]);
             if (selected && selected.type !== 'folder') {
                 handleRename(selected);
             }
@@ -529,12 +541,12 @@ export function Dashboard({ onLogout }: { onLogout: () => void }) {
         onDownload: handleKeyboardDownload,
         onShare: handleKeyboardShare,
         onRename: handleKeyboardRename,
-        enabled: !previewFile && !playingFile && !pdfFile && !showMoveModal
+        enabled: !previewFile && !playingFile && !pdfFile && !showMoveModal && !detailFile
     });
 
     const handlePreview = (file: TelegramFile, orderedFiles?: TelegramFile[]) => {
         const contextFiles = (orderedFiles || displayedFiles).filter((f) => f.type !== 'folder');
-        const contextIndex = contextFiles.findIndex((f) => f.id === file.id);
+        const contextIndex = contextFiles.findIndex((f) => f.id === file.id && (f.folder_id ?? null) === (file.folder_id ?? null));
 
         setPreviewContextFiles(contextFiles);
         setPreviewContextIndex(contextIndex);
@@ -560,10 +572,10 @@ export function Dashboard({ onLogout }: { onLogout: () => void }) {
     const navigatePreview = useCallback((step: 1 | -1) => {
         if (previewContextFiles.length === 0) return;
 
-        const currentFileId = previewFile?.id ?? playingFile?.id ?? pdfFile?.id;
-        if (!currentFileId) return;
+        const currentFile = previewFile ?? playingFile ?? pdfFile;
+        if (!currentFile) return;
 
-        const currentIndex = previewContextFiles.findIndex((f) => f.id === currentFileId);
+        const currentIndex = previewContextFiles.findIndex((f) => f.id === currentFile.id && (f.folder_id ?? null) === (currentFile.folder_id ?? null));
         if (currentIndex === -1) return;
 
         const nextIndex = (currentIndex + step + previewContextFiles.length) % previewContextFiles.length;
@@ -603,12 +615,12 @@ export function Dashboard({ onLogout }: { onLogout: () => void }) {
             return { nextFile: null as TelegramFile | null, prevFile: null as TelegramFile | null };
         }
 
-        const currentFileId = previewFile?.id ?? playingFile?.id ?? pdfFile?.id;
-        if (!currentFileId) {
+        const currentFile = previewFile ?? playingFile ?? pdfFile;
+        if (!currentFile) {
             return { nextFile: null as TelegramFile | null, prevFile: null as TelegramFile | null };
         }
 
-        const currentIdx = previewContextFiles.findIndex((f) => f.id === currentFileId);
+        const currentIdx = previewContextFiles.findIndex((f) => f.id === currentFile.id && (f.folder_id ?? null) === (currentFile.folder_id ?? null));
         if (currentIdx === -1) {
             return { nextFile: null as TelegramFile | null, prevFile: null as TelegramFile | null };
         }
@@ -625,6 +637,11 @@ export function Dashboard({ onLogout }: { onLogout: () => void }) {
     const handleDropOnFolder = async (e: React.DragEvent, targetFolderId: number | null) => {
         e.preventDefault();
         e.stopPropagation();
+
+        if (showAllFavorites || searchTerm.trim().length > 2) {
+            toast.info('Use Move to move files from search results or favorites.');
+            return;
+        }
 
         // Internal drags only (TeleStash file IDs); OS/Explorer file drops are ignored.
         const isInternal = e.dataTransfer.types.includes("application/x-telegram-file-id") ||
@@ -725,7 +742,7 @@ export function Dashboard({ onLogout }: { onLogout: () => void }) {
 
     return (
         <div
-            className="flex h-screen w-full overflow-hidden bg-stash-bg relative"
+            className="library-shell flex h-screen w-full overflow-hidden bg-stash-bg relative"
             onDragOver={handleRootDragOver}
             onDragEnter={handleRootDragEnter}
         >
@@ -740,19 +757,20 @@ export function Dashboard({ onLogout }: { onLogout: () => void }) {
                                 try {
                                     await invoke('cmd_move_files', {
                                         messageIds: [moveFileTarget.id],
-                                        sourceFolderId: activeFolderId,
+                                        sourceFolderId: moveFileTarget.folder_id ?? null,
                                         targetFolderId,
                                     });
                                     // Clean up stale preview cache for the old message ID
-                                    await invoke('cmd_delete_preview_for_message', { messageId: moveFileTarget.id, folderId: activeFolderId }).catch(() => {});
+                                    await invoke('cmd_delete_preview_for_message', { messageId: moveFileTarget.id, folderId: moveFileTarget.folder_id ?? null }).catch(() => {});
                                     await Promise.all([
-                                        invoke('cmd_sync_folder', { folderId: activeFolderId }).catch(() => {}),
+                                        invoke('cmd_sync_folder', { folderId: moveFileTarget.folder_id ?? null }).catch(() => {}),
                                         invoke('cmd_sync_folder', { folderId: targetFolderId }).catch(() => {}),
                                     ]);
-                                    queryClient.invalidateQueries({ queryKey: ['files', activeFolderId] });
-                                    if (targetFolderId !== activeFolderId) {
+                                    queryClient.invalidateQueries({ queryKey: ['files', moveFileTarget.folder_id ?? null] });
+                                    if (targetFolderId !== (moveFileTarget.folder_id ?? null)) {
                                         queryClient.invalidateQueries({ queryKey: ['files', targetFolderId] });
                                     }
+                                    queryClient.invalidateQueries({ queryKey: ['all-favorite-files'] });
                                     toast.success(`Moved "${moveFileTarget.name}"`);
                                     setMoveFileTarget(null);
                                     setShowMoveModal(false);
@@ -776,7 +794,7 @@ export function Dashboard({ onLogout }: { onLogout: () => void }) {
                         currentIndex={previewContextIndex}
                         totalItems={previewContextFiles.length}
                         activeFolderId={activeFolderId}
-                        playlistFiles={displayedFiles.filter(f => isVideoFile(f.name) || isAudioFile(f.name))}
+                        playlistFiles={displayedFiles.filter(f => (f.folder_id ?? null) === (playingFile.folder_id ?? null) && (isVideoFile(f.name) || isAudioFile(f.name)))}
                         key="media-player"
                     />
                 )}
@@ -797,7 +815,7 @@ export function Dashboard({ onLogout }: { onLogout: () => void }) {
             </AnimatePresence>
 
             <VaultRail
-                onFolders={() => setShowFolderDrawer(true)}
+                onFolders={() => updateSetting('sidebarCollapsed', !settings.sidebarCollapsed)}
                 onUpload={handleManualUpload}
                 onAnalytics={() => setShowAnalytics(true)}
                 onSettings={() => setShowSettings(true)}
@@ -811,16 +829,6 @@ export function Dashboard({ onLogout }: { onLogout: () => void }) {
                 downloadCount={downloadQueue.length}
             />
 
-            <AnimatePresence>
-                {showFolderDrawer && (
-                    <>
-                        <div className="vault-drawer-backdrop" onClick={() => setShowFolderDrawer(false)} />
-                        <aside className="vault-folder-drawer" aria-label="Collections drawer">
-                            <div className="vault-drawer-heading">
-                                <div><span className="vault-eyebrow">Vault index</span><h2>Collections</h2></div>
-                                <button className="vault-drawer-close" onClick={() => setShowFolderDrawer(false)} aria-label="Close collections">×</button>
-                            </div>
-                            <div className="vault-drawer-body">
                                 <Sidebar
                                     folders={folders}
                                     groups={groups}
@@ -830,7 +838,6 @@ export function Dashboard({ onLogout }: { onLogout: () => void }) {
                                     onShowAllFavorites={() => {
                                         setShowAllFavorites(true);
                                         setFavoritesOnly(false);
-                                        setShowFolderDrawer(false);
                                     }}
                                     onDrop={handleDropOnFolder}
                                     onDelete={handleFolderDelete}
@@ -850,11 +857,6 @@ export function Dashboard({ onLogout }: { onLogout: () => void }) {
                                     onUpdateGroup={handleUpdateGroup}
                                     onDeleteGroup={handleDeleteGroup}
                                 />
-                            </div>
-                        </aside>
-                    </>
-                )}
-            </AnimatePresence>
 
             <main className="flex-1 flex flex-col min-w-0 overflow-hidden">
                 <TopBar
@@ -885,6 +887,9 @@ export function Dashboard({ onLogout }: { onLogout: () => void }) {
                     <RecentWatchBar
                         entries={watchHistory}
                         currentFiles={displayedFiles}
+                        activeFolderId={activeFolderId}
+                        folderPresentation={settings.folderPresentation}
+                        folderNames={Object.fromEntries(folders.map(folder => [String(folder.id), folder.name]))}
                         onPlayFile={(file) => {
                             const entryFolderId = file.folder_id ?? null;
                             if (entryFolderId !== activeFolderId) {
@@ -895,7 +900,7 @@ export function Dashboard({ onLogout }: { onLogout: () => void }) {
                         onPlay={(entry) => {
                             // Always build targetFile from history entry so the
                             // correct file identity (id, name, folder_id) is used.
-                            const targetFile: TelegramFile = displayedFiles.find(f => f.id === entry.file_id) || ({
+                            const targetFile: TelegramFile = displayedFiles.find(f => f.id === entry.file_id && (f.folder_id ?? null) === (entry.folder_id ?? null)) || ({
                                 id: entry.file_id,
                                 name: entry.file_name,
                                 type: 'file',
@@ -926,15 +931,14 @@ export function Dashboard({ onLogout }: { onLogout: () => void }) {
                     loading={isLoading || isSearching}
                     error={error}
                     viewMode={viewMode}
+                    folderKind={showAllFavorites || searchTerm.trim().length > 2 ? 'general' : activePresentation.kind}
                     selectedIds={selectedIds}
                     activeFolderId={activeFolderId}
                     onFileClick={handleFileClick}
                     onDelete={handleDelete}
-                    onDownload={(id, name) => {
-                        const f = displayedFiles.find(x => x.id === id);
-                        queueDownload(id, name, showAllFavorites ? (f?.folder_id ?? null) : activeFolderId);
-                    }}
+                    onDownload={(id, name, folderId) => queueDownload(id, name, folderId)}
                     onPreview={handlePreview}
+                    onShowDetails={setDetailFile}
                     onManualUpload={handleManualUpload}
                     onToggleSelection={handleToggleSelection}
                     onDrop={handleDropOnFolder}
@@ -961,6 +965,12 @@ export function Dashboard({ onLogout }: { onLogout: () => void }) {
                     availableTags={availableTags}
                 />
             </main>
+
+            {detailFile && (
+                <MediaDetail file={detailFile} sourceName={detailFile.folder_id == null ? 'Saved Messages' : folders.find(folder => folder.id === detailFile.folder_id)?.name ?? 'Library'}
+                    onClose={closeDetails} onPlay={() => { const file = detailFile; closeDetails(); handlePreview(file); }}
+                    onDownload={() => queueDownload(detailFile.id, detailFile.name, detailFile.folder_id ?? null)} />
+            )}
 
             {previewFile && (
                 <PreviewModal
@@ -1012,7 +1022,7 @@ export function Dashboard({ onLogout }: { onLogout: () => void }) {
             {tagEditorFile && (
                 <TagEditorModal
                     file={tagEditorFile}
-                    folderId={showAllFavorites ? (tagEditorFile.folder_id ?? null) : activeFolderId}
+                    folderId={tagEditorFile.folder_id ?? null}
                     onClose={() => setTagEditorFile(null)}
                 />
             )}

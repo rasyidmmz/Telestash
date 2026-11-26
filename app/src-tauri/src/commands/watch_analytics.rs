@@ -65,12 +65,12 @@ pub fn cmd_watch_analytics(
     // not time watched, and would inflate a file opened for one second.
     let mut total_watch_secs: f64 = 0.0;
     let mut stmt = conn
-        .prepare("SELECT file_id, folder_id, last_position_secs, play_count FROM watch_history;")
+        .prepare("SELECT file_id, folder_key, last_position_secs, play_count FROM watch_history;")
         .map_err(|e| e.to_string())?;
     while let sqlite::State::Row = stmt.next().map_err(|e| e.to_string())? {
         let file_id = stmt.read::<i64, _>("file_id").unwrap_or(0) as i32;
-        let folder_raw = stmt.read::<i64, _>("folder_id").unwrap_or(-1);
-        let folder_id = if folder_raw < 0 { None } else { Some(folder_raw) };
+        let folder_key = stmt.read::<String, _>("folder_key").map_err(|e| e.to_string())?;
+        let folder_id = if folder_key == "home" { None } else { Some(folder_key.parse::<i64>().map_err(|e| e.to_string())?) };
         let last_pos = stmt.read::<f64, _>("last_position_secs").unwrap_or(0.0);
         let plays = stmt.read::<i64, _>("play_count").unwrap_or(1).max(1) as f64;
         let mpv = resume_secs.get(&(folder_id, file_id)).copied().unwrap_or(0.0);

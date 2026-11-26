@@ -35,3 +35,28 @@ vi.mock('sonner', () => ({
         warning: vi.fn(),
     },
 }));
+
+// App code (Sidebar width persistence, watch history, themes, backups) reads
+// localStorage at import or render time. CI workers can boot without the
+// jsdom-provided global, so back it with an in-memory Storage when absent.
+if (typeof globalThis.localStorage === 'undefined') {
+    const store = new Map<string, string>();
+    const storage: Storage = {
+        get length() {
+            return store.size;
+        },
+        clear: () => store.clear(),
+        getItem: (key) => (store.has(key) ? (store.get(key) as string) : null),
+        key: (index) => Array.from(store.keys())[index] ?? null,
+        removeItem: (key) => {
+            store.delete(key);
+        },
+        setItem: (key, value) => {
+            store.set(key, String(value));
+        },
+    };
+    Object.defineProperty(globalThis, 'localStorage', {
+        value: storage,
+        configurable: true,
+    });
+}

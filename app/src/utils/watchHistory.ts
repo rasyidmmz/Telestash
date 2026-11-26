@@ -50,8 +50,10 @@ interface WatchHistoryRow {
     total_duration_secs?: number | null;
 }
 
+const historyKey = (folderId: number | null | undefined, fileId: number): string => `${folderId ?? 'home'}:${fileId}`;
+
 const rowToEntry = (row: WatchHistoryRow): WatchHistoryEntry => ({
-    id: `watch_${row.timestamp}_${row.file_id}`,
+    id: `watch_${historyKey(row.folder_id, row.file_id)}`,
     file_id: row.file_id,
     file_name: row.file_name,
     folder_id: row.folder_id ?? null,
@@ -116,9 +118,10 @@ export function initWatchHistory(): Promise<void> {
                 try {
                     await invoke('cmd_watch_history_import', { entries: legacy.map(entryToRow) });
                     localStorage.removeItem(STORAGE_KEY_HISTORY);
-                    const byId = new Map(fromBackend.map((e) => [e.file_id, e]));
+                    const byId = new Map(fromBackend.map((e) => [historyKey(e.folder_id, e.file_id), e]));
                     for (const entry of legacy) {
-                        if (!byId.has(entry.file_id)) byId.set(entry.file_id, entry);
+                        const key = historyKey(entry.folder_id, entry.file_id);
+                        if (!byId.has(key)) byId.set(key, { ...entry, id: `watch_${key}` });
                     }
                     merged = Array.from(byId.values());
                 } catch (e) {
@@ -129,9 +132,9 @@ export function initWatchHistory(): Promise<void> {
             // Keep any entries recorded while the store was still loading. They
             // were already persisted by their own upsert call, so the mirror
             // just needs to win over the older backend copy.
-            const byId = new Map(merged.map((e) => [e.file_id, e]));
+            const byId = new Map(merged.map((e) => [historyKey(e.folder_id, e.file_id), e]));
             for (const entry of memoryHistory) {
-                byId.set(entry.file_id, entry);
+                byId.set(historyKey(entry.folder_id, entry.file_id), entry);
             }
             memoryHistory = sortNewestFirst(Array.from(byId.values())).slice(0, MAX_HISTORY_ENTRIES);
         } catch (e) {
@@ -166,10 +169,11 @@ export function recordWatchEvent(
     lastPosSecs?: number,
     totalDurationSecs?: number
 ): WatchHistoryEntry {
-    const existingIndex = memoryHistory.findIndex(item => item.file_id === file.id);
+    const key = historyKey(file.folder_id, file.id);
+    const existingIndex = memoryHistory.findIndex(item => historyKey(item.folder_id, item.file_id) === key);
 
     const entry: WatchHistoryEntry = {
-        id: existingIndex >= 0 ? memoryHistory[existingIndex].id : `watch_${Date.now()}_${file.id}`,
+        id: existingIndex >= 0 ? memoryHistory[existingIndex].id : `watch_${key}`,
         file_id: file.id,
         file_name: file.name,
         folder_id: file.folder_id ?? null,
@@ -203,9 +207,10 @@ export function recordWatchEvent(
 /**
  * Remove an entry from recent watch history
  */
-export function removeWatchEntry(fileId: number): void {
-    memoryHistory = memoryHistory.filter(item => item.file_id !== fileId);
-    invoke('cmd_watch_history_remove', { fileId })
+export function removeWatchEntry(fileId: number, folderId: number | null): void {
+    const key = historyKey(folderId, fileId);
+    memoryHistory = memoryHistory.filter(item => historyKey(item.folder_id, item.file_id) !== key);
+    invoke('cmd_watch_history_remove', { fileId, folderId })
         .catch((e) => console.error('Failed to remove watch entry:', e));
 }
 

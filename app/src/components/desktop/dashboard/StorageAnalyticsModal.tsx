@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { X, HardDrive, PieChart, Film, Music, FileText, Folder, Zap, Trash2, Copy } from '../../shared/icons.tsx';
 import { TelegramFile, TelegramFolder } from '../../../types';
@@ -7,6 +7,7 @@ import { toast } from 'sonner';
 import { invoke } from '@tauri-apps/api/core';
 import { humanizeError } from '../../../utils/errorHumanizer';
 import i18n from '../../../i18n';
+import { useModalDialog } from '../../../hooks/useModalDialog';
 
 interface StorageAnalyticsModalProps {
     files: TelegramFile[];
@@ -22,6 +23,8 @@ interface DuplicateGroup {
 }
 
 export function StorageAnalyticsModal({ files, folders, onClose }: StorageAnalyticsModalProps) {
+    const closeButtonRef = useRef<HTMLButtonElement>(null);
+    const dialogRef = useModalDialog(true, onClose, closeButtonRef);
     const queryClient = useQueryClient();
     const [dupScanning, setDupScanning] = useState(false);
     const [dupGroups, setDupGroups] = useState<DuplicateGroup[] | null>(null);
@@ -126,24 +129,24 @@ export function StorageAnalyticsModal({ files, folders, onClose }: StorageAnalyt
 
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-md p-4 animate-in fade-in duration-200">
-            <div className="bg-[#0D131F] border border-cyan-500/20 rounded-2xl w-full max-w-2xl overflow-hidden shadow-2xl flex flex-col max-h-[90vh]">
+            <div ref={dialogRef} tabIndex={-1} role="dialog" aria-modal="true" aria-labelledby="storage-analytics-title" className="bg-stash-surface border border-stash-border rounded-2xl w-full max-w-2xl overflow-hidden shadow-2xl flex flex-col max-h-[90vh]">
                 
                 {/* Header */}
-                <div className="px-6 py-4 border-b border-gray-800 flex items-center justify-between bg-black/40">
+                <div className="px-6 py-4 border-b border-stash-border flex items-center justify-between bg-stash-hover">
                     <div className="flex items-center gap-3">
                         <div className="w-9 h-9 rounded-xl bg-cyan-500/10 border border-cyan-500/30 flex items-center justify-center text-cyan-400">
                             <PieChart className="w-5 h-5" />
                         </div>
                         <div>
-                            <h2 className="text-base font-bold text-white tracking-wide font-mono flex items-center gap-2">
-                                STORAGE ANALYTICS <span className="text-xs font-normal text-cyan-400/80 bg-cyan-950/60 px-2 py-0.5 rounded border border-cyan-800/50">[0-DISK VAULT]</span>
-                            </h2>
-                            <p className="text-xs text-gray-400">Analisis alokasi media dan ruang penyimpanan cloud Telegram</p>
+                            <h2 id="storage-analytics-title" className="text-base font-semibold text-stash-text tracking-tight">Storage analytics</h2>
+                            <p className="text-xs text-stash-subtext">Media and storage in your Telegram library</p>
                         </div>
                     </div>
                     <button
+                        ref={closeButtonRef}
                         onClick={onClose}
-                        className="p-2 text-gray-400 hover:text-white hover:bg-gray-800/60 rounded-xl transition-all"
+                        className="p-2 text-stash-subtext hover:text-stash-text hover:bg-stash-hover rounded-xl transition-all"
+                        aria-label="Close storage analytics"
                     >
                         <X className="w-5 h-5" />
                     </button>
@@ -154,59 +157,59 @@ export function StorageAnalyticsModal({ files, folders, onClose }: StorageAnalyt
                     
                     {/* Summary Cards */}
                     <div className="grid grid-cols-3 gap-3">
-                        <div className="p-4 bg-gray-900/60 border border-gray-800 rounded-xl flex items-center gap-3">
-                            <div className="p-3 bg-cyan-500/10 text-cyan-400 rounded-lg border border-cyan-500/20">
+                        <div className="p-4 bg-stash-hover border border-stash-border rounded-xl flex items-center gap-3">
+                            <div className="p-3 bg-cyan-500/10 text-cyan-400 rounded-lg border border-stash-border">
                                 <HardDrive className="w-5 h-5" />
                             </div>
                             <div>
-                                <div className="text-xs text-gray-400 font-mono">TOTAL DIGUNAKAN</div>
-                                <div className="text-lg font-bold text-white font-mono">{formatBytes(analytics.totalSize)}</div>
+                                <div className="text-xs text-stash-subtext font-mono">TOTAL USED</div>
+                                <div className="text-lg font-bold text-stash-text font-mono">{formatBytes(analytics.totalSize)}</div>
                             </div>
                         </div>
 
-                        <div className="p-4 bg-gray-900/60 border border-gray-800 rounded-xl flex items-center gap-3">
+                        <div className="p-4 bg-stash-hover border border-stash-border rounded-xl flex items-center gap-3">
                             <div className="p-3 bg-emerald-500/10 text-emerald-400 rounded-lg border border-emerald-500/20">
                                 <Film className="w-5 h-5" />
                             </div>
                             <div>
-                                <div className="text-xs text-gray-400 font-mono">TOTAL MEDIA</div>
-                                <div className="text-lg font-bold text-white font-mono">{analytics.totalFiles} Berkas</div>
+                                <div className="text-xs text-stash-subtext font-mono">TOTAL FILES</div>
+                                <div className="text-lg font-bold text-stash-text font-mono">{analytics.totalFiles} files</div>
                             </div>
                         </div>
 
-                        <div className="p-4 bg-gray-900/60 border border-gray-800 rounded-xl flex items-center gap-3">
+                        <div className="p-4 bg-stash-hover border border-stash-border rounded-xl flex items-center gap-3">
                             <div className="p-3 bg-purple-500/10 text-purple-400 rounded-lg border border-purple-500/20">
                                 <Folder className="w-5 h-5" />
                             </div>
                             <div>
-                                <div className="text-xs text-gray-400 font-mono">FOLDER VAULT</div>
-                                <div className="text-lg font-bold text-white font-mono">{analytics.totalFolders} Folder</div>
+                                <div className="text-xs text-stash-subtext font-mono">FOLDERS</div>
+                                <div className="text-lg font-bold text-stash-text font-mono">{analytics.totalFolders} folders</div>
                             </div>
                         </div>
                     </div>
 
                     {/* Progress Bar Distribution */}
                     <div className="space-y-2">
-                        <div className="flex justify-between text-xs text-gray-400 font-mono">
-                            <span>DISTRIBUSI JENIS MEDIA</span>
+                        <div className="flex justify-between text-xs text-stash-subtext font-mono">
+                            <span>MEDIA TYPES</span>
                             <span>{analytics.video.percent}% Video</span>
                         </div>
-                        <div className="h-3 w-full bg-gray-900 rounded-full overflow-hidden flex border border-gray-800 p-0.5">
+                        <div className="h-3 w-full bg-stash-hover rounded-full overflow-hidden flex border border-stash-border p-0.5">
                             <div style={{ width: `${analytics.video.percent}%` }} className="bg-cyan-500 h-full rounded-l-full transition-all duration-500" title="Video" />
                             <div style={{ width: `${analytics.audio.percent}%` }} className="bg-emerald-500 h-full transition-all duration-500" title="Audio" />
                             <div style={{ width: `${analytics.subtitle.percent}%` }} className="bg-amber-500 h-full transition-all duration-500" title="Subtitles" />
-                            <div style={{ width: `${analytics.doc.percent}%` }} className="bg-gray-600 h-full rounded-r-full transition-all duration-500" title="Dokumen" />
+                            <div style={{ width: `${analytics.doc.percent}%` }} className="bg-gray-600 h-full rounded-r-full transition-all duration-500" title="Documents" />
                         </div>
                     </div>
 
                     {/* Detail Breakdown */}
                     <div className="grid grid-cols-2 gap-3">
-                        <div className="p-3 bg-gray-900/40 border border-gray-800/80 rounded-xl flex items-center justify-between">
+                        <div className="p-3 bg-stash-hover border border-stash-border rounded-xl flex items-center justify-between">
                             <div className="flex items-center gap-3">
                                 <Film className="w-4 h-4 text-cyan-400" />
                                 <div>
-                                    <div className="text-sm font-semibold text-white">Film & Video</div>
-                                    <div className="text-xs text-gray-400">{analytics.video.count} Berkas</div>
+                                    <div className="text-sm font-semibold text-stash-text">Film & Video</div>
+                                    <div className="text-xs text-stash-subtext">{analytics.video.count} files</div>
                                 </div>
                             </div>
                             <div className="text-right font-mono text-sm font-bold text-cyan-400">
@@ -214,12 +217,12 @@ export function StorageAnalyticsModal({ files, folders, onClose }: StorageAnalyt
                             </div>
                         </div>
 
-                        <div className="p-3 bg-gray-900/40 border border-gray-800/80 rounded-xl flex items-center justify-between">
+                        <div className="p-3 bg-stash-hover border border-stash-border rounded-xl flex items-center justify-between">
                             <div className="flex items-center gap-3">
                                 <Music className="w-4 h-4 text-emerald-400" />
                                 <div>
-                                    <div className="text-sm font-semibold text-white">Audio & Musik</div>
-                                    <div className="text-xs text-gray-400">{analytics.audio.count} Berkas</div>
+                                    <div className="text-sm font-semibold text-stash-text">Audio & Music</div>
+                                    <div className="text-xs text-stash-subtext">{analytics.audio.count} files</div>
                                 </div>
                             </div>
                             <div className="text-right font-mono text-sm font-bold text-emerald-400">
@@ -227,12 +230,12 @@ export function StorageAnalyticsModal({ files, folders, onClose }: StorageAnalyt
                             </div>
                         </div>
 
-                        <div className="p-3 bg-gray-900/40 border border-gray-800/80 rounded-xl flex items-center justify-between">
+                        <div className="p-3 bg-stash-hover border border-stash-border rounded-xl flex items-center justify-between">
                             <div className="flex items-center gap-3">
                                 <Zap className="w-4 h-4 text-amber-400" />
                                 <div>
-                                    <div className="text-sm font-semibold text-white">Subtitle Sidecar</div>
-                                    <div className="text-xs text-gray-400">{analytics.subtitle.count} Teks SRT</div>
+                                    <div className="text-sm font-semibold text-stash-text">Subtitle Sidecar</div>
+                                    <div className="text-xs text-stash-subtext">{analytics.subtitle.count} files</div>
                                 </div>
                             </div>
                             <div className="text-right font-mono text-sm font-bold text-amber-400">
@@ -240,15 +243,15 @@ export function StorageAnalyticsModal({ files, folders, onClose }: StorageAnalyt
                             </div>
                         </div>
 
-                        <div className="p-3 bg-gray-900/40 border border-gray-800/80 rounded-xl flex items-center justify-between">
+                        <div className="p-3 bg-stash-hover border border-stash-border rounded-xl flex items-center justify-between">
                             <div className="flex items-center gap-3">
-                                <FileText className="w-4 h-4 text-gray-400" />
+                                <FileText className="w-4 h-4 text-stash-subtext" />
                                 <div>
-                                    <div className="text-sm font-semibold text-white">Dokumen & Lainnya</div>
-                                    <div className="text-xs text-gray-400">{analytics.doc.count} Berkas</div>
+                                    <div className="text-sm font-semibold text-stash-text">Documents & Other</div>
+                                    <div className="text-xs text-stash-subtext">{analytics.doc.count} files</div>
                                 </div>
                             </div>
-                            <div className="text-right font-mono text-sm font-bold text-gray-300">
+                            <div className="text-right font-mono text-sm font-bold text-stash-text">
                                 {formatBytes(analytics.doc.size)}
                             </div>
                         </div>
@@ -257,9 +260,9 @@ export function StorageAnalyticsModal({ files, folders, onClose }: StorageAnalyt
                 </div>
 
                     {/* Duplicates */}
-                    <div className="p-4 bg-gray-900/60 border border-gray-800 rounded-xl">
+                    <div className="p-4 bg-stash-hover border border-stash-border rounded-xl">
                         <div className="flex items-center justify-between mb-3">
-                            <div className="flex items-center gap-2 text-xs font-mono text-gray-300 uppercase tracking-wider">
+                            <div className="flex items-center gap-2 text-xs font-mono text-stash-text uppercase tracking-wider">
                                 <Copy className="w-3.5 h-3.5 text-amber-400" />
                                 DUPLICATE FILES
                             </div>
@@ -284,17 +287,17 @@ export function StorageAnalyticsModal({ files, folders, onClose }: StorageAnalyt
                         </div>
 
                         {dupScanning && (
-                            <p className="text-xs text-gray-500 font-mono">Quick scan is instant; full scan streams file prefixes from Telegram and can take a while.</p>
+                            <p className="text-xs text-stash-subtext font-mono">Quick scan is instant; full scan streams file prefixes from Telegram and can take a while.</p>
                         )}
 
                         {dupGroups && dupGroups.length === 0 && (
-                            <p className="text-xs text-gray-500 font-mono">No duplicates found.</p>
+                            <p className="text-xs text-stash-subtext font-mono">No duplicates found.</p>
                         )}
 
                         {dupGroups && dupGroups.length > 0 && (
                             <div className="space-y-3 max-h-64 overflow-y-auto">
                                 {dupGroups.map((group, gi) => (
-                                    <div key={gi} className="border border-gray-800 rounded-lg p-3">
+                                    <div key={gi} className="border border-stash-border rounded-lg p-3">
                                         <div className="flex items-center justify-between mb-2">
                                             <span className="text-xs font-mono text-amber-400">
                                                 {group.files.length} copies
@@ -304,13 +307,13 @@ export function StorageAnalyticsModal({ files, folders, onClose }: StorageAnalyt
                                                     </span>
                                                 )}
                                             </span>
-                                            <span className="text-xs font-mono text-gray-500">{formatBytes(group.size)} each</span>
+                                            <span className="text-xs font-mono text-stash-subtext">{formatBytes(group.size)} each</span>
                                         </div>
                                         <div className="space-y-1.5">
                                             {group.files.map((f) => {
                                                 const key = `${f.folder_id ?? 'null'}:${f.message_id}`;
                                                 return (
-                                                    <label key={key} className="flex items-center gap-2 text-xs text-gray-300 cursor-pointer group">
+                                                    <label key={key} className="flex items-center gap-2 text-xs text-stash-text cursor-pointer group">
                                                         <input
                                                             type="checkbox"
                                                             checked={dupSelected.has(key)}
@@ -318,7 +321,7 @@ export function StorageAnalyticsModal({ files, folders, onClose }: StorageAnalyt
                                                             className="accent-red-500"
                                                         />
                                                         <span className="truncate flex-1" title={f.name}>{f.name}</span>
-                                                        <span className="text-gray-600 font-mono">{new Date(f.created_at).toLocaleDateString()}</span>
+                                                        <span className="text-stash-subtext font-mono">{new Date(f.created_at).toLocaleDateString()}</span>
                                                     </label>
                                                 );
                                             })}
@@ -338,7 +341,7 @@ export function StorageAnalyticsModal({ files, folders, onClose }: StorageAnalyt
                     </div>
 
                 {/* Footer */}
-                <div className="px-6 py-4 border-t border-gray-800 bg-black/40 flex items-center justify-between">
+                <div className="px-6 py-4 border-t border-stash-border bg-stash-hover flex items-center justify-between">
                     <button
                         onClick={handlePurgeCache}
                         className="px-4 py-2 bg-red-500/10 border border-red-500/30 text-red-400 rounded-xl hover:bg-red-500/20 text-xs font-semibold font-mono flex items-center gap-2 transition-all"
@@ -349,7 +352,7 @@ export function StorageAnalyticsModal({ files, folders, onClose }: StorageAnalyt
 
                     <button
                         onClick={onClose}
-                        className="px-5 py-2 bg-cyan-500 text-black hover:bg-cyan-400 font-semibold rounded-xl text-xs transition-all font-mono"
+                        className="px-5 py-2 auth-primary font-semibold rounded-xl text-xs transition-all font-mono"
                     >
                         CLOSE
                     </button>

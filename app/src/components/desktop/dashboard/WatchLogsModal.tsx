@@ -1,13 +1,16 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { X, Search, Trash2, Download, Film } from '../../shared/icons.tsx';
 import { WatchLogEvent, getWatchLogs, clearWatchLogs, exportWatchLogsText } from '../../../utils/watchHistory';
 import { toast } from 'sonner';
+import { useModalDialog } from '../../../hooks/useModalDialog';
 
 interface WatchLogsModalProps {
     onClose: () => void;
 }
 
 export function WatchLogsModal({ onClose }: WatchLogsModalProps) {
+    const closeButtonRef = useRef<HTMLButtonElement>(null);
+    const dialogRef = useModalDialog(true, onClose, closeButtonRef);
     const [logs, setLogs] = useState<WatchLogEvent[]>([]);
     const [searchTerm, setSearchTerm] = useState('');
     const [filterType, setFilterType] = useState<string>('ALL');
@@ -58,49 +61,51 @@ export function WatchLogsModal({ onClose }: WatchLogsModalProps) {
             case 'ERROR':
                 return 'bg-red-950/80 text-red-400 border-red-500/30';
             default:
-                return 'bg-gray-900 text-gray-300 border-gray-800';
+                return 'bg-gray-900 text-stash-text border-stash-border';
         }
     };
 
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm animate-in fade-in">
-            <div className="w-full max-w-4xl h-[650px] bg-slate-950 border border-gray-800 rounded-xl shadow-2xl flex flex-col overflow-hidden">
+            <div ref={dialogRef} tabIndex={-1} role="dialog" aria-modal="true" aria-labelledby="watch-logs-title" className="w-full max-w-4xl h-[650px] max-h-[90vh] bg-stash-surface border border-stash-border rounded-2xl shadow-2xl flex flex-col overflow-hidden">
                 {/* Header */}
-                <div className="flex items-center justify-between px-5 py-4 border-b border-gray-800 bg-slate-900/60">
+                <div className="flex items-center justify-between px-5 py-4 border-b border-stash-border bg-stash-hover">
                     <div className="flex items-center gap-3">
-                        <div className="p-2 rounded-lg bg-cyan-950/80 border border-cyan-500/30 text-cyan-400">
+                        <div className="p-2 rounded-lg bg-stash-primary/10 border border-stash-primary/30 text-stash-primary">
                             <Film className="w-5 h-5" />
                         </div>
                         <div>
-                            <h2 className="text-base font-mono font-bold text-stash-text flex items-center gap-2">
+                            <h2 id="watch-logs-title" className="text-base font-semibold text-stash-text flex items-center gap-2">
                                 Watch History Logs
-                                <span className="text-[10px] px-2 py-0.5 rounded bg-cyan-950 border border-cyan-500/30 text-cyan-400">
+                                <span className="text-[10px] px-2 py-0.5 rounded bg-stash-primary/10 border border-stash-primary/30 text-stash-primary">
                                     {filteredLogs.length} Events
                                 </span>
                             </h2>
-                            <p className="text-xs text-gray-400 font-mono">
+                            <p className="text-xs text-stash-subtext font-mono">
                                 Cinema Media Playback & AI Subtitle Activity Log
                             </p>
                         </div>
                     </div>
                     <button
+                        ref={closeButtonRef}
                         onClick={onClose}
-                        className="p-1.5 text-gray-400 hover:text-white rounded-lg hover:bg-gray-800 transition-colors"
+                        className="p-1.5 text-stash-subtext hover:text-stash-text rounded-lg hover:bg-stash-hover transition-colors"
+                        aria-label="Close watch history logs"
                     >
                         <X className="w-5 h-5" />
                     </button>
                 </div>
 
                 {/* Toolbar */}
-                <div className="flex items-center justify-between gap-3 px-5 py-3 border-b border-gray-800 bg-slate-900/30">
+                <div className="flex items-center justify-between gap-3 px-5 py-3 border-b border-stash-border bg-stash-hover">
                     <div className="flex-1 relative">
-                        <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" />
+                        <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-stash-subtext" />
                         <input
                             type="text"
                             placeholder="Search movie title or event..."
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
-                            className="w-full bg-slate-900 border border-gray-800 rounded-lg pl-9 pr-3 py-1.5 text-xs text-gray-200 font-mono placeholder:text-gray-600 focus:outline-none focus:border-cyan-500/50"
+                            className="w-full bg-stash-bg border border-stash-border rounded-lg pl-9 pr-3 py-1.5 text-xs text-stash-text font-mono placeholder:text-stash-subtext focus:outline-none focus:border-stash-primary/50"
                         />
                     </div>
 
@@ -108,7 +113,7 @@ export function WatchLogsModal({ onClose }: WatchLogsModalProps) {
                         <select
                             value={filterType}
                             onChange={(e) => setFilterType(e.target.value)}
-                            className="bg-slate-900 border border-gray-800 rounded-lg px-3 py-1.5 text-xs font-mono text-gray-300 focus:outline-none focus:border-cyan-500/50"
+                            className="bg-stash-bg border border-stash-border rounded-lg px-3 py-1.5 text-xs font-mono text-stash-text focus:outline-none focus:border-stash-primary/50"
                         >
                             <option value="ALL">All Events</option>
                             <option value="PLAY_START">PLAY_START</option>
@@ -119,7 +124,7 @@ export function WatchLogsModal({ onClose }: WatchLogsModalProps) {
 
                         <button
                             onClick={handleExport}
-                            className="px-3 py-1.5 bg-slate-900 hover:bg-slate-800 border border-gray-800 text-xs font-mono text-gray-300 rounded-lg transition-colors flex items-center gap-1.5"
+                            className="px-3 py-1.5 bg-stash-bg hover:bg-stash-hover border border-stash-border text-xs font-mono text-stash-text rounded-lg transition-colors flex items-center gap-1.5"
                             title="Export Watch Logs"
                         >
                             <Download className="w-3.5 h-3.5 text-cyan-400" />
@@ -140,7 +145,7 @@ export function WatchLogsModal({ onClose }: WatchLogsModalProps) {
                 {/* Log List */}
                 <div className="flex-1 overflow-y-auto p-4 space-y-2 font-mono text-xs scrollbar-thin scrollbar-thumb-gray-800">
                     {filteredLogs.length === 0 ? (
-                        <div className="flex flex-col items-center justify-center h-full text-gray-500">
+                        <div className="flex flex-col items-center justify-center h-full text-stash-subtext">
                             <Film className="w-10 h-10 mb-2 stroke-[1.5] opacity-40" />
                             <p className="text-xs">No video playback activity history found</p>
                         </div>
@@ -157,19 +162,19 @@ export function WatchLogsModal({ onClose }: WatchLogsModalProps) {
                             return (
                                 <div
                                     key={log.id}
-                                    className="p-3 rounded-lg bg-slate-900/80 border border-gray-800/80 hover:border-gray-700 transition-colors flex items-start gap-3"
+                                    className="p-3 rounded-lg bg-stash-hover border border-stash-border hover:border-stash-primary/40 transition-colors flex items-start gap-3"
                                 >
-                                    <span className="text-[10px] text-gray-500 whitespace-nowrap mt-0.5">
+                                    <span className="text-[10px] text-stash-subtext whitespace-nowrap mt-0.5">
                                         [{formattedTime}]
                                     </span>
                                     <span className={`text-[10px] font-bold px-2 py-0.5 rounded border uppercase whitespace-nowrap ${getEventBadgeClass(log.event_type)}`}>
                                         {log.event_type}
                                     </span>
                                     <div className="flex-1 min-w-0">
-                                        <div className="text-gray-200 font-semibold truncate">
+                                        <div className="text-stash-text font-semibold truncate">
                                             {log.file_name}
                                         </div>
-                                        <div className="text-gray-400 text-[11px] mt-0.5">
+                                        <div className="text-stash-subtext text-[11px] mt-0.5">
                                             {log.details}
                                         </div>
                                     </div>
@@ -180,11 +185,11 @@ export function WatchLogsModal({ onClose }: WatchLogsModalProps) {
                 </div>
 
                 {/* Footer */}
-                <div className="px-5 py-3 border-t border-gray-800 bg-slate-900/60 flex items-center justify-between text-[11px] font-mono text-gray-500">
+                <div className="px-5 py-3 border-t border-stash-border bg-stash-hover flex items-center justify-between text-[11px] font-mono text-stash-subtext">
                     <span>TeleStash Independent Cinema Watch Log System</span>
                     <button
                         onClick={onClose}
-                        className="px-4 py-1.5 bg-gray-800 hover:bg-gray-700 text-gray-200 rounded-lg transition-colors"
+                        className="px-4 py-1.5 bg-stash-hover hover:bg-stash-border text-stash-text rounded-lg transition-colors"
                     >
                         Close
                     </button>

@@ -33,8 +33,6 @@ export function VaultRail({ onFolders, onUpload, onAnalytics, onSettings, onTogg
 
     const syncLabel = isSyncing ? 'Syncing' : 'Sync status';
     const usageBytes = (bandwidth?.up_bytes ?? 0) + (bandwidth?.down_bytes ?? 0);
-    const usageLimit = 250 * 1024 * 1024 * 1024; // 250 GB
-    const usagePercent = Math.min((usageBytes / usageLimit) * 100, 100);
 
     return (
         <aside className="vault-rail" aria-label="Vault navigation">
@@ -130,14 +128,12 @@ export function VaultRail({ onFolders, onUpload, onAnalytics, onSettings, onTogg
                                 <span>{isConnected ? 'Live MTProto session' : 'No active session'}</span>
                             </div>
                             <div className="vault-sync-pop-usage">
-                                <span>Used today</span>
+                                <span>Transferred</span>
                                 <span>{formatBytes(usageBytes)}</span>
                             </div>
-                            <div className="vault-sync-pop-track"><i style={{ width: `${usagePercent}%` }} /></div>
                             <div className="vault-sync-pop-legend">
                                 <span>{formatBytes(bandwidth?.up_bytes ?? 0)} up</span>
                                 <span>{formatBytes(bandwidth?.down_bytes ?? 0)} down</span>
-                                <span>250 GB</span>
                             </div>
                             {onSync && (
                                 <button className="vault-sync-pop-action" onClick={onSync} disabled={isSyncing}>

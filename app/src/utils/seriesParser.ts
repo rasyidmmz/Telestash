@@ -300,29 +300,24 @@ export function getNextEpisode(currentFile: TelegramFile, folderFiles: TelegramF
  * Deduplicate and consolidate recent watch history entries so that each TV series,
  * folder/channel, or standalone movie appears exactly once with its most recent playback progress.
  */
-export function groupRecentWatchEntries(entries: WatchHistoryEntry[]): WatchHistoryEntry[] {
+export function groupRecentWatchEntries(
+    entries: WatchHistoryEntry[],
+    presentations: Record<string, { kind: 'series' | 'movies' | 'general' }> = {},
+): WatchHistoryEntry[] {
     if (!entries || entries.length === 0) return [];
     const seenGroups = new Set<string>();
     const consolidated: WatchHistoryEntry[] = [];
 
     for (const entry of entries) {
         const info = parseEpisodeInfo(entry.file_name);
-        let groupKey: string;
-
-        if (info.isEpisode) {
-            // Group by series title if extracted, otherwise by folder_id + series pattern
-            const titleKey = info.seriesTitle ? info.seriesTitle.toLowerCase().trim() : '';
-            if (titleKey) {
-                groupKey = `series-title:${titleKey}`;
-            } else if (entry.folder_id !== null && entry.folder_id !== undefined) {
-                groupKey = `series-folder:${entry.folder_id}`;
-            } else {
-                groupKey = `series-file:${entry.file_id}`;
-            }
-        } else {
-            // Standalone video/movie
-            groupKey = `movie:${entry.file_id}`;
-        }
+        const folderKey = entry.folder_id == null ? 'home' : String(entry.folder_id);
+        const kind = presentations[folderKey]?.kind ?? 'general';
+        const titleKey = info.seriesTitle?.toLowerCase().trim();
+        const groupKey = kind === 'series'
+            ? `series-folder:${folderKey}`
+            : kind === 'general' && info.isEpisode && titleKey
+                ? `series-title:${folderKey}:${titleKey}`
+                : `file:${folderKey}:${entry.file_id}`;
 
         if (!seenGroups.has(groupKey)) {
             seenGroups.add(groupKey);

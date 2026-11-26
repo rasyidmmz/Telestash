@@ -1,278 +1,92 @@
 import { useEffect, useState } from 'react';
 import { invoke } from '@tauri-apps/api/core';
-import { Play, Clock, Trash2, History, Sparkles, ChartPie } from '../../shared/icons.tsx';
-import { WatchHistoryEntry, removeWatchEntry, clearWatchHistory } from '../../../utils/watchHistory';
-import { useTranslation } from 'react-i18next';
-import { formatBytes } from '../../../utils';
-import { TelegramFile } from '../../../types';
+import { Play, Trash2, ChartPie } from '../../shared/icons';
+import { clearWatchHistory, removeWatchEntry, type WatchHistoryEntry } from '../../../utils/watchHistory';
 import { getNextEpisode, groupRecentWatchEntries, parseEpisodeInfo } from '../../../utils/seriesParser';
-import { MediaBadgesList } from '../../shared/MediaBadgesList';
+import { type FolderPresentationMap, folderPresentationKey } from '../../../folderPresentation';
+import type { TelegramFile } from '../../../types';
 
 interface RecentWatchBarProps {
     entries: WatchHistoryEntry[];
     currentFiles?: TelegramFile[];
+    activeFolderId?: number | null;
+    folderPresentation?: FolderPresentationMap;
+    folderNames?: Record<string, string>;
     onPlay: (entry: WatchHistoryEntry) => void;
     onPlayFile?: (file: TelegramFile) => void;
     onRefresh: () => void;
     onAnalyticsClick?: () => void;
 }
 
-export function RecentWatchBar({ entries, currentFiles, onPlay, onPlayFile, onRefresh, onAnalyticsClick }: RecentWatchBarProps) {
-    const { t } = useTranslation();
-    // Exact MPV watch-later positions (read once, on demand — no polling).
-    // Keyed by "folder:message" so identical message ids in different folders
-    // cannot borrow each other's position.
+function positionLabel(seconds: number): string {
+    const minutes = Math.floor(seconds / 60);
+    return `${minutes}:${String(Math.floor(seconds % 60)).padStart(2, '0')}`;
+}
+
+export function RecentWatchBar({ entries, currentFiles = [], activeFolderId = null,
+    folderPresentation = {}, folderNames = {}, onPlay, onPlayFile, onRefresh, onAnalyticsClick }: RecentWatchBarProps) {
     const [resumePositions, setResumePositions] = useState<Record<string, number>>({});
+
     useEffect(() => {
         let active = true;
         invoke<{ folder_id: number | null; message_id: number; seconds: number }[]>('cmd_list_resume_positions')
-            .then((positions) => {
+            .then(positions => {
                 if (!active) return;
-                const map: Record<string, number> = {};
-                for (const p of positions) map[`${p.folder_id ?? 'home'}:${p.message_id}`] = p.seconds;
-                setResumePositions(map);
-            })
-            .catch(() => { /* watch-later unavailable — silent */ });
+                setResumePositions(Object.fromEntries(positions.map(p => [`${folderPresentationKey(p.folder_id)}:${p.message_id}`, p.seconds])));
+            }).catch(() => {});
         return () => { active = false; };
     }, []);
 
-    const resolveSeconds = (entry: WatchHistoryEntry): number | null => {
-        const mpv = resumePositions[`${entry.folder_id ?? 'home'}:${entry.file_id}`];
-        const stored = entry.last_position_secs ?? 0;
-        const candidate = Math.max(mpv ?? 0, stored);
-        return candidate > 5 ? candidate : null;
-    };
-
-    if (!entries || entries.length === 0) return null;
-
-    const handleRemove = (e: React.MouseEvent, fileId: number) => {
-        e.stopPropagation();
-        removeWatchEntry(fileId);
-        onRefresh();
-    };
-
-    const handleClearAll = () => {
-        clearWatchHistory();
-        onRefresh();
-    };
-
-    // Group and deduplicate watch history so each TV series, folder, or movie shows only its latest watch entry
-    const consolidatedEntries = groupRecentWatchEntries(entries);
-
-    // Find the relevant recent watched entry matching current open folder/files,
-    // or default to the most recent watched entry.
-    const matchingWatched = (currentFiles && currentFiles.length > 0)
-        ? consolidatedEntries.find(entry => {
-            const ep = parseEpisodeInfo(entry.file_name);
-            const epTitle = ep.seriesTitle?.toLowerCase().trim();
-            return currentFiles.some(f => {
-                if (entry.folder_id && f.folder_id && entry.folder_id === f.folder_id) return true;
-                if (epTitle) {
-                    const fInfo = parseEpisodeInfo(f.name);
-                    return fInfo.seriesTitle?.toLowerCase().trim() === epTitle;
-                }
-                return false;
-            });
-        })
-        : consolidatedEntries[0];
-
-    const latestWatched = matchingWatched || consolidatedEntries[0];
-    const latestFileObj: TelegramFile | null = latestWatched ? {
-        id: latestWatched.file_id,
-        name: latestWatched.file_name,
-        size: latestWatched.file_size,
-        sizeStr: formatBytes(latestWatched.file_size),
-        folder_id: latestWatched.folder_id ?? undefined,
-        type: 'file'
-    } : null;
-
-    const nextEpisodeFile = (latestFileObj && currentFiles && currentFiles.length > 0)
-        ? getNextEpisode(latestFileObj, currentFiles)
+    if (!entries.length) return null;
+    const grouped = groupRecentWatchEntries(entries, folderPresentation);
+    const currentKind = folderPresentation[folderPresentationKey(activeFolderId)]?.kind ?? 'general';
+    const lastInFolder = entries.find(entry => (entry.folder_id ?? null) === activeFolderId);
+    const lastFile = lastInFolder && currentFiles.find(file => file.id === lastInFolder.file_id
+        && (file.folder_id ?? null) === (lastInFolder.folder_id ?? null));
+    const nextFile = currentKind !== 'movies' && lastFile
+        ? getNextEpisode(lastFile, currentFiles.filter(file => (file.folder_id ?? null) === activeFolderId))
         : null;
 
     return (
-        <div className="mb-6 px-1 animate-in fade-in slide-in-from-top-2">
-            <div className="flex items-center justify-between mb-3">
-                <div className="flex items-center gap-2">
-                    <History className="w-4 h-4 text-cyan-400" />
-                    <span className="text-[11px] font-mono font-bold text-stash-text uppercase tracking-wider">
-                        Continue Watching / Recent Watch
-                    </span>
-                    <span className="text-[10px] font-mono px-1.5 py-0.2 rounded bg-slate-900 border border-gray-800 text-cyan-400">
-                        {consolidatedEntries.length}
-                    </span>
-                </div>
-                <div className="flex items-center gap-3">
-                    {onAnalyticsClick && (
-                        <button
-                            onClick={onAnalyticsClick}
-                            className="text-[11px] font-mono text-gray-500 hover:text-stash-primary transition-colors flex items-center gap-1"
-                            title={t('analytics.title')}
-                        >
-                            <ChartPie className="w-3 h-3" />
-                            <span>{t('analytics.title')}</span>
-                        </button>
-                    )}
-                    <button
-                        onClick={handleClearAll}
-                        className="text-[11px] font-mono text-gray-500 hover:text-red-400 transition-colors flex items-center gap-1"
-                        title="Clear Recent Watch History"
-                    >
-                        <Trash2 className="w-3 h-3" />
-                        <span>Clear</span>
-                    </button>
+        <section className="watch-strip" aria-label="Continue watching">
+            <div className="watch-strip-heading">
+                <h2>Continue watching</h2>
+                <div className="watch-strip-tools">
+                    {onAnalyticsClick && <button type="button" onClick={onAnalyticsClick}><ChartPie className="w-4 h-4" /> Analytics</button>}
+                    <button type="button" onClick={() => { clearWatchHistory(); onRefresh(); }}><Trash2 className="w-4 h-4" /> Clear</button>
                 </div>
             </div>
-
-            <div className="flex items-center gap-3 overflow-x-auto pb-2 scrollbar-thin scrollbar-thumb-gray-800">
-                {/* 1. Distinct Vibrant "Next Up" Episode Card */}
-                {nextEpisodeFile && (
-                    <div
-                        key={`next-up-${nextEpisodeFile.id}`}
-                        onClick={() => {
-                            if (onPlayFile) {
-                                onPlayFile(nextEpisodeFile);
-                            } else {
-                                onPlay({
-                                    id: `next-${nextEpisodeFile.id}`,
-                                    file_id: nextEpisodeFile.id,
-                                    file_name: nextEpisodeFile.name,
-                                    file_size: nextEpisodeFile.size,
-                                    folder_id: nextEpisodeFile.folder_id ?? null,
-                                    timestamp: new Date().toISOString(),
-                                    status: 'started'
-                                });
-                            }
-                        }}
-                        role="button"
-                        tabIndex={0}
-                        aria-label={`Play Next: ${nextEpisodeFile.name}`}
-                        onKeyDown={(event) => {
-                            if (event.target !== event.currentTarget || (event.key !== 'Enter' && event.key !== ' ')) return;
-                            event.preventDefault();
-                            event.currentTarget.click();
-                        }}
-                        className="group relative flex-shrink-0 w-64 p-3 rounded-lg bg-gradient-to-br from-cyan-950/80 via-slate-900/95 to-slate-900/95 hover:from-cyan-900/90 hover:via-slate-800/95 hover:to-slate-800/95 border-2 border-cyan-500/60 hover:border-cyan-400 cursor-pointer transition-all duration-200 select-none shadow-[0_0_15px_rgba(6,182,212,0.15)] hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400"
-                    >
-                        <div className="flex items-center justify-between gap-2 mb-2">
-                            <span className="flex items-center gap-1 text-[10px] font-mono font-bold px-2 py-0.5 rounded bg-cyan-500 text-slate-950 uppercase tracking-wide">
-                                <Sparkles className="w-2.5 h-2.5 fill-current" />
-                                NEXT UP
-                            </span>
-                            <span className="text-[10px] font-mono text-cyan-400/80">
-                                {formatBytes(nextEpisodeFile.size)}
-                            </span>
-                        </div>
-
-                        <div className="text-xs font-semibold text-white truncate group-hover:text-cyan-300 transition-colors mb-1.5" title={nextEpisodeFile.name}>
-                            {nextEpisodeFile.name}
-                        </div>
-
-                        <div className="flex items-center justify-between pt-2 border-t border-cyan-500/20">
-                            <MediaBadgesList filename={nextEpisodeFile.name} maxBadges={2} />
-                            <span className="inline-flex items-center gap-1 text-[11px] font-mono font-bold text-cyan-300 group-hover:translate-x-0.5 transition-transform">
-                                <Play className="w-3 h-3 fill-cyan-400" />
-                                Play Next
-                            </span>
-                        </div>
-                    </div>
+            <div className="watch-strip-items">
+                {nextFile && onPlayFile && (
+                    <button type="button" className="watch-card watch-next" onClick={() => onPlayFile(nextFile)}>
+                        <span className="watch-card-caption">Next episode</span>
+                        <strong title={nextFile.name}>{nextFile.name}</strong>
+                        <span><Play className="w-4 h-4" /> Play next</span>
+                    </button>
                 )}
-
-                {/* 2. Calm, Minimalist Consolidated Recent Watch Cards (Per Series / Movie) */}
-                {consolidatedEntries.slice(0, 10).map((entry) => {
-                    const formattedDate = new Date(entry.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-                    const epInfo = parseEpisodeInfo(entry.file_name);
-
+                {grouped.slice(0, 10).map(entry => {
+                    const key = folderPresentationKey(entry.folder_id);
+                    const kind = folderPresentation[key]?.kind ?? 'general';
+                    const episode = parseEpisodeInfo(entry.file_name);
+                    const title = kind === 'series' ? (folderNames[key] || episode.seriesTitle || entry.file_name) : entry.file_name;
+                    const seconds = Math.max(resumePositions[`${key}:${entry.file_id}`] ?? 0, entry.last_position_secs ?? 0);
+                    const percent = entry.total_duration_secs && entry.total_duration_secs > 0
+                        ? Math.min(100, Math.max(0, seconds / entry.total_duration_secs * 100)) : null;
                     return (
-                        <div
-                            key={entry.id}
-                            onClick={() => onPlay(entry)}
-                            role="button"
-                            tabIndex={0}
-                            aria-label={`Resume ${entry.file_name}`}
-                            onKeyDown={(event) => {
-                                if (event.target !== event.currentTarget || (event.key !== 'Enter' && event.key !== ' ')) return;
-                                event.preventDefault();
-                                event.currentTarget.click();
-                            }}
-                            className="group relative flex-shrink-0 w-64 p-3 rounded-lg bg-slate-900/80 hover:bg-slate-800/90 border border-slate-700/70 hover:border-slate-500/90 cursor-pointer transition-all duration-200 select-none shadow-[0_2px_8px_rgba(0,0,0,0.3)] hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-400"
-                        >
-                            <div className="flex items-start justify-between gap-2 mb-2">
-                                <div className="flex items-center gap-1.5">
-                                    <span className="text-[10px] font-mono font-medium px-2 py-0.5 rounded bg-slate-800/90 border border-slate-700/80 text-slate-300 tracking-wide">
-                                        {epInfo.isEpisode ? (epInfo.displayBadge || 'EPISODE') : 'MOVIE'}
-                                    </span>
-                                    {epInfo.seriesTitle && (
-                                        <span className="text-[10px] font-medium text-slate-400 truncate max-w-[110px]" title={epInfo.seriesTitle}>
-                                            {epInfo.seriesTitle}
-                                        </span>
-                                    )}
-                                </div>
-
-                                <div className="flex items-center gap-1.5">
-                                    <span className="text-[10px] font-mono text-slate-400">
-                                        {formatBytes(entry.file_size)}
-                                    </span>
-                                    <button
-                                        onClick={(e) => handleRemove(e, entry.file_id)}
-                                        className="opacity-0 group-hover:opacity-100 p-0.5 rounded hover:bg-slate-800 text-slate-500 hover:text-red-400 transition-all ml-1"
-                                        title="Remove from history"
-                                        aria-label={`Remove ${entry.file_name} from history`}
-                                    >
-                                        <Trash2 className="w-3 h-3" />
-                                    </button>
-                                </div>
-                            </div>
-
-                            <div className="text-xs font-medium text-slate-200 truncate group-hover:text-white transition-colors mb-1.5" title={entry.file_name}>
-                                {entry.file_name}
-                            </div>
-
-                            <div className="flex items-center gap-2 mb-2 text-[10px] font-mono text-slate-400">
-                                <span className="flex items-center gap-1">
-                                    <Clock className="w-2.5 h-2.5 text-slate-400" />
-                                    {formattedDate}
-                                </span>
-                                {entry.status === 'completed' && (
-                                    <span className="text-[10px] text-emerald-400">Finished</span>
-                                )}
-                            </div>
-
-                            {(() => {
-                                const pos = resolveSeconds(entry);
-                                if (pos === null) return null;
-                                const pct = entry.total_duration_secs && entry.total_duration_secs > 0
-                                    ? Math.min(100, (pos / entry.total_duration_secs) * 100)
-                                    : null;
-                                return (
-                                    <div className="mb-2">
-                                        <div className="w-full h-1 rounded-full bg-slate-800 overflow-hidden">
-                                            <div
-                                                className="h-full rounded-full bg-cyan-400/90 transition-all duration-500"
-                                                style={{ width: pct !== null ? `${pct}%` : '100%' }}
-                                            />
-                                        </div>
-                                        {pct !== null && (
-                                            <div className="mt-1 text-[10px] font-mono text-slate-500">
-                                                {Math.round(pct)}% watched
-                                            </div>
-                                        )}
-                                    </div>
-                                );
-                            })()}
-
-                            <div className="flex items-center justify-between pt-2 border-t border-slate-800/80">
-                                <MediaBadgesList filename={entry.file_name} maxBadges={2} />
-
-                                <span className="inline-flex items-center gap-1 text-[11px] font-mono font-semibold text-slate-300 group-hover:text-emerald-400 group-hover:translate-x-0.5 transition-all">
-                                    <Play className="w-2.5 h-2.5 fill-slate-300 group-hover:fill-emerald-400 transition-colors" />
-                                    Resume
-                                </span>
-                            </div>
+                        <div key={`${key}:${entry.file_id}`} className="watch-card">
+                            <button type="button" className="watch-card-main" aria-label={`Resume ${entry.file_name}`} onClick={() => onPlay(entry)}>
+                                <span className="watch-card-caption">{kind === 'series' ? 'Series' : kind === 'movies' ? 'Movie' : 'Recent'}{episode.displayBadge ? ` · ${episode.displayBadge}` : ''}</span>
+                                <strong title={title}>{title}</strong>
+                                {title !== entry.file_name && <span className="watch-card-file" title={entry.file_name}>{entry.file_name}</span>}
+                                {seconds > 0 && <span className="watch-card-position">Resume at {positionLabel(seconds)}</span>}
+                                {percent !== null && <span className="watch-card-progress" aria-label={`${Math.round(percent)}% watched`}><span style={{ width: `${percent}%` }} /></span>}
+                            </button>
+                            <button type="button" className="watch-card-remove" aria-label={`Remove ${entry.file_name} from history`}
+                                onClick={() => { removeWatchEntry(entry.file_id, entry.folder_id); onRefresh(); }}><Trash2 className="w-4 h-4" /></button>
                         </div>
                     );
                 })}
             </div>
-        </div>
+        </section>
     );
 }

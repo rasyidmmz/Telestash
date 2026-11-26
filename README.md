@@ -32,6 +32,18 @@ Unlike a browser-only media workflow, TeleStash is a native 64-bit Rust/Tauri ap
 
 ---
 
+## Library organization
+
+Use a folder's options menu to mark it as **Series**, **Movies**, or **General**.
+This changes how TeleStash presents the folder without moving or renaming Telegram files.
+Series folders open as compact episode lists with season navigation and an **Other files** view.
+Movies folders open as a poster collection, using available image previews or a title/type fallback.
+Choose list, grid, or posters directly in the toolbar; your choice is saved per folder.
+
+Continue watching groups a series by its folder and keeps individual movies separate.
+File details show the source and available technical information, with direct playback through native MPV.
+Folder presentation preferences are included in settings backups; backups created before this feature remain supported.
+
 ## 💡 Why TeleStash?
 
 | Feature / Metric | Standard Web Browsers & Cloud Apps | TeleStash Media Vault Engine |
